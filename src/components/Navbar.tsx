@@ -62,7 +62,7 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
-    navigate('/');
+    navigate('/kms');
   };
 
   const isActive = (path) => location.pathname === path;
@@ -127,7 +127,7 @@ export default function Navbar() {
             <div className="relative" ref={projectsRef}>
               <button
                 onClick={() => { setProjectsOpen((o) => !o); setAboutOpen(false); }}
-                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-white/10 ${location.pathname.startsWith('/projects') ? 'bg-white/20' : ''
+                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-white/10 ${location.pathname.startsWith('/kms/projects') ? 'bg-white/20' : ''
                   }`}
               >
                 Projects
@@ -262,15 +262,15 @@ export default function Navbar() {
               Projects
             </p>
             {PROJECT_LINKS.map((child) => (
-              <Link key={child.path} to={`/kms/${child.path}`} onClick={() => setMobileOpen(false)}
+              <Link key={child.path} to={child.path} onClick={() => setMobileOpen(false)}
                 className="block px-6 py-2 text-sm hover:bg-white/10 rounded-md">
                 {child.label}
               </Link>
             ))}
 
             {SIMPLE_LINKS.map((link) => (
-              <Link key={link.path} to={`/kms/${link.path}`} onClick={() => setMobileOpen(false)}
-                className={`block px-3 py-2 rounded-md text-sm hover:bg-white/10 ${isActive(`/kms/${link.path}`) ? 'bg-white/20' : ''}`}>
+              <Link key={link.path} to={link.path} onClick={() => setMobileOpen(false)}
+                className={`block px-3 py-2 rounded-md text-sm hover:bg-white/10 ${isActive(link.path) ? 'bg-white/20' : ''}`}>
                 {link.label}
               </Link>
             ))}

@@ -53,6 +53,8 @@ export default function DashboardEmbed({ title, embedUrl, reportUrl }) {
           title={title}
           className="w-full h-full border-0"
           allowFullScreen
+          sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+          allow="clipboard-write; encrypted-media; picture-in-picture; web-share"
           onLoad={() => setLoading(false)}
           onError={() => { setLoading(false); setError(true); }}
         />
@@ -60,4 +62,3 @@ export default function DashboardEmbed({ title, embedUrl, reportUrl }) {
     </div>
   );
 }
-

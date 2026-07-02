@@ -10,7 +10,7 @@ export default function Login() {
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/kms';
 
   const [form, setForm] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -166,7 +166,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
-          <Link to="/" className="hover:text-[#0038A8] dark:hover:text-blue-400 transition-colors">← Back to Home</Link>
+          <Link to="/kms" className="hover:text-[#0038A8] dark:hover:text-blue-400 transition-colors">← Back to Home</Link>
         </p>
       </div>
     </div>
