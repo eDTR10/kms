@@ -1,0 +1,130 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "year": 2026,
+      "metric": "58",
+      "metricLabel": "Barangays Connected",
+      "title": "Expanded Rural Free Wi-Fi Infrastructure",
+      "description": "Successfully deployed community Wi-Fi hotspots across 58 remote barangays, providing stable internet access to over 20,000 residents for online education and emergency communications.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 2,
+      "year": 2026,
+      "metric": "8",
+      "metricLabel": "Systems Launched",
+      "title": "Localized e-Governance Platforms",
+      "description": "Rolled out 8 localized information management systems for municipal local government units (LGUs) to streamline business permitting, tax mapping, and licensing processes.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 3,
+      "year": 2026,
+      "metric": "3",
+      "metricLabel": "Provincial Hubs",
+      "title": "Establishment of Regional ICT Innovation Centers",
+      "description": "Launched 3 new innovation hubs equipped with high-speed fiber internet and co-working spaces to support local tech startups and freelance digital workers.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 4,
+      "year": 2025,
+      "metric": "1,500",
+      "metricLabel": "Trainees Certified",
+      "title": "ICT Skills & Digital Literacy Initiative",
+      "description": "Conducted 35 technical training sessions across the region, certifying 1,500 youth and small business owners in basic digital literacy, e-commerce strategies, and cybersecurity.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 5,
+      "year": 2025,
+      "metric": "15",
+      "metricLabel": "Tech4ED Centers",
+      "title": "New Tech4ED Center Establishments",
+      "description": "Established 15 new Tech4ED centers in underserved municipalities, equipping them with modern workstations, document scanners, and digital learning modules.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 6,
+      "year": 2025,
+      "metric": "100%",
+      "metricLabel": "LGU Compliance",
+      "title": "Cybersecurity Awareness and Audit Campaign",
+      "description": "Completed comprehensive cybersecurity vulnerability assessments and threat-awareness workshops for all provincial and municipal government IT departments in the region.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 7,
+      "year": 2025,
+      "metric": "12",
+      "metricLabel": "MSMEs Onboarded",
+      "title": "Digital Transformation for Local Trade",
+      "description": "Assisted 12 prominent rural cooperatives and micro-enterprises in integrating digital payment gateways and launching storefronts on major e-commerce platforms.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 8,
+      "year": 2024,
+      "metric": "4",
+      "metricLabel": "Disaster Networks",
+      "title": "Emergency Communications Infrastructure Deployment",
+      "description": "Set up 4 redundant, solar-powered satellite communication kits in high-risk coastal zones to ensure uninterrupted government coordination during severe weather events.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 9,
+      "year": 2024,
+      "metric": "2,400",
+      "metricLabel": "Students Reached",
+      "title": "Digital Literacy Caravan for Public Schools",
+      "description": "Partnered with local school divisions to bring a mobile IT laboratory to 10 remote public high schools, providing hands-on coding and internet safety seminars to 2,400 students.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 10,
+      "year": 2024,
+      "metric": "250",
+      "metricLabel": "Jobs Created",
+      "title": "Rural Impact Sourcing Workshop Outcomes",
+      "description": "Facilitated specialized virtual assistant and digital marketing bootcamps that directly resulted in verified remote employment contracts for 250 rural scholars.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 11,
+      "year": 2024,
+      "metric": "5",
+      "metricLabel": "Awards Received",
+      "title": "Recognition for Excellence in ICT Development",
+      "description": "Received 5 national and regional awards recognizing outstanding contributions to ICT infrastructure, digital literacy, and e-governance initiatives.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 12,
+      "year": 2024,
+      "metric": "1",
+      "metricLabel": "Regional ICT Hub",
+      "title": "Launch of the Regional ICT Innovation Center",
+      "description": "Inaugurated the first regional ICT innovation center, serving as a collaborative space for tech startups, government agencies, and educational institutions to foster digital innovation.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 13,
+      "year": 2024,
+      "metric": "20",
+      "metricLabel": "Digital Literacy Campaigns",
+      "title": "Community Digital Literacy Outreach",
+      "description": "Conducted 20 community-based digital literacy campaigns, educating local residents on safe internet practices, online banking, and e-government services.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    },
+    {
+      "id": 14,
+      "year": 2024,
+      "metric": "3",
+      "metricLabel": "Smart City Initiatives",
+      "title": "Implementation of Smart City Solutions",
+      "description": "Implemented 3 smart city pilot projects, including intelligent traffic management, public Wi-Fi zones, and IoT-based environmental monitoring systems.",
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+    }
+  ]
+}
