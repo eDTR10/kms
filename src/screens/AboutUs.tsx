@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapPin, Phone, Mail, Globe, ExternalLink } from 'lucide-react';
+import CharterSearch from './CitizenCharter/CharterSearch';
 
 /* ─────────────────────────── static data ─────────────────────────── */
 
@@ -230,9 +231,7 @@ function QualityTab() {
 }
 
 function CharterTab() {
-  const folderUrl = 'https://drive.google.com/drive/folders/132BeMBW5fF2XaupcpFHF_y6nkVabd7wN';
-  const embedUrl =
-    'https://drive.google.com/file/d/1tp7ShdOa-DksIBqtECb8wqBHU8zX4BHQ/view';
+  const pdfUrl = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/CC_TARP_Regional_External_2025.pdf`;
 
   return (
     <div className="max-w-4xl space-y-5">
@@ -246,23 +245,19 @@ function CharterTab() {
           </p>
         </div>
         <a
-          href={folderUrl}
+          href={pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors"
         >
-          <ExternalLink size={14} /> Open in Google Drive
+          <ExternalLink size={14} /> Open PDF Copy of Citizen's Charter
         </a>
       </div>
-      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
-        <iframe
-          src={embedUrl}
-          title="Citizen's Charter Documents"
-          className="w-full"
-          style={{ height: '480px', border: 'none' }}
-          loading="lazy"
-        />
-      </div>
+
+      {/* Embedded service search */}
+      <CharterSearch />
+
+      
     </div>
   );
 }

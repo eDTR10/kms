@@ -1,0 +1,475 @@
+{
+  "document": {
+    "title": "Citizen's Charter - DICT Regional Office (External Services)",
+    "year": 2025,
+    "office": "DICT Regional Office",
+    "services": [
+      {
+        "service_number": 1,
+        "service_name": "Application for Digital Certificates",
+        "description": "The <b>Philippine National Public Key Infrastructure (PNPKI)</b> allows the use of digital certificates which enables secure communications among individuals and government agencies. The PNPKI issues <b>two (2) types of digital certificates</b> to individuals and/or organizations: <b>(a) signing certificate</b>, which is used for document signing and <b>(b) authentication certificate</b>, which is typically used for email signing and encryption.",
+        "office_or_division": "DICT Regional Office, Regional Offices, <b>Cybersecurity Bureau - Digital Certificate Division</b>",
+        "classification": "<span style=\"color:#2563ea\">Complex</span>",
+        "type_of_transaction": [
+          "<span style=\"color:#1d4ed8\">G2C – Government to Citizen</span>",
+          "<span style=\"color:#1d4ed8\">G2B – Government to Business</span>",
+          "<span style=\"color:#1d4ed8\">G2G – Government to Government</span>"
+        ],
+        "who_may_avail": "<b>All Citizens</b>",
+        "checklist_of_requirements": {
+          "for_individual_certificate": [
+            {
+              "checklist_of_requirements": "<b>1. Registration</b> via PNPKI Online Registration System (ORS) or PNPKI Individual Certificate Application Form (for renewal and bulk applications)<br/><br/><span style=\"color:#6b7280\">(1) Original Copy <b>Or</b> (1) Electronic Copy</span>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>2. E-mail address</b> owned by the individual or authorized by the owner for use by the subscriber",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>3. Valid Government-issued Identification</b><br/> <br/><br/>  <br/><br/><b>Philippine National ID (PhilID)</b> (soft copy / scanned copy in PDF or JPG format) — <span style=\"color:#6b7280\">Philippine Statistics Authority (PSA)</span><br/><span style=\"color:#dc2626\">or</span> combination of the following:<br/>— <b>Birth Certificate</b> or valid <b>Philippine passport</b> (soft copy / scanned copy in PDF or JPG) — <span style=\"color:#6b7280\">PSA / DFA</span><br/>— <b>AND</b> — <b>UMID Card</b> (soft copy / scanned copy in PDF or JPG) — <span style=\"color:#6b7280\">SSS</span><br/><br/><br/><br/><span style=\"color:#2563ea\">(In the absence of UMID-compliant card, <b>ANY TWO</b> of the following cards are allowed as valid IDs based on BSP Circular 608 series of 2008)</span><br/>Passport • Driver's License • PRC ID • NBI Clearance • Police Clearance • Postal ID • Voter's ID • GSIS e-Card • SSS Card • Senior Citizen Card • OWWA/OFW ID • Seaman's Book • Alien Certification of Registration / Immigrant Certificate of Registration • Government Office and GOCC ID",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>4. One (1) passport size photo</b> taken within the last <b>six (6) months</b>",
+              "where_to_secure": "Applicant / Client"
+            }
+          ],
+          "for_agency_certificate": [
+            {
+              "checklist_of_requirements": "<b>1. PNPKI Agency Certificate Application Form</b><br/><span style=\"color:#6b7280\">(1) Original Copy</span><br/><span style=\"color:#2563ea\">Remarks: Obtain via the DICT Website: <b>https://dict.gov.ph/</b></span>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>2. Valid Government-issued Identification</b><br/><b>Philippine National ID (PhilID)</b> (soft copy / scanned copy in PDF or JPG) — <span style=\"color:#6b7280\">PSA</span><br/><span style=\"color:#dc2626\">or</span> combination of:<br/>— <b>Birth Certificate</b> (on security paper for Filipino) or <b>ACR Card</b> (for foreigner) or valid <b>passport</b> — <span style=\"color:#6b7280\">PSA / DFA</span><br/>— <b>AND</b> — <b>UMID Card</b> — <span style=\"color:#6b7280\">SSS</span><br/><br/><span style=\"color:#2563ea\">(In absence of UMID-compliant card, <b>ANY TWO</b> of: Passport • Driver's License • PRC ID • NBI Clearance • Police Clearance • Postal ID • Voter's ID • GSIS e-Card • SSS Card • Senior Citizen Card • OWWA/OFW ID • Seaman's Book • Alien Certification of Registration / Immigrant Certificate of Registration)</span>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>3. One (1) passport size photo</b> taken within the last <b>six (6) months</b>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>4. Tax Payer Identification Number (TIN)</b>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>5. Authorization Letter / Board Resolution</b> naming the authorized representative/s to apply for a digital certificate in behalf of the agency<br/><span style=\"color:#6b7280\">(1) Original Copy</span>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>6. Consent</b> to verify the information submitted",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>7.</b> The process is done via <b>Zoom</b> or <b>Google</b>",
+              "where_to_secure": "Applicant / Client"
+            }
+          ],
+          "additional_for_non_government_entities": [
+            {
+              "checklist_of_requirements": "<b>1. SEC</b> business registration for corporation and partnership, <b>DTI</b> Certificate of Business Name Registration for single proprietorship <b>OR CDA</b> registration",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>2. Business Permit</b>",
+              "where_to_secure": "Applicant / Client"
+            },
+            {
+              "checklist_of_requirements": "<b>3. Social Security System (SSS)</b> Employer Clearance",
+              "where_to_secure": "Applicant / Client"
+            }
+          ]
+        },
+        "process_flow": [
+          {
+            "client_steps": "<b>1. Register</b> via the Online Registration System (ORS) and submit all requirements.<br/><span style=\"color:#6b7280\">Location: Home-based or via the DICT Provincial or Regional Office</span><br/><span style=\"color:#2563ea\">Notes: Access the PNPKI ORS portal thru: <b>https://bit.ly/ApplyPNPKI</b></span>",
+            "agency_action": "<b>1.1.</b> Receive and evaluate the registration and supporting documents of the applicant",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Registration Authority Officer (RAO)</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.2.</b> Scheduling of online verification.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Registration Authority Officer (RAO)</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.3.</b> Conduct of video call with the applicant through video conferencing platforms such as: <b>Viber, Zoom,</b> and <b>Hangouts</b>",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Registration Authority Officer (RAO)</b>;<br/>Digital Certificate Division PNPKI Support Team / Assigned Personnel"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.4.</b> Adding user (including verification and add user into TMSRA from ORS of the applicant) into the <b>PNPKI System</b>.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Registration Authority Assistants (RAA)</b>;<br/>Digital Certificate Division PNPKI Support Team / Assigned Personnel"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.5.</b> Once the add user request is approved by another RA Officer (RAO), the system sends an <b>email to the subscriber</b> with instructions on how to download and install digital certificates.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Registration Authority Assistants (RAA)</b>;<br/>Digital Certificate Division PNPKI Support Team / Assigned Personnel"
+          },
+          {
+            "client_steps": "<b>2. Request</b> for digital certificates.<br/><span style=\"color:#6b7280\">Location: Home-based or via the DICT Provincial or Regional Office</span>",
+            "agency_action": "<b>2.</b> Approve certificate request.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Registration Authority Officer (RAO)</b>"
+          },
+          {
+            "client_steps": "<b>3. Download and install</b> digital certificates.<br/><span style=\"color:#6b7280\">Location: Home-based or via the DICT Provincial or Regional Office</span>",
+            "agency_action": "<b>3.</b> Digital Certificate Division PNPKI Support Team / assigned personnel, provides support and assistance as needed.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "<b>Digital Certificate Division PNPKI Support Team / Assigned Personnel</b>"
+          }
+        ],
+        "regional_email_contacts": {
+          "DICT Region 10": "r10.pnpki@dict.gov.ph"
+        }
+      },
+      {
+        "service_number": 2,
+        "service_name": "Processing of Application to Take the ICT Diagnostic Exam",
+        "description": "The <b>Philippine National Public Key Infrastructure (PNPKI)</b> allows the use of digital certificates which enables secure communications among individuals and government agencies. The PNPKI issues <b>two (2) types of digital certificates</b>: <b>(a) signing certificate</b>, which is used for document signing and <b>(b) authentication certificate</b>, which is typically used for email signing and encryption. This way, the government's delivery of services to citizens and businesses becomes <b>safer, faster and more efficient</b>.",
+        "office_or_division": "DICT Regional Office, Regional Offices, <b>ICT Literacy and Competency Development Bureau</b>",
+        "classification": "<span style=\"color:#15803d\">Simple</span>",
+        "type_of_transaction": [
+          "<span style=\"color:#1d4ed8\">G2C – Government to Citizen</span>"
+        ],
+        "who_may_avail": "<b>ICT Professionals and Individuals</b>",
+        "checklist_of_requirements": [
+          {
+            "checklist_of_requirements": "<b>Accomplished Application Form</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy</span><br/><span style=\"color:#2563ea\">Remarks: Access the form through this link: </span> <span style=\"color:#2563ea\"> <b>https://tinyurl.com/DiagExamRegForm</b></span>",
+            "where_to_secure": "<b>DICT - ILCDB</b>"
+          }
+        ],
+        "process_flow": [
+          {
+            "client_steps": "<b>1.</b> Accomplish the ILCDB Online Registration Form.<br/><span style=\"color:#6b7280\">Location: Access the form through this link:</span><br/> <span style=\"color:#2563ea\"> <b>https://tinyurl.com/DiagExamRegForm</b></span>",
+            "agency_action": "<b>1.1</b> Receive accomplished registration form.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>5 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          },
+          {
+            "client_steps": "<b>2.</b> Receive confirmation accepting the registration form.<br/><span style=\"color:#6b7280\">Location: An auto-reply will be displayed upon completion of the registration through this link:</span><br/> <span style=\"color:#2563ea\"> <b>https://tinyurl.com/DiagExamRegForm</b></span>",
+            "agency_action": "<b>2.1</b> Review and Evaluate Online Registration Form and prepare list of examinees.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>5 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          }
+        ],
+        "total": {
+          "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+          "processing_time": "<b>10 minutes</b>"
+        }
+      },
+      {
+        "service_number": 3,
+        "service_name": "Issuance of Verified ICT Diagnostic Examination Results",
+        "description": "The <b>ICT Proficiency Certification Examination</b> is designed to evaluate the competence of an individual to perform <b>programming or systems analysis and design functions</b>. This is pursuant to <b>PD 1408</b>, which directs the National Computer Center (now DICT) and the Civil Service Commission (CSC) to devise ways of determining the fitness of individuals in occupying highly technical ICT positions. The <b>ICT Diagnostic Exam is a prerequisite</b> for the ICT Proficiency Hands on Exam.",
+        "office_or_division": "DICT Regional Office, Regional Offices, <b>ICT Literacy and Competency Development Bureau</b>",
+        "classification": "<span style=\"color:#15803d\">Simple</span>",
+        "type_of_transaction": [
+          "<span style=\"color:#1d4ed8\">G2C – Government to Citizen</span>"
+        ],
+        "who_may_avail": "<b>ICT Professionals and Individuals</b>",
+        "checklist_of_requirements": [
+          {
+            "checklist_of_requirements": "<b>Accomplished Application Form</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy</span><br/><span style=\"color:#2563ea\">Remarks: Access the form through this link: <b>https://tinyurl.com/DiagExamRegForm</b></span>",
+            "where_to_secure": "<b>DICT - ILCDB</b>"
+          }
+        ],
+        "process_flow": [
+          {
+            "client_steps": "<b>1.</b> Receive confirmation of acceptance.<br/><span style=\"color:#6b7280\">Location: An email confirmation will be sent through:</span><br/><span style=\"color:#2563ea\"><b>ilcdb.registrar@dict.gov.ph</b></span>",
+            "agency_action": "<b>1.1</b> Send results of Diagnostic Exam via Email",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>5 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          }
+        ],
+        "total": {
+          "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+          "processing_time": "<b>5 minutes</b>"
+        }
+      },
+      {
+        "service_number": 4,
+        "service_name": "Processing of Application to Take the ICT Proficiency Hands on Examination",
+        "description": "The <b>ICT Proficiency Certification Examination</b> is designed to validate the competence of an individual in <b>programming and system analysis and design functions</b>. This is pursuant to <b>PD 1408</b>, which directs the National Computer Center (now DICT) and the Civil Service Commission (CSC) to devise ways of determining the fitness of individuals in highly technical ICT positions. DICT and CSC therefore conduct tests in these areas.",
+        "office_or_division": "DICT Regional Office, Regional Offices, <b>ICT Literacy and Competency Development Bureau</b>",
+        "classification": "<span style=\"color:#15803d\">Simple</span>",
+        "type_of_transaction": [
+          "<span style=\"color:#1d4ed8\">G2G – Government to Government</span>",
+          "<span style=\"color:#1d4ed8\">G2C – Government to Citizen</span>"
+        ],
+        "who_may_avail": "<b>Government ICT Professionals</b> and Private Individuals",
+        "checklist_of_requirements": [
+          {
+            "checklist_of_requirements": "<b>1. Accomplished Application Form</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy</span><br/><span style=\"color:#2563ea\">Remarks: Access the application form through this link: <b>https://tinyurl.com/HandsOnExamRegForm</b></span>",
+            "where_to_secure": "<b>DICT - ILCDB</b>"
+          },
+          {
+            "checklist_of_requirements": "<b>2. Diagnostic Result (Notification)</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy</span>",
+            "where_to_secure": "<b>DICT - ILCDB</b>"
+          },
+          {
+            "checklist_of_requirements": "<b>3. Transcript of Records (TOR)</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy And (1) Photo Copy</span>",
+            "where_to_secure": "Applicant's School — <b>School Registrar</b>"
+          },
+          {
+            "checklist_of_requirements": "<b>4. Original Birth Certificate (NSO or PSA)</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy And (1) Original Copy</span>",
+            "where_to_secure": "<b>Philippine Statistics Authority</b> — Regional Statistical Services Office (RSSO)"
+          },
+          {
+            "checklist_of_requirements": "<b>5. Passport Size ID Picture</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy And (1) Original Copy</span><br/><span style=\"color:#2563ea\">Remarks: With handwritten name tag containing: <b>(LAST NAME, FIRST NAME MI)</b></span>",
+            "where_to_secure": "Any photo studio"
+          },
+          {
+            "checklist_of_requirements": "<b>6. Official Receipt</b><br/><span style=\"color:#6b7280\">(1) Original Copy</span>",
+            "where_to_secure": "<b>DICT – Cash Division</b>"
+          }
+        ],
+        "process_flow": [
+          {
+            "client_steps": "<b>1.</b> Accomplish the Online Registration Form and submit the required documents.<br/><span style=\"color:#6b7280\">Location: Access the form through the link:</span><br/><b>https://tinyurl.com/HandsOnExamRegForm</b>",
+            "agency_action": "<b>1.1</b> Review the Online Registration Form and its attached documentary requirements.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.2</b> Send confirmation of application and request for submission of physical documentary requirements.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>5 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ILCDB</b>"
+          },
+          {
+            "client_steps": "<b>2.</b> Receive confirmation of application and submit physical documentary requirements.<br/><span style=\"color:#6b7280\">Location: An auto-reply will be displayed upon completing the form. Another confirmation email will be sent through <span style=\"color:#2563ea\"><b>ilcdb.registrar@dict.gov.ph</b></span> for instructions on submitting physical copies.</span>",
+            "agency_action": "<b>2.1</b> Review the submitted documents.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>1 day</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>2.2</b> Prepare the Order of Payment Form",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>5 minutes</b>",
+            "person_responsible": "Preparation: <b>Registrar's Office Staff</b><br/>Signing: <b>Accounting Head</b>"
+          },
+          {
+            "client_steps": "<b>3.</b> Receive Order of Payment Form and pay the necessary fees.<br/><span style=\"color:#6b7280\">Location: Ground Floor, DICT Building, C.P. Garcia Avenue, Diliman, Quezon City</span>",
+            "agency_action": "<b>3.1</b> Issue signed Order of Payment",
+            "fees_to_be_paid": "<span style=\"color:#dc2626\"><b>For Professionals: PHP 500</b></span><br/><span style=\"color:#2563ea\"><b>For Graduating Students: PHP 300</b></span>",
+            "processing_time": "<b>30 minutes</b>",
+            "person_responsible": "Chief Administrative Officer;<br/><b>Accounting Division</b><br/>Supervising Administrative Officer;<br/><b>Accounting Division</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>3.2</b> Receive payment and issue <b>Official Receipt (OR)</b>",
+            "fees_to_be_paid": "<span style=\"color:#6b7280\">Included above</span>",
+            "processing_time": "<b>30 minutes</b>",
+            "person_responsible": "Chief Administrative Officer;<br/><b>Cash Division</b><br/>Supervising Administrative Officer;<br/><b>Cash Division</b>"
+          },
+          {
+            "client_steps": "<b>4.</b> Receive the OR from the Cash Division and present the same to the ILCDB.<br/><span style=\"color:#6b7280\">Location: Registrar's Office, 2nd Floor, DICT Valenzuela, Karuhatan, Valenzuela City</span>",
+            "agency_action": "<b>4.1</b> Validate the OR and issue the <b>Examination Permit</b>.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>10 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          }
+        ],
+        "total": {
+          "fees_to_be_paid": "<span style=\"color:#dc2626\"><b>PRO: PHP 500</b></span> / <span style=\"color:#2563ea\"><b>GS: PHP 300</b></span>",
+          "processing_time": "<b>2 days, 1 hour, 20 minutes</b>"
+        },
+        "mode_of_payment": "<b>via DICT Cashier</b><br/><span style=\"color:#6b7280\">Location: G/F DICT Bldg., C.P. Garcia Avenue, Diliman, Quezon City</span>"
+      },
+      {
+        "service_number": 5,
+        "service_name": "Issuance of ICT Proficiency Hands On Examination Results",
+        "description": "The <b>ICT Proficiency Certification Examination</b> is designed to validate the competence of an individual in <b>programming and system analysis and design functions</b>. This is pursuant to <b>PD 1408</b>, which directs the National Computer Center (now DICT) and the Civil Service Commission (CSC) to devise ways of determining the fitness of individuals in highly technical ICT positions. DICT and CSC therefore conduct tests in these areas.",
+        "office_or_division": "<b>ICT Literacy and Competency Development Bureau</b>",
+        "classification": "<span style=\"color:#15803d\">Simple</span>",
+        "type_of_transaction": [
+          "<span style=\"color:#1d4ed8\">G2C – Government to Citizen</span>"
+        ],
+        "who_may_avail": "<b>ICT Professionals and Individuals</b> who passed the Diagnostic Examination",
+        "checklist_of_requirements": [
+          {
+            "checklist_of_requirements": "<b>Email notification</b><br/><span style=\"color:#6b7280\">(1) Electronic Copy</span>",
+            "where_to_secure": "<b>DICT - ILCDB</b>"
+          }
+        ],
+        "process_flow": [
+          {
+            "client_steps": "<b>1.</b> Receive email notification that certificates are ready for claiming.<br/><span style=\"color:#6b7280\">Location: A confirmation email through <span style=\"color:#2563ea\"><b>ilcdb.registrar@dict.gov.ph</b></span></span>",
+            "agency_action": "<b>1.1</b> Send email notification to examinees.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>5 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.2</b> Prepare notification slip and certificates.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>10 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          },
+          {
+            "client_steps": "<b>2.</b> Present the notification email to ILCDB.<br/><span style=\"color:#6b7280\">Location: An email from <span style=\"color:#2563ea\">  <b>ilcdb.registrar@dict.gov.ph</b></span></span>",
+            "agency_action": "<b>2.1</b> Issue certificate and notification slip.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>15 minutes</b>",
+            "person_responsible": "Training Specialist III, Training Management Division;<br/><b>ICT Literacy and Competency Development Division (ILCDB)</b>"
+          }
+        ],
+        "total": {
+          "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+          "processing_time": "<b>30 minutes</b>"
+        }
+      },
+      {
+        "service_number": 6,
+        "service_name": "Processing of Request for ICT Technical Assistance and Services",
+        "description": "The Regional Office provides <b>ICT-related technical assistance</b> to LGUs and SUCs, such as provisioning of online meeting platforms, the conduct of training sessions and webinars, and review of <b>Information Systems Strategic Plan</b>, among others.",
+        "office_or_division": "<b>Technical Operations Division</b>",
+        "classification": "<span style=\"color:#15803d\">Simple</span> / <span style=\"color:#2563ea\">Complex</span> / <span style=\"color:#dc2626\">Highly Technical</span>",
+        "type_of_transaction": [
+          "<span style=\"color:#1d4ed8\">G2G – Government to Government</span>"
+        ],
+        "who_may_avail": "<b>Government Agencies</b>",
+        "checklist_of_requirements": [
+          {
+            "checklist_of_requirements": "<b>Request Letter</b>",
+            "where_to_secure": "Applicant / Client"
+          }
+        ],
+        "process_flow": [
+          {
+            "client_steps": "<b>1.</b> Forward the request letter indicating the specific technical assistance needed via e-mail to the respective regional office email.<br/><span style=\"color:#6b7280\">Location: Official Regional Emails</span>",
+            "agency_action": "<b>1.1.</b> Review and Evaluate Online Application Form and Requirements",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>15 minutes</b>",
+            "person_responsible": "Provincial Officers / Project Focal<br/><b>Provincial / Regional Office</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.2.</b> Forward the request letter to the office concerned",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>15 minutes</b>",
+            "person_responsible": "Provincial Officers / Project Focal<br/><b>Provincial / Regional Office</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.3.</b> The office concerned evaluates if the request classifies as <span style=\"color:#15803d\"><b>Simple</b></span>, <span style=\"color:#2563ea\"><b>Complex</b></span> and <span style=\"color:#dc2626\"><b>Highly Technical</b></span>.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>15 minutes</b>",
+            "person_responsible": "Provincial Officers / Project Focal<br/><b>Provincial / Regional Office</b>"
+          },
+          {
+            "client_steps": null,
+            "agency_action": "<b>1.4.</b> Endorse the recommendation to the <b>Provincial Officer</b> or <b>Regional Director</b> for approval.",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>3 days</b>",
+            "person_responsible": "Project Focal<br/><b>Technical Operations Division</b>"
+          },
+          {
+            "client_steps": "<b>2.</b> Receive the letter of decision whether approved or disapproved.",
+            "agency_action": "<b>2.</b> Send a reply letter",
+            "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+            "processing_time": "<b>15 minutes</b>",
+            "person_responsible": "Project Focal<br/><b>Technical Operations Division</b>"
+          }
+        ],
+        "total": {
+          "fees_to_be_paid": "<span style=\"color:#15803d\"><b>None</b></span>",
+          "processing_time": "<b>3 days, 1 hour</b>"
+        },
+        "regional_email_contacts": {
+             "DICT Region 10": "region10@dict.gov.ph"
+      
+        }
+      }
+
+
+    ],
+    "feedback_and_complaints_mechanism": {
+      "how_to_send_feedback": [
+        "Accomplish our <b>Feedback Form</b> available in the offices and put this at the drop box located at the <b>Public Assistance and Complaints Desk</b>",
+        "Feedback may also be sent through e-mail <span style=\"color:#1d4ed8\"><b>feedback@dict.gov.ph</b></span> or <span style=\"color:#1d4ed8\"><b>consumer.protection@dict.gov.ph</b></span>",
+        "Talk to our <b>Officer of the Day</b>"
+      ],
+      "how_feedbacks_are_processed": [
+        "Client files feedback either through accomplishing Feedback Form available in the lobby or by sending their feedback through e-mail address: <span style=\"color:#1d4ed8\"><b>feedback@dict.gov.ph</b></span>",
+        "Personnel assigned as <b>Officer of the Day</b> records, reviews the feedback and forwards this to appropriate Services/Unit of the Office.",
+        "All feedback recorded for the day will be submitted to the <b>Committee on Anti-Red Tape (CART) Secretariat</b>.",
+        "The CART Secretariat shall ensure that proper acknowledgment shall be given to those who filed their feedback within <b>fifteen (15) days</b> upon receipt.",
+        "The CART Secretariat shall prepare a <b>monthly summary</b> of feedbacks received and forward the report to the CART Chairperson or Supervising Senior Executive Official/s for Central Office and Office of the Regional Director for Regional Offices.",
+        "Feedback inputs received from the Officer of the Day will be used as a reference for <b>process/product/service improvements</b>."
+      ],
+      "how_to_file_a_complaint": {
+        "channel": "For service-related complaints against DICT, email <b>Anti-Red Tape Authority (ARTA)</b> through <span style=\"color:#1d4ed8\"><b>complaints@arta.gov.ph</b></span>",
+        "required_details": [
+          "Full name and contact information of the complainant",
+          "Sex and Gender",
+          "Incident details / Narrative of concern",
+          "Evidence",
+          "Name of the person/office being complained"
+        ],
+        "other_channels": [
+          {
+            "name": "Presidential Complaint Center (PCC)",
+            "email": "pcc@malacanang.gov.ph",
+            "hotline": "8888"
+          },
+          {
+            "name": "CCB",
+            "contact": "0908 881 6565 (SMS)"
+          }
+        ]
+      },
+      "how_complaints_are_processed": [
+        "The <b>DICT Committee on Anti Red Tape (CART)</b> evaluates all complaints against DICT filed through ARTA, and identifies if the same is within DICT jurisdiction, mandate and/or authority.",
+        "Upon evaluation, the CART shall start the investigation and forward the complaint to the relevant office for their explanation. The concerned office should reply within <b>3 days</b> upon receipt of the referred complaint from CART.",
+        "The CART shall create a <b>CART Referral Report</b> or an equivalent report and return the complete docket case to the Public Assistance Division of ARTA within <b>20 working days</b>. The 20 day period may be extended once for the same period through a written consent of the complainant.",
+        "<span style=\"color:#15803d\"><b>If successfully resolved:</b></span> The CART shall cause the complainant to file the Consent to Closure Complaint (Annex C of ARTA MC No. 2021-11).",
+        "<span style=\"color:#dc2626\"><b>If failed to resolve:</b></span> The CART shall submit the CART Referral Report together with: (1) Sworn Affidavit of the Complainant, (2) Counter-Affidavit of the Complained Government Official, (3) Recommendation of the CART Chairperson or head of DICT."
+      ],
+      "contact_information_of_ccb_pcc_arta": {
+        "ARTA": "  complaints@arta.gov.ph",
+        "PCC": "8888",
+        "CCB": "0908 881 6565 (SMS)"
+      }
+    },
+    "regional_offices": [
+      { "region": "DICT Region 10",          "address": "DICT Villarin Street Carmen Cagayan de Oro City 9000",                                                                   "contact_information": "(088)587-2981 / region10@dict.gov.ph" },
+      { "region": "DICT CAR",               "address": "DICT Compound, Polo Field St Joseph Village, Baguio City 2600",                                                          "contact_information": "(074)442-4616 / car@dict.gov.ph" },
+      { "region": "DICT Region 1",           "address": "3F Kenny Plaza Bldg., M.L. Quezon Ave, San Fernando City, La Union 2500",                                               "contact_information": "(072) 610-4880 / region1@dict.gov.ph" },
+      { "region": "DICT Region 2",           "address": "#2 Bagay Road, San Gabriel Village, Tuguegarao City, Cagayan 3500",                                                     "contact_information": "(078) 825-1624 / region2@dict.gov.ph" },
+      { "region": "DICT Region 3",           "address": "3rd Flr. Marison Square Bldg. Cagayan Valley Road Brgy. Sta. Rita Guiguinto, Bulacan 3015",                            "contact_information": "(044) 792 3743 / region3@dict.gov.ph" },
+      { "region": "DICT Region IV-A",        "address": "DICT Compound Telecom Road, Capitol Site, Brgy. Kumintang Ibaba, Batangas City 4200",                                   "contact_information": "(043)757-7632 / region4a@dict.gov.ph" },
+      { "region": "DICT Region IV-B",        "address": "DICT Compound Telecom Road, Capitol Site, Brgy. Kumintang Ibaba, Batangas City 4200",                                   "contact_information": "(043)702-4323 / region4b@dict.gov.ph" },
+      { "region": "DICT Region 5",           "address": "DICT Regional Office V, 2nd Floor Post-Telecom Building Lapu-Lapu St. Brgy 25 Lapu-Lapu Legazpi City, Albay 4500",    "contact_information": "+63929-606-5491 / support.region5@dict.gov.ph" },
+      { "region": "DICT Region 6",           "address": "DICT, Zamora Street, Iloilo City 5000",                                                                                  "contact_information": "(033) 351-1684 / region6@dict.gov.ph" },
+      { "region": "DICT Region 7",           "address": "DICT Building, Pigafetta Street, Brgy. San Roque, Port Area, Cebu City, 6000",                                          "contact_information": "(02) 8-920-0101 loc. 9021 / region7@dict.gov.ph" },
+      { "region": "DICT Region 8",           "address": "DICT Regional Office 8, A. Mabini St., Port Area, Tacloban City, Leyte, 6500",                                          "contact_information": "region8@dict.gov.ph" },
+      { "region": "DICT Region 9 + BASULTA", "address": "DICT Bldg., Corcuerra Ext., Port Area, Zamboanga City, 7000",                                                           "contact_information": "(062) 991-2742 / region9basulta@dict.gov.ph" },
+      
+      { "region": "DICT Region 11",          "address": "DICT Region XI, F. Torres St., Davao City (Telecom Ofc Cmpd) 8000",                                                      "contact_information": "(082) 291-2255 / region11@dict.gov.ph" },
+      { "region": "DICT Region 12",          "address": "DICT OFFICE XII, 2F Rommel Building, Jose Abad Santos, Zone III, Koronadal City, 9506",                                  "contact_information": "(083) 520 1698 / region12@dict.gov.ph" },
+      { "region": "DICT Region 13 (CARAGA)", "address": "DICT Caraga Regional Office. J. Rosales Avenue, Butuan City 8600",                                                       "contact_information": "(085) 817-2011 / caragaregion13@dict.gov.ph" }
+    ]
+  }
+}
