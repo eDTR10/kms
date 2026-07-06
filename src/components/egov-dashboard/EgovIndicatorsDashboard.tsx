@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import KpiCallout from "@/components/kpi/KpiCallout";
 import PeriodFilterBar, { DEFAULT_PERIOD_FILTERS, type PeriodFilters } from "@/components/kpi/PeriodFilterBar";
 import TrendAreaChart from "@/components/kpi/TrendAreaChart";
-import EgovTargetsTable from "./EgovTargetsTable";
+import TargetsTable from "@/components/kpi/TargetsTable";
 import kpiData from "@/data/egovKpiData.json";
 import { describePeriod, resolvePeriodValue, QUARTER_MONTHS } from "@/lib/kpiPeriod";
 import { staggerContainer, fadeUpItem } from "@/lib/motionVariants";
@@ -92,7 +92,7 @@ export default function EgovIndicatorsDashboard() {
         className="grid grid-cols-3 gap-4 lg:grid-cols-3"
       >
         {kpis.map((k) => (
-          <motion.div key={k.indicatorId} variants={fadeUpItem}>
+          <motion.div key={k.indicatorId} variants={fadeUpItem} className="h-full">
             <KpiCallout datum={resolved[k.indicatorId]} />
           </motion.div>
         ))}
@@ -104,7 +104,7 @@ export default function EgovIndicatorsDashboard() {
         points={registeredUsersPoints}
       />
 
-      <EgovTargetsTable rows={targetRows} periodLabel={describePeriod(scope)} />
+      <TargetsTable rows={targetRows} periodLabel={describePeriod(scope)} />
     </section>
   );
 }

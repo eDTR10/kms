@@ -1,0 +1,33 @@
+{
+  "seriesNames": [
+    "Active",
+    "Highly Active"
+  ],
+  "categories": [
+    {
+      "category": "Bukidnon",
+      "activeWeight": 1,
+      "highlyActiveWeight": 4
+    },
+    {
+      "category": "HUC",
+      "activeWeight": 0,
+      "highlyActiveWeight": 2
+    },
+    {
+      "category": "Lanao del Norte",
+      "activeWeight": 1,
+      "highlyActiveWeight": 0
+    },
+    {
+      "category": "Misamis Occidental",
+      "activeWeight": 2,
+      "highlyActiveWeight": 0
+    },
+    {
+      "category": "Misamis Oriental",
+      "activeWeight": 1,
+      "highlyActiveWeight": 0
+    }
+  ]
+}

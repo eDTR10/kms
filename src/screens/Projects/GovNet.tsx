@@ -1,6 +1,7 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
+import NBPIndicatorsDashboard from '../../components/nbp-dashboard/NBPIndicatorsDashboard';
 import logogovnet from '../../assets/project-logo/NBP.png';
 export default function GovNet() {
   return (
@@ -18,6 +19,11 @@ export default function GovNet() {
           </p>
         </div>
       </div>
+
+      <div className="mb-10">
+        <NBPIndicatorsDashboard />
+      </div>
+
       <DashboardEmbed
         title="CDO GovNet Report"
         embedUrl="https://datastudio.google.com/embed/reporting/d18767f5-b034-40b4-9215-93674ff57e47/page/fADIF"

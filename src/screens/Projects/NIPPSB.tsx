@@ -1,6 +1,7 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
+import NIPPSBIndicatorsDashboard from '../../components/nippsb-dashboard/NIPPSBIndicatorsDashboard';
 import logonippsb from '../../assets/project-logo/NIPPSB.png';
 export default function NIPPSB() {
   return (
@@ -18,6 +19,11 @@ export default function NIPPSB() {
           </p>
         </div>
       </div>
+
+      <div className="mb-10">
+        <NIPPSBIndicatorsDashboard />
+      </div>
+
       <DashboardEmbed
         title="NIPPSB Dashboard"
         embedUrl="https://lookerstudio.google.com/embed/reporting/a41369e5-115f-4e05-8550-679234bad073/page/ZNmIF"

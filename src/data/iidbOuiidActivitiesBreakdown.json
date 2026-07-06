@@ -1,0 +1,26 @@
+[
+  {
+    "label": "Bukidnon",
+    "weight": 0.3333333333333333
+  },
+  {
+    "label": "Region-Wide",
+    "weight": 0.19047619047619047
+  },
+  {
+    "label": "Cagayan de Oro City",
+    "weight": 0.19047619047619047
+  },
+  {
+    "label": "Outside Region",
+    "weight": 0.14285714285714285
+  },
+  {
+    "label": "Camiguin",
+    "weight": 0.09523809523809523
+  },
+  {
+    "label": "Iligan City",
+    "weight": 0.047619047619047616
+  }
+]

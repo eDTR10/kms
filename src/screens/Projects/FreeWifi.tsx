@@ -25,11 +25,11 @@ export default function FreeWifi() {
         <FreeWifiIndicatorsDashboard />
       </div>
 
-      <DashboardEmbed
+      {/* <DashboardEmbed
         title="Free Wi-Fi Dashboard"
         embedUrl="https://datastudio.google.com/embed/reporting/c016a68b-488e-41c2-95f3-fd5d8fde0b00/page/p_dqiy4l4zhd"
         reportUrl="https://datastudio.google.com/reporting/c016a68b-488e-41c2-95f3-fd5d8fde0b00/page/p_dqiy4l4zhd"
-      />
+      /> */}
     </div>
   );
 }

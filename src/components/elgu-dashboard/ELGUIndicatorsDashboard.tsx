@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import KpiCallout from "@/components/kpi/KpiCallout";
 import HighlightKpiCallout from "./HighlightKpiCallout";
 import IndicatorFilterBar, { DEFAULT_FILTERS } from "./IndicatorFilterBar";
-import LguModulePieChart from "./LguModulePieChart";
+import CategoryPieChart from "@/components/kpi/CategoryPieChart";
 import catalogData from "@/data/elguIndicators.json";
 import kpiData from "@/data/elguKpiData.json";
 import { describePeriod, resolvePeriodValue } from "@/lib/kpiPeriod";
@@ -31,25 +31,36 @@ const PIE_EXCLUDED_NAMES = new Set([
   "Number of LGUs operational with Online Payment integrated (eGovPay)",
 ]);
 
-// The two flagship metrics get a spotlight callout instead of sitting in the grid.
-const HIGHLIGHTED_NAMES = new Set([
-  "Number of LGUs operational with eLGU v1 system",
+// Left column: four flagship metrics stacked narrow, top to bottom.
+const LEFT_COLUMN_ORDERED = [
   "Number of LGUs operational with eLGU v2 system",
-]);
-
-// A second spotlight row, just below the flagship one.
-const SECOND_TIER_NAMES = new Set([
+  "Number of LGUs operational with eLGU v1 system",
   "Number of LGUs operational with eLGU BPCO system",
   "Number of LGUs operational with eLGU Working Permit",
-]);
+];
+const LEFT_COLUMN_NAMES = new Set(LEFT_COLUMN_ORDERED);
+
+// Right column: two milestone metrics, each twice the height of a left card.
+const RIGHT_COLUMN_ORDERED = ["Number of eLGU Go Live", "Number of eLGU Launching"];
+const RIGHT_COLUMN_NAMES = new Set(RIGHT_COLUMN_ORDERED);
 
 // "Number of LGUs operational with eLGU v1 system" -> "eLGU V1"
+// "Number of eLGU Launching" -> "eLGU Launching"
 function deriveModuleLabel(indicatorName: string): string {
-  return indicatorName
-    .replace(LGU_MODULE_PREFIX, "")
-    .replace(/ system$/i, "")
-    .replace(/\bv(\d)\b/i, (_match, n: string) => `V${n}`)
-    .trim();
+  if (indicatorName.startsWith(LGU_MODULE_PREFIX)) {
+    return indicatorName
+      .replace(LGU_MODULE_PREFIX, "")
+      .replace(/ system$/i, "")
+      .replace(/\bv(\d)\b/i, (_match, n: string) => `V${n}`)
+      .trim();
+  }
+  return indicatorName.replace(/^Number of /i, "").trim();
+}
+
+function deriveVariant(indicatorName: string): "default" | "confetti" | "live" {
+  if (indicatorName === "Number of eLGU Launching") return "confetti";
+  if (indicatorName === "Number of eLGU Go Live") return "live";
+  return "default";
 }
 
 export default function ELGUIndicatorsDashboard() {
@@ -98,20 +109,24 @@ export default function ELGUIndicatorsDashboard() {
     [kpiRows]
   );
 
-  const highlightRows = useMemo(
-    () => kpiRows.filter((k) => HIGHLIGHTED_NAMES.has(k.indicatorName)),
-    [kpiRows]
-  );
+  const leftColumnRows = useMemo(() => {
+    const byName = new Map(kpiRows.map((k) => [k.indicatorName, k]));
+    return LEFT_COLUMN_ORDERED.map((name) => byName.get(name)).filter(
+      (k): k is ResolvedKpi => !!k
+    );
+  }, [kpiRows]);
 
-  const secondTierRows = useMemo(
-    () => kpiRows.filter((k) => SECOND_TIER_NAMES.has(k.indicatorName)),
-    [kpiRows]
-  );
+  const rightColumnRows = useMemo(() => {
+    const byName = new Map(kpiRows.map((k) => [k.indicatorName, k]));
+    return RIGHT_COLUMN_ORDERED.map((name) => byName.get(name)).filter(
+      (k): k is ResolvedKpi => !!k
+    );
+  }, [kpiRows]);
 
   const gridRows = useMemo(
     () =>
       kpiRows.filter(
-        (k) => !HIGHLIGHTED_NAMES.has(k.indicatorName) && !SECOND_TIER_NAMES.has(k.indicatorName)
+        (k) => !LEFT_COLUMN_NAMES.has(k.indicatorName) && !RIGHT_COLUMN_NAMES.has(k.indicatorName)
       ),
     [kpiRows]
   );
@@ -136,42 +151,52 @@ export default function ELGUIndicatorsDashboard() {
         resultCount={filteredCatalog.length}
       />
 
-      {highlightRows.length > 0 && (
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          className="grid grid-cols-2 gap-4 sm:grid-cols-2"
-        >
-          {highlightRows.map((k) => (
-            <motion.div key={k.indicatorId} variants={fadeUpItem}>
-              <HighlightKpiCallout datum={k} label={deriveModuleLabel(k.indicatorName)} />
+      {(leftColumnRows.length > 0 || rightColumnRows.length > 0) && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {leftColumnRows.length > 0 && (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              className="flex flex-col gap-4"
+            >
+              {leftColumnRows.map((k) => (
+                <motion.div key={k.indicatorId} variants={fadeUpItem}>
+                  <HighlightKpiCallout datum={k} label={deriveModuleLabel(k.indicatorName)} />
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
-        </motion.div>
-      )}
+          )}
 
-      {secondTierRows.length > 0 && (
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          className="grid grid-cols-2 gap-4 sm:grid-cols-2"
-        >
-          {secondTierRows.map((k) => (
-            <motion.div key={k.indicatorId} variants={fadeUpItem}>
-              <HighlightKpiCallout datum={k} label={deriveModuleLabel(k.indicatorName)} />
+          {rightColumnRows.length > 0 && (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              className="flex flex-col gap-4"
+            >
+              {rightColumnRows.map((k) => (
+                <motion.div key={k.indicatorId} variants={fadeUpItem} className="flex-1">
+                  <HighlightKpiCallout
+                    datum={k}
+                    label={deriveModuleLabel(k.indicatorName)}
+                    variant={deriveVariant(k.indicatorName)}
+                  />
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
-        </motion.div>
+          )}
+        </div>
       )}
 
       {lguModuleData.length >= 2 && (
-        <div className="max-w-lg">
-          <LguModulePieChart data={lguModuleData} />
-        </div>
+        <CategoryPieChart
+          title="LGUs operational by system module"
+          subtitle="Share of operational LGU count across each eLGU module (placeholder values)"
+          data={lguModuleData}
+        />
       )}
 
       {gridRows.length > 0 ? (
@@ -180,17 +205,17 @@ export default function ELGUIndicatorsDashboard() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="grid grid-cols-4 gap-4 lg:grid-cols-2 sm:grid-cols-1"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
         >
           {gridRows.map((k) => (
-            <motion.div key={k.indicatorId} variants={fadeUpItem}>
+            <motion.div key={k.indicatorId} variants={fadeUpItem} className="h-full">
               <KpiCallout datum={k} />
             </motion.div>
           ))}
         </motion.div>
       ) : (
-        highlightRows.length === 0 &&
-        secondTierRows.length === 0 && (
+        leftColumnRows.length === 0 &&
+        rightColumnRows.length === 0 && (
           <p className="text-sm text-muted-foreground py-6 text-center border border-dashed border-border rounded-xl">
             No portal-visible KPIs match the current filters.
           </p>

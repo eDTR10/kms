@@ -1,6 +1,7 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
+import IIDBIndicatorsDashboard from '../../components/iidb-dashboard/IIDBIndicatorsDashboard';
 import logoiidb from '../../assets/project-logo/IIDB.png';
 
 export default function IIDB() {
@@ -19,6 +20,11 @@ export default function IIDB() {
           </p>
         </div>
       </div>
+
+      <div className="mb-10">
+        <IIDBIndicatorsDashboard />
+      </div>
+
       <DashboardEmbed
         title="IIDB Dashboard"
         embedUrl="https://datastudio.google.com/embed/reporting/6e8fb826-5f06-4950-a57d-7c2be915a918/page/p_4mlt23t9gd"

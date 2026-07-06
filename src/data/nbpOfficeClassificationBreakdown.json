@@ -1,0 +1,22 @@
+[
+  {
+    "label": "NGA",
+    "weight": 0.704
+  },
+  {
+    "label": "LGU",
+    "weight": 0.184
+  },
+  {
+    "label": "PES/PHS",
+    "weight": 0.048
+  },
+  {
+    "label": "GOCC",
+    "weight": 0.048
+  },
+  {
+    "label": "SUC",
+    "weight": 0.016
+  }
+]

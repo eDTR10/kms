@@ -1,20 +1,40 @@
 import { useState } from "react";
+import AnimatedNumber from "./AnimatedNumber";
+import { useMountedIn } from "@/lib/useMountedIn";
 
-interface BarDatum {
+export interface RankedBarDatum {
   label: string;
-  count: number;
+  value: number;
+  units?: string | null;
 }
 
 const SEQ_STEPS = ["var(--viz-seq-450)", "var(--viz-seq-400)", "var(--viz-seq-250)", "var(--viz-seq-100)"];
 
+const wholeFormatter = new Intl.NumberFormat("en-US");
+
+function formatValue(value: number, units?: string | null): string {
+  const formatted = wholeFormatter.format(Math.round(value));
+  return units === "%" ? `${formatted}%` : formatted;
+}
+
 /**
- * Horizontal bar chart, one sequential hue, more-is-darker.
- * Job: compare magnitude of portal KPIs across their reporting source.
+ * "Ranked Bar Chart" infographic style: several related indicators compared
+ * on one sequential-hue scale, ranked highest to lowest, bars growing in on
+ * mount.
  */
-export default function IndicatorSourceChart({ data }: { data: BarDatum[] }) {
+export default function RankedBarChart({
+  title,
+  subtitle,
+  data,
+}: {
+  title: string;
+  subtitle: string;
+  data: RankedBarDatum[];
+}) {
   const [hovered, setHovered] = useState<number | null>(null);
-  const sorted = [...data].sort((a, b) => b.count - a.count);
-  const max = Math.max(...sorted.map((d) => d.count), 1);
+  const mounted = useMountedIn();
+  const sorted = [...data].sort((a, b) => b.value - a.value);
+  const max = Math.max(...sorted.map((d) => d.value), 1);
 
   return (
     <div
@@ -22,20 +42,20 @@ export default function IndicatorSourceChart({ data }: { data: BarDatum[] }) {
       style={{ background: "var(--viz-surface)", borderColor: "var(--viz-border)" }}
     >
       <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--viz-text-primary)" }}>
-        Portal KPIs by reporting source
+        {title}
       </h3>
       <p className="text-xs mb-4" style={{ color: "var(--viz-text-secondary)" }}>
-        Which report each KM Portal KPI is drawn from
+        {subtitle}
       </p>
 
       <div className="flex flex-col gap-3">
         {sorted.map((d, i) => {
-          const widthPct = Math.max(4, (d.count / max) * 100);
+          const widthPct = mounted ? Math.max(4, (d.value / max) * 100) : 0;
           const isHovered = hovered === i;
           return (
             <div key={d.label} className="flex items-center gap-3">
               <span
-                className="w-40 shrink-0 text-xs text-right truncate"
+                className="w-48 shrink-0 text-xs text-right truncate"
                 title={d.label}
                 style={{ color: "var(--viz-text-secondary)" }}
               >
@@ -50,10 +70,10 @@ export default function IndicatorSourceChart({ data }: { data: BarDatum[] }) {
                 onBlur={() => setHovered(null)}
                 tabIndex={0}
                 role="img"
-                aria-label={`${d.label}: ${d.count} KPIs`}
+                aria-label={`${d.label}: ${formatValue(d.value, d.units)}`}
               >
                 <div
-                  className="h-full rounded-r-[4px] transition-opacity"
+                  className="h-full rounded-r-[4px] transition-[width,opacity] duration-700 ease-out"
                   style={{
                     width: `${widthPct}%`,
                     background: SEQ_STEPS[i % SEQ_STEPS.length],
@@ -64,7 +84,7 @@ export default function IndicatorSourceChart({ data }: { data: BarDatum[] }) {
                   className="absolute top-1/2 -translate-y-1/2 text-xs font-medium"
                   style={{ left: `calc(${widthPct}% + 8px)`, color: "var(--viz-text-primary)" }}
                 >
-                  {d.count}
+                  <AnimatedNumber value={d.value} formatter={(v) => formatValue(v, d.units)} />
                 </span>
                 {isHovered && (
                   <div
@@ -74,7 +94,7 @@ export default function IndicatorSourceChart({ data }: { data: BarDatum[] }) {
                       color: "var(--viz-surface)",
                     }}
                   >
-                    <strong>{d.count}</strong> KPIs from {d.label}
+                    <strong>{formatValue(d.value, d.units)}</strong> — {d.label}
                   </div>
                 )}
               </div>

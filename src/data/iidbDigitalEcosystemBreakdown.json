@@ -1,0 +1,14 @@
+[
+  {
+    "label": "Cagayan de Oro City",
+    "weight": 0.3333333333333333
+  },
+  {
+    "label": "Camiguin",
+    "weight": 0.3333333333333333
+  },
+  {
+    "label": "Outside Region",
+    "weight": 0.3333333333333333
+  }
+]

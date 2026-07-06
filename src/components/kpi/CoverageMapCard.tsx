@@ -55,7 +55,7 @@ export default function CoverageMapCard({ datum }: { datum: ResolvedKpi }) {
   });
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 hover:border-primary/40 transition-colors">
+    <div className="h-full bg-card border border-border rounded-xl p-6 flex flex-col gap-4 hover:border-primary/40 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-primary">{datum.indicatorName}</p>
         {!datum.hasLiveData && (

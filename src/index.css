@@ -82,6 +82,28 @@
 .animate-slow-pulse {
   animation: slow-pulse 8s ease-in-out infinite;
 }
+
+/* Hard on/off blink — a real blink, not a smooth pulse/ping */
+@keyframes live-blink {
+  0%, 49%  { opacity: 1; }
+  50%, 100% { opacity: 0.15; }
+}
+.animate-live-blink {
+  animation: live-blink 1s steps(1, end) infinite;
+}
+
+/* Confetti pieces drifting down through a card, looping */
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  8%   { opacity: 0.85; }
+  90%  { opacity: 0.85; }
+  100% { transform: translateY(280px) rotate(320deg); opacity: 0; }
+}
+.animate-confetti-fall {
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
 /* width */
 ::-webkit-scrollbar {
   width: 7px;

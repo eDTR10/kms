@@ -1,6 +1,7 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
+import CybersecurityIndicatorsDashboard from '../../components/cybersecurity-dashboard/CybersecurityIndicatorsDashboard';
 import PNPKI from '../../assets/project-logo/PNPKI.jpg';
 export default function Cybersecurity() {
   return (
@@ -18,6 +19,11 @@ export default function Cybersecurity() {
           </p>
         </div>
       </div>
+
+      <div className="mb-10">
+        <CybersecurityIndicatorsDashboard />
+      </div>
+
       <DashboardEmbed
         title="Cybersecurity / PNPKI Report"
         embedUrl="https://lookerstudio.google.com/embed/reporting/b6d40d56-33bd-4567-8d8a-20d16876deb4/page/p_gzgpvldahd"

@@ -1,0 +1,2030 @@
+[
+  {
+    "indicatorId": "total-participants",
+    "indicatorName": "Total Participants",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 29
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 26
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 12
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 32
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 32
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 15
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 14
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 15
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 31
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 36
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 27
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 29
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 14
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 15
+      }
+    ],
+    "aggregation": "sum",
+    "target": 198,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "male-participants",
+    "indicatorName": "Male Participants",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 11
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 11
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 11
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 10
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 7
+      }
+    ],
+    "aggregation": "sum",
+    "target": 92,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "female-participants",
+    "indicatorName": "Female Participants",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 12
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 12
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 11
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 11
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 11
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 10
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 8
+      }
+    ],
+    "aggregation": "sum",
+    "target": 106,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "number-of-startups-supported-and-engaged-through-dsdap-programs",
+    "indicatorName": "Number of startups supported and engaged through DSDAP programs",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Target Table",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 9
+      }
+    ],
+    "aggregation": "sum",
+    "target": 1,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "number-of-learning-sessions-and-workshops-conducted-across-ict-sectors-locally-and-participated-outside-region-set-ph-edge-epic-pofcon-dino-nicp-summit",
+    "indicatorName": "Number of learning sessions and workshops conducted across ICT sectors locally and participated outside region (SET PH, EDGE, EPIC, POFCON, DINO, NICP Summit)",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Target Table",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 0
+      }
+    ],
+    "aggregation": "sum",
+    "target": 1,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "number-of-digital-ecosystem-policy-conferences-fgds-and-consultations-conducted-or-participated",
+    "indicatorName": "Number of digital ecosystem, policy conferences, FGDs, and consultations conducted or participated",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Target Table",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 6
+      }
+    ],
+    "aggregation": "sum",
+    "target": 1,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "bapd-dsdap",
+    "indicatorName": "BAPD-DSDAP",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Pie/Donut Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 0
+      }
+    ],
+    "aggregation": "sum",
+    "target": 1,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "ecosystem-development",
+    "indicatorName": "Ecosystem Development",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Pie/Donut Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 1
+      }
+    ],
+    "aggregation": "sum",
+    "target": 13,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "ouiid-activities",
+    "indicatorName": "OUIID Activities",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Pie/Donut Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 1
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 1
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 1
+      }
+    ],
+    "aggregation": "sum",
+    "target": 13,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "digital-ecosystem",
+    "indicatorName": "Digital Ecosystem",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Pie/Donut Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 3
+      }
+    ],
+    "aggregation": "sum",
+    "target": 40,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "number-of-active-ict-councils",
+    "indicatorName": "Number of Active ICT Councils",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Grouped Bar Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 5
+      }
+    ],
+    "aggregation": "sum",
+    "target": 66,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "number-of-highly-active-ict-councils",
+    "indicatorName": "Number of Highly Active ICT Councils",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Grouped Bar Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 0
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 0
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 6
+      }
+    ],
+    "aggregation": "sum",
+    "target": 79,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  }
+]

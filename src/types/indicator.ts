@@ -25,6 +25,8 @@ export interface HistoryPoint {
 export interface KpiDatum {
   indicatorId: string;
   indicatorName: string;
+  /** Sub-program grouping, for project pages that bundle more than one program (e.g. "PNPKI" vs "Cybersecurity"). */
+  program?: string;
   groupTag: string;
   monitoringSource: string | null;
   units: string | null;

@@ -22,7 +22,8 @@ function formatWithUnits(value: number, units: string | null): string {
   return formatted;
 }
 
-export default function EgovTargetsTable({ rows, periodLabel }: { rows: TargetRow[]; periodLabel: string }) {
+/** Indicator vs. target, with a progress bar — shared across every project dashboard. */
+export default function TargetsTable({ rows, periodLabel }: { rows: TargetRow[]; periodLabel: string }) {
   const mounted = useMountedIn();
 
   return (
@@ -39,10 +40,10 @@ export default function EgovTargetsTable({ rows, periodLabel }: { rows: TargetRo
           {rows.map((r) => {
             const progressPct = r.target > 0 ? Math.min(100, Math.round((r.current / r.target) * 100)) : 0;
             return (
-              <TableRow key={r.indicatorName}>
-                <TableCell className="font-medium text-foreground">{r.indicatorName}</TableCell>
+              <TableRow key={r.indicatorName} className="hover:bg-accent/50 transition-colors">
+                <TableCell className="font-medium text-foreground p-4">{r.indicatorName}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 h-[30px]">
                     <span>
                       <AnimatedNumber value={r.current} formatter={(v) => formatWithUnits(v, r.units)} />
                     </span>

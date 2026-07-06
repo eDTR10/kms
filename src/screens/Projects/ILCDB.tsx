@@ -1,6 +1,7 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
+import ILCDBIndicatorsDashboard from '../../components/ilcdb-dashboard/ILCDBIndicatorsDashboard';
 import logoIlcdb from '../../assets/project-logo/ILCDB.png';
 export default function ILCDB() {
   return (
@@ -18,6 +19,11 @@ export default function ILCDB() {
           </p>
         </div>
       </div>
+
+      <div className="mb-10">
+        <ILCDBIndicatorsDashboard />
+      </div>
+
       <DashboardEmbed
         title="ILCDB Report"
         embedUrl="https://datastudio.google.com/embed/reporting/f8914384-b24f-4008-a338-a7f7ac14b425/page/IXtzD"

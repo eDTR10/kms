@@ -1,0 +1,2212 @@
+[
+  {
+    "indicatorId": "pnpki-orientations-conducted",
+    "indicatorName": "PNPKI orientations conducted",
+    "program": "PNPKI",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Line Graph / Area Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 11
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 11
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 10
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 11
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 10
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 10
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 9
+      }
+    ],
+    "aggregation": "sum",
+    "target": 119,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "100-of-pnpki-applications-new-and-renewal-processed-every-quarter-of-the-year",
+    "indicatorName": "100% of PNPKI applications (new and renewal) processed every quarter of the year",
+    "program": "PNPKI",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "%",
+    "infographicStyle": "Pie/Donut Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 93.3
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 97.9
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 98.7
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 99.6
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 96.6
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 95.3
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 92
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 96.3
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 98.5
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 90.1
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 95.3
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 95.1
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 88.4
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 89.5
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 96.2
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 99.4
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 97.8
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 91.8
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 99.4
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 99.2
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 91.9
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 95.7
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 96.5
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 92.6
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 98
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 97.8
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 91
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 98.6
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 92.5
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 94.4
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 97
+      }
+    ],
+    "aggregation": "average",
+    "target": 100,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "government-entities-conducted-with-pnpki-awareness-campaigns",
+    "indicatorName": "Government Entities conducted with PNPKI awareness campaigns",
+    "program": "PNPKI",
+    "groupTag": "Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Pie/Donut Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 7
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 6
+      }
+    ],
+    "aggregation": "sum",
+    "target": 79,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "individuals-in-the-conduct-of-pnpki-awareness-campaigns",
+    "indicatorName": "Individuals in the conduct of PNPKI awareness campaigns",
+    "program": "PNPKI",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 37
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 40
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 37
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 29
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 33
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 37
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 30
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 34
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 32
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 33
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 34
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 38
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 40
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 40
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 33
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 38
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 34
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 41
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 38
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 34
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 37
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 36
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 34
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 30
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 35
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 33
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 37
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 30
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 34
+      }
+    ],
+    "aggregation": "sum",
+    "target": 449,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "registered-subscribers-to-pnpki",
+    "indicatorName": "Registered subscribers to PNPKI",
+    "program": "PNPKI",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Map",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 73
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 51
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 70
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 55
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 60
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 53
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 55
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 74
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 55
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 66
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 54
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 66
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 61
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 62
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 61
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 52
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 64
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 73
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 70
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 56
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 65
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 65
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 59
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 53
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 71
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 71
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 73
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 50
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 58
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 69
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 72
+      }
+    ],
+    "aggregation": "sum",
+    "target": 950,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "stakeholders-served-monitored-and-responded",
+    "indicatorName": "Stakeholders served, monitored, and responded",
+    "program": "PNPKI",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Internal (Project)",
+    "units": "%",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 98.6
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 95.9
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 94.5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 92.8
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 88
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 98.5
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 98
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 98.2
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 96.3
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 91.1
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 94.7
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 96.4
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 93.5
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 89.5
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 90.5
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 91.4
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 85.1
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 92.7
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 98
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 97.9
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 94.9
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 96.6
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 98.1
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 93.1
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 89.3
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 96.1
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 85.1
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 87.3
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 86.4
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 96.3
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 97
+      }
+    ],
+    "aggregation": "average",
+    "target": 100,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "cybersecurity-advocacy-and-training-programs-conducted",
+    "indicatorName": "Cybersecurity Advocacy and Training Programs Conducted",
+    "program": "Cybersecurity",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Line Graph / Area Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 7
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 6
+      }
+    ],
+    "aggregation": "sum",
+    "target": 79,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "cert-operation-trainings-conducted",
+    "indicatorName": "CERT Operation Trainings conducted",
+    "program": "Cybersecurity",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Line Graph / Area Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 5
+      }
+    ],
+    "aggregation": "sum",
+    "target": 66,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "cybersecurity-learners",
+    "indicatorName": "Cybersecurity Learners",
+    "program": "Cybersecurity",
+    "groupTag": "Quality",
+    "monitoringSource": "For Creation",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 38
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 35
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 34
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 37
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 39
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 47
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 47
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 46
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 48
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 47
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 45
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 42
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 48
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 45
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 43
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 35
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 41
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 38
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 37
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 45
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 33
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 49
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 39
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 47
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 48
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 40
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 38
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 41
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 46
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 47
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 37
+      }
+    ],
+    "aggregation": "sum",
+    "target": 488,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "cybersecurity-professionals",
+    "indicatorName": "Cybersecurity Professionals",
+    "program": "Cybersecurity",
+    "groupTag": "Quality",
+    "monitoringSource": "For Creation",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 14
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 14
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 14
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 13
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 13
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 16
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 16
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 15
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 15
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 16
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 13
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 18
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 19
+      }
+    ],
+    "aggregation": "sum",
+    "target": 251,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "sector-based-cybersecurity-awareness-campaigns",
+    "indicatorName": "Sector-based Cybersecurity Awareness Campaigns",
+    "program": "Cybersecurity",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Line Graph / Area Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 8
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 9
+      }
+    ],
+    "aggregation": "sum",
+    "target": 119,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "hackforgov-number-of-participants",
+    "indicatorName": "HackforGov - Number of Participants",
+    "program": "Cybersecurity",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Line Graph / Area Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 25
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 24
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 24
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 26
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 24
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 19
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 18
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 18
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 19
+      }
+    ],
+    "aggregation": "sum",
+    "target": 251,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "hackforgov-number-of-participating-schools",
+    "indicatorName": "HackforGov - Number of Participating Schools",
+    "program": "Cybersecurity",
+    "groupTag": "Quality / Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Map",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 12
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 12
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 11
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 11
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 10
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 12
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 11
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 12
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 12
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 10
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 13
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 12
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 13
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 12
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 12
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 11
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 10
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 11
+      }
+    ],
+    "aggregation": "sum",
+    "target": 145,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  }
+]

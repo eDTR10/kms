@@ -1,0 +1,26 @@
+[
+  {
+    "title": "NICTHS — Conduct of National ICT Household Survey",
+    "subtitle": "Efficiency / Timeline",
+    "stages": [
+      "Planning",
+      "Data Gathering",
+      "Validation",
+      "Analysis",
+      "Reporting"
+    ],
+    "completedThrough": 5
+  },
+  {
+    "title": "Policy and White Paper Development",
+    "subtitle": "Quality / Efficiency",
+    "stages": [
+      "Scoping",
+      "Drafting",
+      "Stakeholder Review",
+      "Finalization",
+      "Publication"
+    ],
+    "completedThrough": 5
+  }
+]
