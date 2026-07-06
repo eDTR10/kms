@@ -8,7 +8,6 @@ import AboutUs from './screens/AboutUs';
 import Maps from './screens/Maps';
 import AFD from './screens/AFD';
 import Login from './screens/Login';
-import CitizenCharter from './screens/CitizenCharter/CC';
 
 // Projects
 import FreeWifi from './screens/Projects/FreeWifi';
@@ -35,7 +34,7 @@ function App() {
         <Route path="/kms/login" element={<Login />} />
 
         {/* Full-screen kiosk display (no navbar/footer) */}
-        <Route path="/kms/citizen-charter" element={<CitizenCharter />} />
+   
 
         {/* Admin routes (own layout) */}
         <Route
