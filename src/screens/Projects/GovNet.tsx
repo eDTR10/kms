@@ -1,9 +1,11 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
+import ProjectCarousel from '../../components/ProjectCarousel';
 import logogovnet from '../../assets/project-logo/NBP.png';
 export default function GovNet() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 dark:bg-gray-950">
+      <ProjectCarousel />
       <div className="mb-6 flex items-center gap-6">
         <div className="shrink-0 w-24 h-24 bg-[#2d4a6e] rounded-xl flex items-center justify-center p-2 shadow-md">
           <img src={logogovnet} alt="National Broadband Plan" className="max-h-full max-w-full object-contain" />

@@ -1,0 +1,2030 @@
+[
+  {
+    "indicatorId": "other-free-wi-fi-activities",
+    "indicatorName": "Other Free Wi-Fi Activities",
+    "groupTag": "Efficiency",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 8
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 9
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 8
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 9
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 9
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 7
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 9
+      }
+    ],
+    "aggregation": "sum",
+    "target": 119,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "provision-of-internet-access-via-low-earth-orbit-satellites-pialeos-region-x",
+    "indicatorName": "Provision of Internet Access via Low Earth Orbit Satellites (PIALEOS) - Region X",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 2
+      }
+    ],
+    "aggregation": "sum",
+    "target": 26,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "provision-of-internet-connectivity-services-pics-in-public-places-region-x-phase-2",
+    "indicatorName": "Provision of Internet Connectivity Services (PICS) in Public Places - Region X Phase 2",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 4
+      }
+    ],
+    "aggregation": "sum",
+    "target": 53,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "provision-of-internet-connectivity-services-pics-in-municipalities",
+    "indicatorName": "Provision of Internet Connectivity Services (PICS) in Municipalities",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 6
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 7
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 6
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 7
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 6
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 7
+      }
+    ],
+    "aggregation": "sum",
+    "target": 92,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "pop-extension",
+    "indicatorName": "PoP Extension",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 2
+      }
+    ],
+    "aggregation": "sum",
+    "target": 26,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "provision-of-internet-connectivity-services-pics-in-public-places-region-x-phase-3",
+    "indicatorName": "Provision of Internet Connectivity Services (PICS) in Public Places - Region X Phase 3",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 5
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 4
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 4
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 5
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 5
+      }
+    ],
+    "aggregation": "sum",
+    "target": 66,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "procurement-of-public-community-wi-fi-with-management-system-pcwms",
+    "indicatorName": "Procurement of Public Community Wi-Fi with Management System (PCWMS)",
+    "groupTag": "Efficiency / Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 4
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 2
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 3
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 2
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 3
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 2
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 3
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 4
+      }
+    ],
+    "aggregation": "sum",
+    "target": 53,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "service-availability",
+    "indicatorName": "Service Availability",
+    "groupTag": "Quality",
+    "monitoringSource": "Internal (Project)",
+    "units": "%",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 99.4
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 95.6
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 92.5
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 98.7
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 96.4
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 99.2
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 94.4
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 97.7
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 94.2
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 93.4
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 92.2
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 95.2
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 92.6
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 94.4
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 93.7
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 93.9
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 95.8
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 98.1
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 98.3
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 94.5
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 92.8
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 96.9
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 98.3
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 99
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 98.4
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 95.9
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 97
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 92.9
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 92.5
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 93.1
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 94.2
+      }
+    ],
+    "aggregation": "average",
+    "target": 100,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "bayanihan-sim-distribution",
+    "indicatorName": "Bayanihan Sim Distribution",
+    "groupTag": "Efficiency / Timeline",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Map",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 47
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 42
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 48
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 48
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 40
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 36
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 45
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 35
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 45
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 38
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 42
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 37
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 38
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 45
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 37
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 44
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 41
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 44
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 35
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 37
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 47
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 42
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 42
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 47
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 48
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 47
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 44
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 37
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 34
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 42
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 40
+      }
+    ],
+    "aggregation": "sum",
+    "target": 528,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "100-maintenance-of-fpiap-access-points",
+    "indicatorName": "100% maintenance of FPIAP Access Points",
+    "groupTag": "Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Map",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 14
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 12
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 13
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 12
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 13
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 16
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 16
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 13
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 13
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 14
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 15
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 14
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 15
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 16
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 15
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 13
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 15
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 17
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 15
+      }
+    ],
+    "aggregation": "sum",
+    "target": 198,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "penetration-rate-across-the-region",
+    "indicatorName": "Penetration Rate across the region",
+    "groupTag": "Efficiency",
+    "monitoringSource": "Internal (Project)",
+    "units": "%",
+    "infographicStyle": "Map",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 50.3
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 43.1
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 61.3
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 39.7
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 35.9
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 55
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 43
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 42
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 45.7
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 43.8
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 37.7
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 47.5
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 49.5
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 42
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 49.6
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 55.8
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 44.6
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 36.3
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 43
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 42
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 56.1
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 60.5
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 55
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 40.9
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 58.7
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 56.2
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 42.9
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 36
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 46.3
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 55
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 61.6
+      }
+    ],
+    "aggregation": "average",
+    "target": 100,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "connected-beneficiaries",
+    "indicatorName": "Connected beneficiaries",
+    "groupTag": "Efficiency",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Line Graph / Area Chart",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 8174
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 8359
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 8578
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 8815
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 9166
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 9366
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 9565
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 9718
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 10080
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 10392
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 10647
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 10865
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 11088
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 11405
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 11772
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 12229
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 12472
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 12883
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 13203
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 13562
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 13926
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 14194
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 14577
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 14808
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 15041
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 15560
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 16051
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 16582
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 16906
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 17418
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 18084
+      }
+    ],
+    "aggregation": "latest",
+    "target": 20800,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  }
+]

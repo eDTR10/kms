@@ -134,6 +134,30 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
+
+    /* Dataviz tokens (light) — see dataviz skill references/palette.md */
+    --viz-surface: #fcfcfb;
+    --viz-text-primary: #0b0b0b;
+    --viz-text-secondary: #52514e;
+    --viz-muted: #898781;
+    --viz-grid: #e1e0d9;
+    --viz-baseline: #c3c2b7;
+    --viz-border: rgba(11, 11, 11, 0.1);
+    --viz-good: #006300;
+    --viz-series-1: #2a78d6;
+    --viz-series-2: #1baf7a;
+    --viz-series-3: #eda100;
+    --viz-series-4: #008300;
+    --viz-series-5: #4a3aa7;
+    --viz-series-6: #e34948;
+    --viz-status-good: #0ca30c;
+    --viz-status-warning: #fab219;
+    --viz-status-serious: #ec835a;
+    --viz-status-critical: #d03b3b;
+    --viz-seq-100: #cde2fb;
+    --viz-seq-250: #86b6ef;
+    --viz-seq-400: #3987e5;
+    --viz-seq-450: #2a78d6;
   }
 
   .dark {
@@ -156,5 +180,29 @@
     --border: 236 32% 15%;
     --input: 236 32% 15%;
     --ring: 227 100% 59%;
+
+    /* Dataviz tokens (dark) — see dataviz skill references/palette.md */
+    --viz-surface: #1a1a19;
+    --viz-text-primary: #ffffff;
+    --viz-text-secondary: #c3c2b7;
+    --viz-muted: #898781;
+    --viz-grid: #2c2c2a;
+    --viz-baseline: #383835;
+    --viz-border: rgba(255, 255, 255, 0.1);
+    --viz-good: #0ca30c;
+    --viz-series-1: #3987e5;
+    --viz-series-2: #199e70;
+    --viz-series-3: #c98500;
+    --viz-series-4: #008300;
+    --viz-series-5: #9085e9;
+    --viz-series-6: #e66767;
+    --viz-status-good: #0ca30c;
+    --viz-status-warning: #fab219;
+    --viz-status-serious: #ec835a;
+    --viz-status-critical: #d03b3b;
+    --viz-seq-100: #184f95;
+    --viz-seq-250: #184f95;
+    --viz-seq-400: #3987e5;
+    --viz-seq-450: #3987e5;
   }
 }
