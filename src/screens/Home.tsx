@@ -24,56 +24,56 @@ const PROJECTS = [
     title: 'Free Wi-Fi',
     description: 'Free public Wi-Fi access points deployed across Region 10 communities.',
     path: '/kms/projects/free-wifi',
-    accent: 'bg-blue-500',
+    accent: 'bg-[#2D284E]',
   },
   {
     logo: logoILCDB,
     title: 'ILCDB',
     description: 'ICT Livelihood & Community Development Barangay program beneficiaries and reports.',
     path: '/kms/projects/ilcdb',
-    accent: 'bg-indigo-500',
+    accent: 'bg-[#14478F]',
   },
   {
     logo: logoeGov,
     title: 'eGov (NGP)',
     description: 'Electronic Government and National Government Portal deployment status.',
     path: '/kms/projects/egov',
-    accent: 'bg-amber-500',
+    accent: 'bg-[#225AEA]',
   },
   {
     logo: logoPNPKI,
     title: 'Cybersecurity / PNPKI',
     description: 'Philippine National Public Key Infrastructure and cybersecurity readiness reports.',
     path: '/kms/projects/cybersecurity',
-    accent: 'bg-purple-500',
+    accent: 'bg-[#FDD306]',
   },
   {
     logo: logoNBP,
     title: 'NBP / CDO GovNet',
     description: 'National Broadband Program and Cagayan de Oro Government Network connectivity.',
     path: '/kms/projects/govnet',
-    accent: 'bg-teal-500',
+    accent: 'bg-[#335567]',
   },
   {
     logo: logoeLGU,
     title: 'eLGU',
     description: 'Electronic Local Government Unit operations and automation program.',
     path: '/kms/projects/elgu',
-    accent: 'bg-orange-500',
+    accent: 'bg-[#335567]',
   },
   {
     logo: logoIIDB,
     title: 'IIDB',
     description: 'ICT Industry Development Bureau – Region 10 enterprises and ICT professionals.',
     path: '/kms/projects/iidb',
-    accent: 'bg-green-500',
+    accent: 'bg-[#FF0180]',
   },
   {
     logo: logoNIPPSB,
     title: 'NIPPSB',
     description: 'National ICT Proficiency and Performance Standard for Barangays program report.',
     path: '/kms/projects/nippsb',
-    accent: 'bg-pink-500',
+    accent: 'bg-[#1E477F]',
   },
 ];
 
@@ -195,7 +195,9 @@ export default function Home() {
                     className={`group h-full flex flex-col border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 ${darkCard}`}
                   >
                     {/* Accent stripe */}
-                    <div className={`h-1 ${project.accent}`} />
+                    <div className={`h-1  ${project.accent} ` } />
+
+                    {console.log(project.accent)}
                     {/* Logo banner */}
                     <div className="flex items-center justify-center h-28 relative overflow-hidden bg-slate-50 dark:bg-white p-6">
                       <img

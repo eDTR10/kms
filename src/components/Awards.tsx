@@ -59,15 +59,11 @@ function AwardLightboxContent({ item }) {
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-[#ffffff] to-[#ffffffef]" />
       )}
+      <div className="absolute top-20 inset-0 bg-gradient-to-t from-white via-white to-white/0" />
+
       {/* Scrollable text overlay — sits on top of the fixed backdrop above,
-          initially anchored to the bottom so the photo reads first. Solid
-          white so long descriptions never collide with whatever text is
-          baked into the source image (many award images are social-media
-          graphics with their own captions/logos); the soft blend below is
-          just at the seam, so it still reads as emerging from the photo
-          rather than a hard-edged panel dropped on top of it. */}
-      <div className="relative h-[60vh] bottom-0 bg-white overflow-y-auto">
-        <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-transparent to-white pointer-events-none" />
+          initially anchored to the bottom so the photo reads first. */}
+      <div className="relative h-[60vh] bottom-0 overflow-y-auto">
         <div className="min-h-full flex flex-col justify-end px-6 sm:px-8 py-8">
           <h3 className="text-2xl sm:text-4xl font-black text-accent-foreground leading-tight drop-shadow-lg mb-2">
             {item.title}
