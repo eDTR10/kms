@@ -1,0 +1,1064 @@
+[
+  {
+    "id": "elgu-1",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Number of technical support tickets resolved from eLGU BPLS operational LGUs",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Inactive",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-2",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Number of trainings conducted on the use of eLGU to the LGUs in the Region",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Inactive",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "egov-3",
+    "project": "eGov",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Number of eGovPh promotional Activities",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Inactive",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-4",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Percentage of tickets resolved",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Inactive",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-5",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "At least 75% satisfactory feedback in the helpdesk",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Inactive",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-6",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Number of other trainings, seminars conducted to stakeholders",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Inactive",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-8",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Engagement",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-9",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS eReadiness Survey",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-10",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Pilot Implementation",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-11",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Roadshow",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-12",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Databuild Up",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-13",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Capacity Building",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-14",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Users Training",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-15",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Benchmarking",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-16",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Launching",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-17",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Orientation",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-18",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Data Build up Assessment & Simulation Training",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-19",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of iBPLS Dry Run Activities",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-20",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of notarized MOAs with DSA between DICT and LGU",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-21",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of New LGUs with Operational Status: Business Permit",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-22",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of New LGUs with Operational Status: Integrated Processing of Barangay Clearance in Business Permit Module",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-23",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of New LGUs with Operational Status: Building Permit",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-24",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of New LGUs with Operational Status: Certificate of Occupancy",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-25",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of New LGUs with Operational Status: Working Permit",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-26",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of batches of system study",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-27",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Technical Assistance: Data Build Up",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-28",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Technical Assistance: Pilot Testing",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-29",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Technical Assistance: Dry Run",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-30",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Technical Assistance: Data Migration (If necessary)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-31",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "Technical Assistance: Implementation",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-32",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of regional technical support activities (site visits, validation, refresher training, internal planning and performance review and monitoring)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-33",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of MOA Received-(Business Permit)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-34",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of new LGUs on iBPLS Implementation-(Business Permit)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-35",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of new LGUs on iBPLS Implementation -(BPCO)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-36",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on iBPLS Userâs Training - (Business Permit)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-37",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on iBPLS Userâs Training - (BPCO)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-38",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on iBPLS Data Buildup - (Business Permit)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-39",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on iBPLS Data Buildup - (BPCO)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-40",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on iBPLS Pilot Implementation-(Business Permit)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-41",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on iBPLS Pilot Implementation-(BPCO)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-42",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs on System Orientation, Roadshow, Project Briefing",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-43",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of Capacity Building activities conducted for iBPLS (GWT, client orientation, etc)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-44",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGU using iBPLS (monitored & supported online)",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-45",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up"
+    ],
+    "indicatorName": "# of LGUs implementing iBPLS cloud",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-46",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Secretary Accomplishment Report"
+    ],
+    "indicatorName": "Number of eLGU Transactions",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-47",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Secretary Accomplishment Report",
+      "BIMP-EAGA"
+    ],
+    "indicatorName": "Number of LGUs adopting eLGU system",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-48",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with eLGU v1 system",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-49",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with eLGU v2 system",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-50",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with eLGU BPCO system",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-51",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with eLGU Working Permit",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-52",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with Barangay Clearance integrated",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-53",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with Online Payment integrated (Linkbiz)",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-54",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs operational with Online Payment integrated (eGovPay)",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-55",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of LGUs with ARTA commendation",
+    "dimensions": [],
+    "measure": null,
+    "units": "Number",
+    "monitoringSource": "Internal (Project)",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-56",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of LGUs provided with onboarding training - eLGU system",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-57",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - Technical Support Tickets Resolved",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-58",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - Refresher training",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-59",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Previous Data Build Up",
+      "New"
+    ],
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - BPBC users training",
+    "dimensions": [],
+    "measure": null,
+    "units": null,
+    "monitoringSource": null,
+    "status": "Archived",
+    "showInPortal": false,
+    "infographicStyle": null,
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-60",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - BPCO users training",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-61",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - WP users training",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-62",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of engagements conducted to the LGUs",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "Conducts",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-63",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of eLGU Launching",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-64",
+    "project": "eLGU",
+    "indicatorSource": [
+      "Regional Implementation Plan"
+    ],
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - Technical Assistance Training",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  },
+  {
+    "id": "elgu-65",
+    "project": "eLGU",
+    "indicatorSource": [
+      "New"
+    ],
+    "indicatorName": "Number of eLGU Go Live",
+    "dimensions": [
+      "Quality",
+      "Efficiency",
+      "Timeliness"
+    ],
+    "measure": "LGUs",
+    "units": "Number",
+    "monitoringSource": "Data Build Up",
+    "status": "Active",
+    "showInPortal": true,
+    "infographicStyle": "Big Number Callout",
+    "linkToDatabase": null
+  }
+]

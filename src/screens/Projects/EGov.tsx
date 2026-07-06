@@ -1,9 +1,12 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
+import ProjectCarousel from '../../components/ProjectCarousel';
+import EgovIndicatorsDashboard from '../../components/egov-dashboard/EgovIndicatorsDashboard';
 import logoeGov from '../../assets/project-logo/eGovPH Logo.png';
 export default function EGov() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 dark:bg-gray-950">
+      <ProjectCarousel />
       <div className="mb-6 flex items-center gap-6">
         <div className="shrink-0 w-24 h-24 bg-white border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center p-2 shadow-md">
           <img src={logoeGov} alt="eGovPH" className="max-h-full max-w-full object-contain" />
@@ -16,6 +19,11 @@ export default function EGov() {
           </p>
         </div>
       </div>
+
+      <div className="mb-10">
+        <EgovIndicatorsDashboard />
+      </div>
+
       <DashboardEmbed
         title="eGov NGP Report"
         embedUrl="https://lookerstudio.google.com/embed/reporting/81b02c41-dbbc-46d4-ad8e-e349a72a2814/page/af24D"

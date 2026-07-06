@@ -1,0 +1,9 @@
+[
+  { "name": "Bukidnon", "weight": 0.22 },
+  { "name": "Misamis Oriental", "weight": 0.20 },
+  { "name": "Lanao del Norte", "weight": 0.16 },
+  { "name": "Cagayan de Oro City", "weight": 0.14 },
+  { "name": "Misamis Occidental", "weight": 0.12 },
+  { "name": "Iligan City", "weight": 0.10 },
+  { "name": "Camiguin", "weight": 0.06 }
+]

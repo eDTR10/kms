@@ -1,9 +1,11 @@
 // @ts-nocheck
 import DashboardEmbed from '../../components/DashboardEmbed';
+import ProjectCarousel from '../../components/ProjectCarousel';
 import logonippsb from '../../assets/project-logo/NIPPSB.png';
 export default function NIPPSB() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 dark:bg-gray-950">
+      <ProjectCarousel />
       <div className="mb-6 flex items-center gap-6">
         <div className="shrink-0 w-24 h-24 bg-white border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center p-2 shadow-md">
           <img src={logonippsb} alt="NIPPSB" className="max-h-full max-w-full object-contain" />

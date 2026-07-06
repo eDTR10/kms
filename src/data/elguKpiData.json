@@ -1,0 +1,3194 @@
+[
+  {
+    "indicatorId": "elgu-46",
+    "indicatorName": "Number of eLGU Transactions",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 26
+      }
+    ],
+    "target": 343,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-47",
+    "indicatorName": "Number of LGUs adopting eLGU system",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 27
+      }
+    ],
+    "target": 356,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-48",
+    "indicatorName": "Number of LGUs operational with eLGU v1 system",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 27
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 19
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 29
+      }
+    ],
+    "target": 383,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-49",
+    "indicatorName": "Number of LGUs operational with eLGU v2 system",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 14
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 21
+      }
+    ],
+    "target": 277,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-50",
+    "indicatorName": "Number of LGUs operational with eLGU BPCO system",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 14
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 25
+      }
+    ],
+    "target": 330,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-51",
+    "indicatorName": "Number of LGUs operational with eLGU Working Permit",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 26
+      }
+    ],
+    "target": 343,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-52",
+    "indicatorName": "Number of LGUs operational with Barangay Clearance integrated",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 28
+      }
+    ],
+    "target": 370,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-53",
+    "indicatorName": "Number of LGUs operational with Online Payment integrated (Linkbiz)",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 29
+      }
+    ],
+    "target": 383,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-54",
+    "indicatorName": "Number of LGUs operational with Online Payment integrated (eGovPay)",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 21
+      }
+    ],
+    "target": 277,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-55",
+    "indicatorName": "Number of LGUs with ARTA commendation",
+    "groupTag": "Program Output",
+    "monitoringSource": "Internal (Project)",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 27
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 23
+      }
+    ],
+    "target": 304,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-56",
+    "indicatorName": "Number of LGUs provided with onboarding training - eLGU system",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 29
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 24
+      }
+    ],
+    "target": 317,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-57",
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - Technical Support Tickets Resolved",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 20
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 26
+      }
+    ],
+    "target": 343,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-58",
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - Refresher training",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 17
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 29
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 27
+      }
+    ],
+    "target": 356,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-60",
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - BPCO users training",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 28
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 27
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 24
+      }
+    ],
+    "target": 317,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-61",
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - WP users training",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 28
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 26
+      }
+    ],
+    "target": 343,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-62",
+    "indicatorName": "Number of engagements conducted to the LGUs",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 15
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 27
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 28
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 27
+      }
+    ],
+    "target": 356,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-63",
+    "indicatorName": "Number of eLGU Launching",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 28
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 22
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 29
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 29
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 29
+      }
+    ],
+    "target": 383,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-64",
+    "indicatorName": "Number of maintained and operated LGUs adopting eLGU System - Technical Assistance Training",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 18
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 20
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 23
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 27
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 28
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 30
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 29
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 30
+      }
+    ],
+    "target": 396,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  },
+  {
+    "indicatorId": "elgu-65",
+    "indicatorName": "Number of eLGU Go Live",
+    "groupTag": "Quality / Efficiency / Timeliness",
+    "monitoringSource": "Data Build Up",
+    "units": "Number",
+    "infographicStyle": "Big Number Callout",
+    "history": [
+      {
+        "year": 2024,
+        "month": 1,
+        "value": 17
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "value": 16
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "value": 20
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "value": 23
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "value": 22
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "value": 19
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "value": 21
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "value": 18
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "value": 19
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "value": 26
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "value": 25
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "value": 24
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "value": 22
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "value": 21
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "value": 21
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "value": 23
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "value": 24
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "value": 26
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "value": 25
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "value": 22
+      }
+    ],
+    "target": 290,
+    "hasLiveData": false,
+    "dataSourceUrl": null
+  }
+]
