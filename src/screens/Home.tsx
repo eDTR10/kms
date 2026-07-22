@@ -110,14 +110,22 @@ function StatCard({ label, value, icon: Icon }) {
 
   return (
     <motion.div ref={ref} variants={card}>
-      <div className="group p-5 rounded-2xl bg-slate-100 dark:bg-card dark:border dark:border-border shadow-sm flex flex-col items-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white dark:hover:border-primary/40">
-        <span className="w-10 h-10 rounded-full bg-[#0038A8]/10 dark:bg-primary/10 flex items-center justify-center mb-2 transition-transform duration-300 group-hover:scale-110">
-          <Icon size={18} className="text-[#0038A8] dark:text-primary" />
+      <div className="group relative p-5 rounded-2xl overflow-hidden shadow-lg flex flex-col items-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,56,168,0.45)] bg-gradient-to-br from-[#0454e9] via-[#2861f1] to-[#0055f1]">
+        {/* frosted glass pane */}
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-md transition-colors duration-300 group-hover:bg-white/[0.14] pointer-events-none" />
+        {/* glossy top highlight */}
+        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+        {/* glass edge */}
+        <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/25 pointer-events-none" />
+
+        <span className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 transition-transform duration-300 group-hover:scale-110 ring-1 ring-white/30">
+          <Icon size={18} className="text-white" />
         </span>
-        <motion.p className="text-3xl font-black text-[#0038A8] dark:text-primary drop-shadow-sm">
+        <motion.p className="relative text-3xl font-black text-white drop-shadow-sm">
           {display}
         </motion.p>
-        <p className="text-sm font-medium text-gray-500 dark:text-muted-foreground mt-1">{label}</p>
+        <p className="relative text-sm font-medium text-white/80 mt-1">{label}</p>
+        <span className="relative mt-2 h-0.5 w-6 rounded-full bg-[#FCD116] transition-all duration-300 group-hover:w-10" />
       </div>
     </motion.div>
   );

@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, ListChecks, X } from 'lucide-react';
 import { getAccomplishments } from '../services/accomplishments';
 
 // A fixed 10-tile collage template (mirrors a reference photo-collage layout):
@@ -41,12 +41,15 @@ const card = {
   show: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
 };
 
-function AccomplishmentCard({ item, size }) {
+function AccomplishmentCard({ item, size, onClick }) {
   const big = size === 'big';
   const small = size === 'small';
 
   return (
-    <div className="group relative h-full w-full rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-[#0038A8]/40 dark:hover:border-primary/50">
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative h-full w-full text-left rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-[#0038A8]/40 dark:hover:border-primary/50">
       {/* Background: photo if available, otherwise a brand-color cover */}
       {item.image ? (
         <img
@@ -92,16 +95,174 @@ function AccomplishmentCard({ item, size }) {
           </p>
         )}
       </div>
-    </div>
+    </button>
+  );
+}
+
+function AccomplishmentLightboxContent({ item }) {
+  const [imgBroken, setImgBroken] = useState(false);
+  const hasImage = item.image && !imgBroken;
+
+  return (
+    <motion.div
+      key={item.id}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="absolute inset-0 bg-white flex items-end"
+    >
+      {/* Full-bleed photo backdrop, fixed behind the text — mirrors the
+          Awards lightbox so both "click a tile to see the breakdown"
+          experiences feel like one system. */}
+      {hasImage ? (
+        <img
+          src={item.image}
+          alt={item.title}
+          onError={() => setImgBroken(true)}
+          className="absolute inset-0 w-full h-[50vh] object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233]" />
+      )}
+      <div className="absolute top-20 inset-0 bg-gradient-to-t from-white via-white to-white/0" />
+
+      {/* Scrollable text overlay — anchored to the bottom so the photo reads first */}
+      <div className="relative h-[60vh] bottom-0 overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-end px-6 sm:px-8 py-8">
+          <span className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0038A8] text-white text-xs font-bold mb-4">
+            {item.year}
+          </span>
+          <p className="text-4xl sm:text-5xl font-black text-[#0038A8] leading-none drop-shadow-sm mb-1">
+            {item.metric}
+          </p>
+          <p className="text-xs font-medium text-accent-foreground/60 uppercase tracking-wide mb-4">
+            {item.metricLabel}
+          </p>
+          <h3 className="text-2xl sm:text-4xl font-black text-accent-foreground leading-tight drop-shadow-lg mb-3">
+            {item.title}
+          </h3>
+          <p className="text-sm text-accent-foreground/90 leading-relaxed whitespace-pre-line">
+            {item.description}
+          </p>
+
+          {item.breakdown && item.breakdown.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-black/10">
+              <div className="flex items-center gap-2 mb-3">
+                <ListChecks size={14} className="text-[#0038A8]" />
+                <p className="text-xs font-bold text-accent-foreground uppercase tracking-wide">Breakdown</p>
+              </div>
+              <div className="space-y-2.5">
+                {item.breakdown.map((b, i) => {
+                  const nums = item.breakdown.map((row) => parseFloat(String(row.value).replace(/,/g, '')) || 0);
+                  const max = Math.max(...nums, 1);
+                  const pct = Math.max(6, (nums[i] / max) * 100);
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-xs text-accent-foreground/70 w-2/5 shrink-0 truncate">{b.label}</span>
+                      <div className="flex-1 h-2 rounded-full bg-black/5 overflow-hidden">
+                        <div className="h-full rounded-full bg-[#0038A8]" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-xs font-bold text-accent-foreground w-16 text-right shrink-0">{b.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function AccomplishmentLightbox({ items, index, onClose, onNext, onPrev }) {
+  const item = items[index];
+  const multiple = items.length > 1;
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (multiple && e.key === 'ArrowRight') onNext();
+      if (multiple && e.key === 'ArrowLeft') onPrev();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose, onNext, onPrev, multiple]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {multiple && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onPrev(); }}
+          aria-label="Previous accomplishment"
+          className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors"
+        >
+          <ChevronLeft size={24} />
+        </button>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative max-w-3xl w-full h-[85vh] bg-black rounded-2xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-20 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+        >
+          <X size={18} />
+        </button>
+
+        {multiple && (
+          <span className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/40 text-white text-xs font-semibold">
+            {index + 1} / {items.length}
+          </span>
+        )}
+
+        <AnimatePresence mode="wait">
+          <AccomplishmentLightboxContent item={item} />
+        </AnimatePresence>
+      </motion.div>
+
+      {multiple && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNext(); }}
+          aria-label="Next accomplishment"
+          className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors"
+        >
+          <ChevronRight size={24} />
+        </button>
+      )}
+    </motion.div>
   );
 }
 
 export default function Accomplishments() {
   const [items, setItems] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   useEffect(() => {
     getAccomplishments().then(setItems);
   }, []);
+
+  const next = useCallback(
+    () => setSelectedIndex((i) => (i + 1) % items.length),
+    [items.length]
+  );
+  const prev = useCallback(
+    () => setSelectedIndex((i) => (i - 1 + items.length) % items.length),
+    [items.length]
+  );
 
   if (items.length === 0) return null;
 
@@ -134,7 +295,7 @@ export default function Accomplishments() {
               const { base, lg, size } = COLLAGE_PATTERN[i];
               return (
                 <motion.div key={item.id} variants={card} className={`${base} ${lg}`}>
-                  <AccomplishmentCard item={item} size={size} />
+                  <AccomplishmentCard item={item} size={size} onClick={() => setSelectedIndex(i)} />
                 </motion.div>
               );
             }
@@ -142,12 +303,24 @@ export default function Accomplishments() {
             const span = OVERFLOW_SPAN_PATTERN[overflowIndex % OVERFLOW_SPAN_PATTERN.length];
             return (
               <motion.div key={item.id} variants={card} className={span}>
-                <AccomplishmentCard item={item} size="medium" />
+                <AccomplishmentCard item={item} size="medium" onClick={() => setSelectedIndex(i)} />
               </motion.div>
             );
           })}
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {selectedIndex !== null && (
+          <AccomplishmentLightbox
+            items={items}
+            index={selectedIndex}
+            onClose={() => setSelectedIndex(null)}
+            onNext={next}
+            onPrev={prev}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
