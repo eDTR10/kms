@@ -9,7 +9,7 @@ import {
 import AnimatedNumber from "@/components/kpi/AnimatedNumber";
 import { useMountedIn } from "@/lib/useMountedIn";
 
-interface TargetRow {
+export interface TargetRow {
   indicatorName: string;
   current: number;
   target: number;

@@ -157,9 +157,9 @@ export default function CategoryPieChart({ title, subtitle, data, variant = "pie
                   {s.label}
                 </span>
                 <strong style={{ color: "var(--viz-text-primary)" }}>
-                  <AnimatedNumber value={s.value} />
+                  {new Intl.NumberFormat("en-US").format(s.value)}
                 </strong>
-                <span className="text-[10px]" style={{ color: "var(--viz-muted)" }}>({pct}%)</span>
+                <span className="text-[10px]" style={{ color: "var(--viz-text-secondary)" }}>({pct}%)</span>
               </div>
             );
           })}

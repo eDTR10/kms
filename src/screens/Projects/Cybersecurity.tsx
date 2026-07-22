@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import CybersecurityIndicatorsDashboard from '../../components/cybersecurity-dashboard/CybersecurityIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import PNPKI from '../../assets/project-logo/PNPKI.jpg';
 export default function Cybersecurity() {
   return (
@@ -18,6 +20,15 @@ export default function Cybersecurity() {
             Philippine National Public Key Infrastructure and Cybersecurity program report.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.cybersecurity}
+          heading="Sheet-driven indicators"
+          description="Cybersecurity / PNPKI program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

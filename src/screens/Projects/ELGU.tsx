@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import ELGUIndicatorsDashboard from '../../components/elgu-dashboard/ELGUIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import logoElgu from '../../assets/project-logo/eLGU Logo.png';
 export default function ELGU() {
   return (
@@ -18,6 +20,15 @@ export default function ELGU() {
             Electronic Local Government Unit operational dashboard.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.elgu}
+          heading="Sheet-driven indicators"
+          description="eLGU program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

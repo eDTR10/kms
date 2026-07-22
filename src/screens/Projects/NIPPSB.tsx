@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import NIPPSBIndicatorsDashboard from '../../components/nippsb-dashboard/NIPPSBIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import logonippsb from '../../assets/project-logo/NIPPSB.png';
 export default function NIPPSB() {
   return (
@@ -18,6 +20,15 @@ export default function NIPPSB() {
             National ICT Proficiency and Performance Standard for Barangays program.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.nippsb}
+          heading="Sheet-driven indicators"
+          description="NIPPSB program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

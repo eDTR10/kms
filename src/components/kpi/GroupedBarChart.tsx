@@ -78,7 +78,7 @@ export default function GroupedBarChart({ title, subtitle, seriesNames, data }: 
               stroke="var(--viz-grid)"
               strokeWidth={1}
             />
-            <text x={MARGIN.left - 8} y={yAt(t)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--viz-muted)">
+            <text x={MARGIN.left - 8} y={yAt(t)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--viz-text-secondary)">
               {t}
             </text>
           </g>
@@ -96,7 +96,7 @@ export default function GroupedBarChart({ title, subtitle, seriesNames, data }: 
                 y={VIEW_H - MARGIN.bottom + 16}
                 textAnchor="middle"
                 fontSize={10}
-                fill="var(--viz-muted)"
+                fill="var(--viz-text-secondary)"
               >
                 {d.category}
               </text>

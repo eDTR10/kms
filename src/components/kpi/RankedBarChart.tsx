@@ -8,7 +8,7 @@ export interface RankedBarDatum {
   units?: string | null;
 }
 
-const SEQ_STEPS = ["var(--viz-seq-450)", "var(--viz-seq-400)", "var(--viz-seq-250)", "var(--viz-seq-100)"];
+const SEQ_STEPS = ["#facc15", "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#92400e", "#78350f"];
 
 const wholeFormatter = new Intl.NumberFormat("en-US");
 
@@ -52,17 +52,19 @@ export default function RankedBarChart({
         {sorted.map((d, i) => {
           const widthPct = mounted ? Math.max(4, (d.value / max) * 100) : 0;
           const isHovered = hovered === i;
+          // If bar is wide enough (>50%), show number inside at right edge; else outside to the right
+          const showInside = widthPct > 50;
           return (
             <div key={d.label} className="flex items-center gap-3">
               <span
-                className="w-48 shrink-0 text-xs text-right truncate"
+                className="max-w-[14rem] min-w-0 text-xs text-right truncate"
                 title={d.label}
                 style={{ color: "var(--viz-text-secondary)" }}
               >
                 {d.label}
               </span>
               <div
-                className="relative flex-1 h-6 rounded-sm"
+                className="relative flex-1 h-6 rounded-sm overflow-hidden"
                 style={{ background: "var(--viz-grid)" }}
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
@@ -80,18 +82,30 @@ export default function RankedBarChart({
                     opacity: isHovered ? 0.85 : 1,
                   }}
                 />
-                <span
-                  className="absolute top-1/2 -translate-y-1/2 text-xs font-medium"
-                  style={{ left: `calc(${widthPct}% + 8px)`, color: "var(--viz-text-primary)" }}
-                >
-                  <AnimatedNumber value={d.value} formatter={(v) => formatValue(v, d.units)} />
-                </span>
+                {showInside ? (
+                  // Number inside bar, right-aligned with padding — fixed white on amber
+                  <span
+                    className="absolute top-1/2 -translate-y-1/2 right-2 text-xs font-medium truncate max-w-[80%]"
+                    style={{ color: "var(--viz-text-primary)" }}
+                  >
+                    <AnimatedNumber value={d.value} formatter={(v) => formatValue(v, d.units)} />
+                  </span>
+                ) : (
+                  // Number outside to the right of the track
+                  <span
+                    className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] text-xs font-medium whitespace-nowrap"
+                    style={{ color: "var(--viz-text-primary)" }}
+                  >
+                    <AnimatedNumber value={d.value} formatter={(v) => formatValue(v, d.units)} />
+                  </span>
+                )}
                 {isHovered && (
                   <div
                     className="absolute -top-9 left-0 z-10 rounded-md px-2 py-1 text-xs shadow-md whitespace-nowrap"
                     style={{
                       background: "var(--viz-text-primary)",
                       color: "var(--viz-surface)",
+                      maxWidth: 'calc(100% - 16px)',
                     }}
                   >
                     <strong>{formatValue(d.value, d.units)}</strong> — {d.label}

@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import EgovIndicatorsDashboard from '../../components/egov-dashboard/EgovIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import logoeGov from '../../assets/project-logo/eGovPH Logo.png';
 export default function EGov() {
   return (
@@ -18,6 +20,15 @@ export default function EGov() {
             Electronic Government and National Government Portal deployment dashboard.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.egov}
+          heading="Sheet-driven indicators"
+          description="eGov / NGP program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

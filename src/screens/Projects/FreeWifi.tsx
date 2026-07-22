@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import FreeWifiIndicatorsDashboard from '../../components/freewifi-dashboard/FreeWifiIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import logofreewifi from '../../assets/project-logo/Free Wifi.png';
 
 export default function FreeWifi() {
@@ -19,6 +21,15 @@ export default function FreeWifi() {
             Live dashboard for Free Public Wi-Fi access points across Region 10.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.freewifi}
+          heading="Sheet-driven indicators"
+          description="Free Wi-Fi program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

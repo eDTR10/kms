@@ -7,7 +7,29 @@
       "metricLabel": "Barangays Connected",
       "title": "Expanded Rural Free Wi-Fi Infrastructure",
       "description": "Successfully deployed community Wi-Fi hotspots across 58 remote barangays, providing stable internet access to over 20,000 residents for online education and emergency communications.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Bukidnon",
+          "value": "18"
+        },
+        {
+          "label": "Misamis Oriental",
+          "value": "15"
+        },
+        {
+          "label": "Lanao del Norte",
+          "value": "12"
+        },
+        {
+          "label": "Misamis Occidental",
+          "value": "8"
+        },
+        {
+          "label": "Camiguin",
+          "value": "5"
+        }
+      ]
     },
     {
       "id": 2,
@@ -16,7 +38,25 @@
       "metricLabel": "Systems Launched",
       "title": "Localized e-Governance Platforms",
       "description": "Rolled out 8 localized information management systems for municipal local government units (LGUs) to streamline business permitting, tax mapping, and licensing processes.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Business Permitting & Licensing",
+          "value": "3"
+        },
+        {
+          "label": "Tax Mapping & Assessment",
+          "value": "2"
+        },
+        {
+          "label": "Civil Registry",
+          "value": "2"
+        },
+        {
+          "label": "Health Information System",
+          "value": "1"
+        }
+      ]
     },
     {
       "id": 3,
@@ -25,7 +65,21 @@
       "metricLabel": "Provincial Hubs",
       "title": "Establishment of Regional ICT Innovation Centers",
       "description": "Launched 3 new innovation hubs equipped with high-speed fiber internet and co-working spaces to support local tech startups and freelance digital workers.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Cagayan de Oro City",
+          "value": "1"
+        },
+        {
+          "label": "Malaybalay City, Bukidnon",
+          "value": "1"
+        },
+        {
+          "label": "Ozamiz City, Misamis Occidental",
+          "value": "1"
+        }
+      ]
     },
     {
       "id": 4,
@@ -34,7 +88,21 @@
       "metricLabel": "Trainees Certified",
       "title": "ICT Skills & Digital Literacy Initiative",
       "description": "Conducted 35 technical training sessions across the region, certifying 1,500 youth and small business owners in basic digital literacy, e-commerce strategies, and cybersecurity.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Digital Literacy",
+          "value": "650"
+        },
+        {
+          "label": "E-Commerce Strategies",
+          "value": "500"
+        },
+        {
+          "label": "Cybersecurity Basics",
+          "value": "350"
+        }
+      ]
     },
     {
       "id": 5,
@@ -43,7 +111,29 @@
       "metricLabel": "Tech4ED Centers",
       "title": "New Tech4ED Center Establishments",
       "description": "Established 15 new Tech4ED centers in underserved municipalities, equipping them with modern workstations, document scanners, and digital learning modules.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Bukidnon",
+          "value": "5"
+        },
+        {
+          "label": "Misamis Oriental",
+          "value": "4"
+        },
+        {
+          "label": "Lanao del Norte",
+          "value": "3"
+        },
+        {
+          "label": "Misamis Occidental",
+          "value": "2"
+        },
+        {
+          "label": "Camiguin",
+          "value": "1"
+        }
+      ]
     },
     {
       "id": 6,
@@ -52,7 +142,21 @@
       "metricLabel": "LGU Compliance",
       "title": "Cybersecurity Awareness and Audit Campaign",
       "description": "Completed comprehensive cybersecurity vulnerability assessments and threat-awareness workshops for all provincial and municipal government IT departments in the region.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Provincial LGUs audited",
+          "value": "5 / 5"
+        },
+        {
+          "label": "Municipal LGUs audited",
+          "value": "84 / 84"
+        },
+        {
+          "label": "City LGUs audited",
+          "value": "9 / 9"
+        }
+      ]
     },
     {
       "id": 7,
@@ -61,7 +165,21 @@
       "metricLabel": "MSMEs Onboarded",
       "title": "Digital Transformation for Local Trade",
       "description": "Assisted 12 prominent rural cooperatives and micro-enterprises in integrating digital payment gateways and launching storefronts on major e-commerce platforms.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Agri-based cooperatives",
+          "value": "5"
+        },
+        {
+          "label": "Handicraft & textile MSMEs",
+          "value": "4"
+        },
+        {
+          "label": "Food & beverage MSMEs",
+          "value": "3"
+        }
+      ]
     },
     {
       "id": 8,
@@ -70,7 +188,25 @@
       "metricLabel": "Disaster Networks",
       "title": "Emergency Communications Infrastructure Deployment",
       "description": "Set up 4 redundant, solar-powered satellite communication kits in high-risk coastal zones to ensure uninterrupted government coordination during severe weather events.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Misamis Oriental coastal zone",
+          "value": "1"
+        },
+        {
+          "label": "Camiguin Island",
+          "value": "1"
+        },
+        {
+          "label": "Lanao del Norte coastal zone",
+          "value": "1"
+        },
+        {
+          "label": "Misamis Occidental coastal zone",
+          "value": "1"
+        }
+      ]
     },
     {
       "id": 9,
@@ -79,7 +215,21 @@
       "metricLabel": "Students Reached",
       "title": "Digital Literacy Caravan for Public Schools",
       "description": "Partnered with local school divisions to bring a mobile IT laboratory to 10 remote public high schools, providing hands-on coding and internet safety seminars to 2,400 students.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Batch 1 — Bukidnon schools",
+          "value": "800"
+        },
+        {
+          "label": "Batch 2 — Misamis Oriental schools",
+          "value": "900"
+        },
+        {
+          "label": "Batch 3 — Lanao del Norte schools",
+          "value": "700"
+        }
+      ]
     },
     {
       "id": 10,
@@ -88,7 +238,21 @@
       "metricLabel": "Jobs Created",
       "title": "Rural Impact Sourcing Workshop Outcomes",
       "description": "Facilitated specialized virtual assistant and digital marketing bootcamps that directly resulted in verified remote employment contracts for 250 rural scholars.",
-      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=x750_E3f6rAQ7kNvwHCOeih&_nc_oc=AdoTI5zgZOy5tQ29WRn_aeQKnn5KmXcI8fS5jxKb-3DgAcn0BYKB0amptuB-cJE9mN4vagebzbVhfsdfCwK081Uv&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=JQQQP_3mgXb7McN2EBRYyg&_nc_ss=7b2a8&oh=00_AQD3DAVntY1PW3lRrqnCQ0CIf2dJ3Krx99Ndu6K4SDkO4g&oe=6A4BE18C"
+      "image": "https://scontent.fcgm1-1.fna.fbcdn.net/v/t39.30808-6/730498135_122225278670494769_520150623526285649_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1153&ctp=s2048x1153&_nc_cat=104&ccb=1-7&_nc_sid=f727a1&_nc_eui2=AeHZq2OZ5cIDqxQbpxnx6l8IQzRCe9pXtLJDNEJ72le0suqjORAX9eX5ApveS8BMAAwmDnzLZ7N7ZPAxshHt76lD&_nc_ohc=bmn0biB74UIQ7kNvwG2hMaI&_nc_oc=AdoJYcZg2rUFZWvGT5_0rcGRud13pgJek04hmA30Iyy96Ato0rQv3HO_s2X-1VH2HCBiiNGMiXKvWirn8mkWd4iQ&_nc_zt=23&_nc_ht=scontent.fcgm1-1.fna&_nc_gid=wyhluZruSmqDABbgKUMFMQ&_nc_ss=7b2a8&oh=00_AQD5OpXI3EX_uTBvkIgFBjLzbAplCNv2VyoBAI7drJbPsw&oe=6A66074C",
+      "breakdown": [
+        {
+          "label": "Virtual assistants placed",
+          "value": "140"
+        },
+        {
+          "label": "Digital marketers placed",
+          "value": "70"
+        },
+        {
+          "label": "Content moderators placed",
+          "value": "40"
+        }
+      ]
     }
   ]
 }

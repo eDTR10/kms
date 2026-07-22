@@ -6,6 +6,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, Award as AwardIcon, Image as Ima
 import { getAwards } from '../services/awards';
 import { getHighlights } from '../services/highlights';
 import './HeroSlider.css';
+import mindanaoSvgUrl from './../assets/maps/ph.svg';
 
 /* ═══════════════════════════════════════════════
    Constants
@@ -106,7 +107,7 @@ function RealMindanaoMap() {
 
     (async () => {
       try {
-        const res = await fetch('/maps/ph.svg');
+        const res = await fetch(mindanaoSvgUrl);
         if (!res.ok) throw new Error('SVG not found');
         const text = await res.text();
         if (!alive) return;
@@ -354,7 +355,7 @@ function RealMindanaoMap() {
           { name: 'Misamis Oriental', xr: 0.70, yr: 0.28, primary: true },
           { name: 'Cagayan de Oro City', xr: 0.64, yr: 0.40, primary: false},
           { name: 'Bukidnon', xr: 0.72, yr: 0.72, primary: true },
-          { name: 'Iligan', xr: 0.42, yr: 0.45, primary: false },
+          { name: 'Iligan City', xr: 0.42, yr: 0.45, primary: false },
           { name: 'Lanao del Norte', xr: 0.30, yr: 0.58, primary: true },
           { name: 'Misamis Occidental', xr: 0.10, yr: 0.45, primary: true},
           { name: 'Camiguin', xr: 0.64, yr: 0.02, primary: false}

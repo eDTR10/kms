@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import IIDBIndicatorsDashboard from '../../components/iidb-dashboard/IIDBIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import logoiidb from '../../assets/project-logo/IIDB.png';
 
 export default function IIDB() {
@@ -19,6 +21,15 @@ export default function IIDB() {
             ICT Industry Development Bureau – Region 10 enterprises and ICT professionals.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.iidb}
+          heading="Sheet-driven indicators"
+          description="IIDB program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

@@ -66,10 +66,30 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        "gradient-move": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "blob-drift-1": {
+          "0%, 100%": { transform: "translate(-10%, -8%) scale(1)" },
+          "50%": { transform: "translate(12%, 10%) scale(1.2)" },
+        },
+        "blob-drift-2": {
+          "0%, 100%": { transform: "translate(10%, 8%) scale(1.1)" },
+          "50%": { transform: "translate(-12%, -12%) scale(0.9)" },
+        },
+        "gradient-flow": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "100%": { backgroundPosition: "100% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "gradient-move": "gradient-move 6s ease infinite",
+        "blob-drift-1": "blob-drift-1 10s ease-in-out infinite",
+        "blob-drift-2": "blob-drift-2 12s ease-in-out infinite",
+        "gradient-flow": "gradient-flow 8s linear infinite",
       },
     },
   },

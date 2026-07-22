@@ -2,6 +2,8 @@
 import DashboardEmbed from '../../components/DashboardEmbed';
 import ProjectCarousel from '../../components/ProjectCarousel';
 import ILCDBIndicatorsDashboard from '../../components/ilcdb-dashboard/ILCDBIndicatorsDashboard';
+import SheetKpiDashboard from '../../components/egov-dashboard/SheetKpiDashboard';
+import { PROJECT_GIDS } from '../../services/sheetKpi';
 import logoIlcdb from '../../assets/project-logo/ILCDB.png';
 export default function ILCDB() {
   return (
@@ -18,6 +20,15 @@ export default function ILCDB() {
             ICT Livelihood and Community Development Barangay – beneficiaries and report dashboard.
           </p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <SheetKpiDashboard
+          gid={PROJECT_GIDS.ilcdb}
+          heading="Sheet-driven indicators"
+          description="ILCDB program KPIs"
+          pollIntervalMs={30000}
+        />
       </div>
 
       <div className="mb-10">

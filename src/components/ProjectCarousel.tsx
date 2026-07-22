@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
 export interface ProjectCarouselSlide {
   title: string;
   caption?: string;
-  gradient: string;
+  gradient?: string;
+  imageUrl?: string;
 }
 
 const DEFAULT_SLIDES: ProjectCarouselSlide[] = [
@@ -12,16 +13,19 @@ const DEFAULT_SLIDES: ProjectCarouselSlide[] = [
     title: "Program Highlights",
     caption: "Sample placeholder — swap for real project photos",
     gradient: "from-[#0038A8] to-[#001a52]",
+    imageUrl: "https://picsum.photos/seed/program-highlights/1200/350",
   },
   {
     title: "Field Implementation",
     caption: "Sample placeholder — swap for real project photos",
     gradient: "from-[#CE1126] to-[#7a0d18]",
+    imageUrl: "https://picsum.photos/seed/field-implementation/1200/350",
   },
   {
     title: "Partner LGUs & Stakeholders",
     caption: "Sample placeholder — swap for real project photos",
     gradient: "from-[#0038A8] via-[#1b4fc4] to-[#CE1126]",
+    imageUrl: "https://picsum.photos/seed/partner-stakeholders/1200/350",
   },
 ];
 
@@ -60,6 +64,13 @@ export default function ProjectCarousel({ slides = DEFAULT_SLIDES }: { slides?: 
             }`}
           >
             <ImageIcon className="text-white/50" size={32} />
+            {slide.imageUrl ? (
+              <img
+                src={slide.imageUrl}
+                alt={slide.title}
+                className="absolute inset-0 w-full h-full object-cover opacity-40"
+              />
+            ) : null}
             <p className="text-white font-bold text-xl drop-shadow-sm text-center px-6">{slide.title}</p>
             {slide.caption && <p className="text-white/70 text-xs">{slide.caption}</p>}
           </div>

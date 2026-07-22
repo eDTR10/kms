@@ -25,7 +25,7 @@ export default function ProcessFlowChart({ title, subtitle, stages, completedThr
         <span
           className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
           style={{
-            color: doneCount >= stages.length ? "var(--viz-status-good)" : "var(--viz-muted)",
+            color: doneCount >= stages.length ? "var(--viz-status-good)" : "var(--viz-text-secondary)",
             background: doneCount >= stages.length ? "rgba(12,163,12,0.12)" : "var(--viz-grid)",
           }}
         >
@@ -52,14 +52,14 @@ export default function ProcessFlowChart({ title, subtitle, stages, completedThr
                         ? "var(--viz-series-1)"
                         : "var(--viz-baseline)",
                     background: isDone ? "var(--viz-status-good)" : "var(--viz-surface)",
-                    color: isDone ? "#fff" : isCurrent ? "var(--viz-series-1)" : "var(--viz-muted)",
+                    color: isDone ? "#fff" : isCurrent ? "var(--viz-series-1)" : "var(--viz-text-secondary)",
                   }}
                 >
                   {isDone ? <Check size={15} /> : i + 1}
                 </div>
                 <span
                   className="text-center text-[11px] leading-tight"
-                  style={{ color: isDone || isCurrent ? "var(--viz-text-primary)" : "var(--viz-muted)" }}
+                  style={{ color: isDone || isCurrent ? "var(--viz-text-primary)" : "var(--viz-text-secondary)" }}
                 >
                   {stage}
                 </span>

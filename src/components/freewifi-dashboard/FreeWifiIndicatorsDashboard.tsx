@@ -84,7 +84,7 @@ export default function FreeWifiIndicatorsDashboard() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="grid grid-cols-3 gap-4 sm:grid-cols-1"
+          className="grid grid-cols-3 gap-4 xs:grid-cols-1"
         >
           {mapRows.map((k) => (
             <motion.div key={k.indicatorId} variants={fadeUpItem} className="h-full">

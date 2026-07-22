@@ -140,7 +140,7 @@ export default function TrendAreaChart({
               stroke="var(--viz-grid)"
               strokeWidth={1}
             />
-            <text x={MARGIN.left - 8} y={yAt(t)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--viz-muted)">
+            <text x={MARGIN.left - 8} y={yAt(t)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--viz-text-secondary)">
               {formatter(t)}
             </text>
           </g>
@@ -154,7 +154,7 @@ export default function TrendAreaChart({
               y={VIEW_H - 8}
               textAnchor="middle"
               fontSize={10}
-              fill="var(--viz-muted)"
+              fill="var(--viz-text-secondary)"
             >
               {MONTHS[p.month - 1].slice(0, 3)} {String(p.year).slice(2)}
             </text>
