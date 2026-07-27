@@ -2,9 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Award as AwardIcon, Image as ImageIcon } from 'lucide-react';
-import { getAwards } from '../services/awards';
-import { getHighlights } from '../services/highlights';
+import { ArrowRight, ChevronLeft, ChevronRight, Award as AwardIcon, Image as ImageIcon, Star } from 'lucide-react';
+import { getSliderItems } from '../services/slider';
 import './HeroSlider.css';
 import mindanaoSvgUrl from './../assets/maps/ph.svg';
 
@@ -730,6 +729,7 @@ const fade = {
 function getSlideImage(slide: any) {
   if (slide.type === 'award' && slide.award.image) return { src: slide.award.image, fallback: null };
   if (slide.type === 'highlight' && slide.highlight.image) return { src: slide.highlight.image, fallback: null };
+  if (slide.type === 'accomplishment' && slide.accomplishment.image) return { src: slide.accomplishment.image, fallback: null };
   return null;
 }
 
@@ -770,13 +770,15 @@ function IntroSlide() {
         Department of Information and Communications Technology — Northern Mindanao.
       </p>
       <div className="flex sm:flex-row gap-4 justify-center">
-        <a href="#projects"
+        <button onClick={() => {
+          document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
+        }}
           className="px-6 py-3 bg-[#FCD116] text-[#001233] rounded-full font-bold
                      hover:bg-[#ffe14d] transition-all flex items-center justify-center gap-2
                      shadow-[0_0_24px_rgba(252,209,22,0.35)]
                      hover:shadow-[0_0_36px_rgba(252,209,22,0.55)]">
           View Projects <ArrowRight size={16} />
-        </a>
+        </button>
         <Link to="/kms/about"
           className="px-6 py-3 bg-white/8 hover:bg-white/15 rounded-full font-medium
                      text-white transition-colors border border-white/15">
@@ -805,11 +807,13 @@ function AwardSlide({ award }: { award: any }) {
       <p className="text-white/70 text-base mb-8 drop-shadow">
         {award.issuer} &middot; {award.year}
       </p>
-      <a href="#awards"
+      <button onClick={() => {
+        document.getElementById('awards')?.scrollIntoView({ behavior: 'smooth' });
+      }}
         className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full font-medium
                    transition-colors border border-white/15 inline-flex items-center gap-2 text-white">
         View All Awards <ArrowRight size={16} />
-      </a>
+      </button>
     </motion.div>
   );
 }
@@ -835,33 +839,113 @@ function HighlightSlide({ highlight }: { highlight: any }) {
   );
 }
 
+function AccomplishmentSlide({ accomplishment }: { accomplishment: any }) {
+  return (
+    <motion.div key={`accomplishment-${accomplishment.title}`} {...fade} className="flex flex-col items-center">
+      <span className="inline-flex items-center gap-2 bg-[#FCD116]/10 border border-[#FCD116]/25
+                       rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider
+                       mb-6 text-[#FCD116]">
+        <Star size={14} /> Accomplishment
+      </span>
+
+      {/* Metric Display */}
+      <div className="text-center mb-4">
+        <p className="text-5xl sm:text-7xl font-black text-[#FCD116] drop-shadow-lg leading-none">
+          {accomplishment.metric}
+        </p>
+        {accomplishment.metric_label && (
+          <p className="text-sm sm:text-base font-medium text-white/70 uppercase tracking-wide mt-2">
+            {accomplishment.metric_label}
+          </p>
+        )}
+      </div>
+
+      {/* Title */}
+      {accomplishment.title && (
+        <h2 className="text-2xl sm:text-4xl font-black leading-tight tracking-tight
+                       max-w-3xl drop-shadow-lg text-white text-center mb-4">
+          {accomplishment.title}
+        </h2>
+      )}
+
+      {/* Description */}
+      {accomplishment.description && (
+        <p className="text-white/70 text-base max-w-2xl text-center mb-6 line-clamp-2">
+          {accomplishment.description}
+        </p>
+      )}
+
+      {/* Breakdown */}
+      {accomplishment.breakdown && accomplishment.breakdown.length > 0 && (
+        <div className="w-full max-w-md bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+          <p className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">Breakdown</p>
+          <div className="space-y-2">
+            {accomplishment.breakdown.map((b: any, i: number) => {
+              const nums = accomplishment.breakdown.map((row: any) => parseFloat(String(row.value).replace(/,/g, '')) || 0);
+              const max = Math.max(...nums, 1);
+              const pct = Math.max(6, (nums[i] / max) * 100);
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-white/60 w-2/5 shrink-0 truncate">{b.label}</span>
+                  <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-[#FCD116]" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-xs font-bold text-white w-16 text-right shrink-0">{b.value}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <button onClick={() => {
+        document.getElementById('accomplishments')?.scrollIntoView({ behavior: 'smooth' });
+      }}
+        className="mt-6 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full font-medium
+                   transition-colors border border-white/15 inline-flex items-center gap-2 text-white">
+        View All Accomplishments <ArrowRight size={16} />
+      </button>
+    </motion.div>
+  );
+}
+
 
 /* ═══════════════════════════════════════════════
    Hero Slider
    ═══════════════════════════════════════════════ */
 
 export default function HeroSlider() {
-  const [awards, setAwards] = useState<any[]>([]);
-  const [highlights, setHighlights] = useState<any[]>([]);
+  const [sliderItems, setSliderItems] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    getAwards().then(setAwards);
-    getHighlights().then(setHighlights);
+    getSliderItems().then((items) => {
+      // Filter only active items, already sorted by order from backend
+      setSliderItems(items.filter((item) => item.is_active));
+    }).catch(() => {});
   }, []);
 
+  // Build slides from slider items
   const slides = [
     { type: 'intro' },
-    ...awards.map((a) => ({ type: 'award', award: a })),
-    ...highlights.map((h) => ({ type: 'highlight', highlight: h })),
+    ...sliderItems.map((item) => {
+      if (item.content_type === 'award') {
+        return { type: 'award', award: item.content_detail };
+      } else if (item.content_type === 'highlight') {
+        return { type: 'highlight', highlight: item.content_detail };
+      } else if (item.content_type === 'accomplishment') {
+        return { type: 'accomplishment', accomplishment: item.content_detail };
+      }
+      return null;
+    }).filter(Boolean),
   ];
 
   useEffect(() => { if (current >= slides.length) setCurrent(0); }, [slides.length, current]);
 
   const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), [slides.length]);
   const prev = useCallback(() => setCurrent((c) => (c - 1 + slides.length) % slides.length), [slides.length]);
-//  slider counter
+
   useEffect(() => {
     if (slides.length < 2 || paused) return;
     const t = setInterval(next, 10000);
@@ -872,51 +956,54 @@ export default function HeroSlider() {
   const slideImage = getSlideImage(slide);
 
   return (
-    <div className="relative h-[70vh] flex items-center overflow-hidden"
-      onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <>
+      <div className="relative h-[70vh] flex items-center overflow-hidden"
+        onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
 
-      {slide.type === 'intro' && <DICTBackground />}
+        {slide.type === 'intro' && <DICTBackground />}
 
-      <AnimatePresence mode="wait">
-        {slideImage && (
-          <motion.div key={current} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className="absolute inset-0">
-            <SlideBackground slideKey={current} image={slideImage} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-                      py-10 max-h-full overflow-y-auto text-center">
         <AnimatePresence mode="wait">
-          {slide.type === 'intro' && <IntroSlide />}
-          {slide.type === 'award' && <AwardSlide award={slide.award} />}
-          {slide.type === 'highlight' && <HighlightSlide highlight={slide.highlight} />}
+          {slideImage && (
+            <motion.div key={current} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className="absolute inset-0">
+              <SlideBackground slideKey={current} image={slideImage} />
+            </motion.div>
+          )}
         </AnimatePresence>
-      </div>
 
-      {slides.length > 1 && (
-        <>
-          <button onClick={prev} aria-label="Previous slide"
-            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20
-                       bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors">
-            <ChevronLeft size={22} />
-          </button>
-          <button onClick={next} aria-label="Next slide"
-            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20
-                       bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors">
-            <ChevronRight size={22} />
-          </button>
-          <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-1.5 z-20">
-            {slides.map((_, i) => (
-              <button key={i} onClick={() => setCurrent(i)} aria-label={`Go to slide ${i + 1}`}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === current ? 'w-6 bg-[#FCD116]' : 'w-2 bg-white/40'
-                }`} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+                        py-10 max-h-full overflow-y-auto text-center">
+          <AnimatePresence mode="wait">
+            {slide.type === 'intro' && <IntroSlide />}
+            {slide.type === 'award' && <AwardSlide award={slide.award} />}
+            {slide.type === 'highlight' && <HighlightSlide highlight={slide.highlight} />}
+            {slide.type === 'accomplishment' && <AccomplishmentSlide accomplishment={slide.accomplishment} />}
+          </AnimatePresence>
+        </div>
+
+        {slides.length > 1 && (
+          <>
+            <button onClick={prev} aria-label="Previous slide"
+              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20
+                         bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors">
+              <ChevronLeft size={22} />
+            </button>
+            <button onClick={next} aria-label="Next slide"
+              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20
+                         bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors">
+              <ChevronRight size={22} />
+            </button>
+            <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-1.5 z-20">
+              {slides.map((_, i) => (
+                <button key={i} onClick={() => setCurrent(i)} aria-label={`Go to slide ${i + 1}`}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i === current ? 'w-6 bg-[#FCD116]' : 'w-2 bg-white/40'
+                  }`} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }

@@ -68,7 +68,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-[#0038A8] dark:bg-background/80 dark:backdrop-blur-md dark:border-b dark:border-border text-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-[#0038A8] dark:bg-background/80 dark:backdrop-blur-md dark:border-b dark:border-border text-white shadow-lg sticky top-0 z-[9999] ">
       {/* Top accent bar */}
       <div className="h-1 bg-linear-to-r from-[#CE1126] via-[#FCD116] to-[#CE1126] dark:from-primary/50 dark:via-primary dark:to-primary/50" />
 
@@ -76,11 +76,14 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/kms" className="flex items-center gap-3 shrink-0">
+          <div className=" w-12 h-12 bg-white  rounded-lg flex items-center justify-center overflow-hidden">
             <img
               src={dictLogo}
               alt="DICT Logo"
-              className="w-10 h-10 object-contain rounded-full bg-white p-0.5"
+              className="w-10 h-10 mb-1 object-contain "
             />
+          </div>
+            
             <div className="hidden sm:block">
               <p className="font-bold text-sm leading-tight">DICT Region 10</p>
               <p className="text-[#FCD116] dark:text-primary text-xs font-medium">Knowledge Management System</p>

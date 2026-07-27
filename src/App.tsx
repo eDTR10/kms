@@ -11,6 +11,7 @@ import Login from './screens/Login';
 
 // Projects
 import FreeWifi from './screens/Projects/FreeWifi';
+import FreeWifiDashboard from './screens/FreeWifiDashboard';
 import ILCDB from './screens/Projects/ILCDB';
 import EGov from './screens/Projects/EGov';
 import Cybersecurity from './screens/Projects/Cybersecurity';
@@ -25,6 +26,16 @@ import AdminDashboard from './screens/Admin/AdminDashboard';
 import ManageProjects from './screens/Admin/ManageProjects';
 import ManageUsers from './screens/Admin/ManageUsers';
 import ManageCarousel from './screens/Admin/ManageCarousel';
+import ManageSlider from './screens/Admin/ManageSlider';
+import ManageAccomplishments from './screens/Admin/ManageAccomplishments';
+import ManageAwards from './screens/Admin/ManageAwards';
+import ManageHighlights from './screens/Admin/ManageHighlights';
+import ManageFreeWifi from './screens/Admin/ManageFreeWifi';
+import FreeWifiLayout from './screens/Admin/FreeWifi/FreeWifiLayout';
+import FreeWifiHighlights from './screens/Admin/FreeWifi/FreeWifiHighlights';
+import FreeWifiCharts from './screens/Admin/FreeWifi/FreeWifiCharts';
+import CustomCharts from './screens/Admin/FreeWifi/CustomCharts';
+import FreeWifiDatasets from './screens/Admin/FreeWifi/FreeWifiDatasets';
 
 function App() {
   return (
@@ -69,6 +80,86 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/kms/admin/slider"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><ManageSlider /></AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kms/admin/accomplishments"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><ManageAccomplishments /></AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kms/admin/awards"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><ManageAwards /></AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kms/admin/highlights"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><ManageHighlights /></AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kms/admin/free-wifi"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><ManageFreeWifi /></AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kms/admin/free-wifi/highlights"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><FreeWifiLayout /></AdminLayout>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<FreeWifiHighlights />} />
+        </Route>
+        <Route
+          path="/kms/admin/free-wifi/charts"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><FreeWifiLayout /></AdminLayout>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<FreeWifiCharts />} />
+        </Route>
+        <Route
+          path="/kms/admin/free-wifi/custom-charts"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><FreeWifiLayout /></AdminLayout>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CustomCharts />} />
+        </Route>
+        <Route
+          path="/kms/admin/free-wifi/datasets"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><FreeWifiLayout /></AdminLayout>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<FreeWifiDatasets />} />
+        </Route>
 
         {/* Main portal routes */}
         <Route
@@ -81,6 +172,7 @@ function App() {
                 <Route path="/kms/maps" element={<Maps />} />
                 <Route path="/kms/afd" element={<AFD />} />
                 <Route path="/kms/projects/free-wifi" element={<FreeWifi />} />
+                <Route path="/kms/projects/free-wifi/dashboard" element={<FreeWifiDashboard />} />
                 <Route path="/kms/projects/ilcdb" element={<ILCDB />} />
                 <Route path="/kms/projects/egov" element={<EGov />} />
                 <Route path="/kms/projects/cybersecurity" element={<Cybersecurity />} />

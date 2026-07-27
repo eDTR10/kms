@@ -1,10 +1,36 @@
 // @ts-nocheck
-import accomplishmentsData from '../data/accomplishments.json';
+import api from './api';
 
-/** Returns the list of home page accomplishments. Swap the body for
- *  `const { data } = await axios.get('accomplishments'); return data;`
- *  once the backend endpoint exists — the shape already matches.
- */
 export async function getAccomplishments() {
-  return accomplishmentsData.data;
+  const { data } = await api.get('kms/accomplishments/');
+  return data.results ?? data;
+}
+
+export async function createAccomplishment(formData) {
+  const { data } = await api.post('kms/accomplishments/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function updateAccomplishment(id, formData) {
+  const { data } = await api.patch(`kms/accomplishments/${id}/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function deleteAccomplishment(id) {
+  await api.delete(`kms/accomplishments/${id}/`);
+}
+
+export async function importAccomplishmentsJson(jsonData) {
+  const payload = Array.isArray(jsonData) ? jsonData : jsonData?.data ?? jsonData;
+  const { data } = await api.post('kms/accomplishments/import-json/', payload);
+  return data;
+}
+
+export async function reorderAccomplishments(items) {
+  const { data } = await api.post('kms/accomplishments/reorder/', items);
+  return data;
 }

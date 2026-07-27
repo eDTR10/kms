@@ -112,7 +112,7 @@ function StatCard({ label, value, icon: Icon }) {
     <motion.div ref={ref} variants={card}>
       <div className="group relative p-5 rounded-2xl overflow-hidden shadow-lg flex flex-col items-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,56,168,0.45)] bg-gradient-to-br from-[#0454e9] via-[#2861f1] to-[#0055f1]">
         {/* frosted glass pane */}
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-md transition-colors duration-300 group-hover:bg-white/[0.14] pointer-events-none" />
+        <div className="absolute inset-0 bg-white/10  backdrop-blur-md transition-colors duration-300 group-hover:bg-white/[0.14] pointer-events-none" />
         {/* glossy top highlight */}
         <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
         {/* glass edge */}
@@ -134,7 +134,7 @@ function StatCard({ label, value, icon: Icon }) {
 export default function Home() {
   const { dark } = useTheme();
   return (
-    <div className="bg-white dark:bg-background transition-colors duration-300 min-h-[calc(100vh-64px)]">
+    <div className="bg-white  dark:bg-background transition-colors duration-300 min-h-[calc(100vh-64px)]">
       {/* Hero Section */}
       <section className="relative bg-[#0038A8] dark:bg-transparent text-white overflow-hidden border-b border-transparent dark:border-border">
         {!dark && (

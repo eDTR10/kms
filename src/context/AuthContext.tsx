@@ -1,67 +1,138 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { secureStorage } from "@/lib/secureStorage";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { authApi, UserProfile } from "../services/api";
+
+const AUTH_USER_STORAGE_KEY = "auth_user_profile";
 
 export interface User {
-  id?: number;
-  username?: string;
-  name?: string;
-  email?: string;
+  id: number;
+  email: string;
+  name: string;
   picture?: string;
   role: string;
+  acc_lvl: number;
   loginType?: string;
+  position?: string;
+  office?: number | null;
+  is_staff?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => { success: boolean; user?: User; error?: string };
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<User>;
   googleLogin: (credential: string) => { success: boolean; user?: User; error?: string };
-  logout: () => void;
+  logout: () => Promise<void>;
   isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Local accounts (system / admin access)
-const LOCAL_USERS = [
-  { id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Admin User' },
-  { id: 2, username: 'viewer', password: 'viewer123', role: 'viewer', name: 'Viewer User' },
-];
-
 const ADMIN_EMAILS: string[] = [
   // 'yourname@dict.gov.ph',
 ];
 
-const ALLOWED_DOMAIN = import.meta.env.VITE_ALLOWED_DOMAIN || 'dict.gov.ph';
+const ALLOWED_DOMAIN = import.meta.env.VITE_ALLOWED_DOMAIN || "dict.gov.ph";
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function profileToUser(profile: UserProfile): User {
+  const role = profile.acc_lvl === 0 ? "admin" : "viewer";
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: `${profile.first_name} ${profile.last_name}`.trim() || profile.email,
+    role,
+    acc_lvl: profile.acc_lvl,
+    position: profile.position,
+    office: profile.office,
+    is_staff: profile.is_staff,
+  };
+}
+
+function loadStoredUser(): User | null {
+  const raw = secureStorage.getItem(AUTH_USER_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredUser(user: User) {
+  secureStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
+}
+
+function clearStoredUser() {
+  secureStorage.removeItem(AUTH_USER_STORAGE_KEY);
+}
 
 /** Safely decode a JWT payload without a library */
 function decodeJwtPayload(token: string) {
-  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64 + '=='.slice(0, (4 - (base64.length % 4)) % 4);
+  const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "==".slice(0, (4 - (base64.length % 4)) % 4);
   return JSON.parse(atob(padded));
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('kms-user');
-    return stored ? JSON.parse(stored) : null;
-  });
+// ── migrate old plaintext kms-user to encrypted storage ──────────────────────
+function migrateLegacyUser() {
+  const legacy = localStorage.getItem("kms-user");
+  if (legacy && !secureStorage.getItem(AUTH_USER_STORAGE_KEY)) {
+    secureStorage.setItem(AUTH_USER_STORAGE_KEY, legacy);
+    localStorage.removeItem("kms-user");
+  }
+}
 
-  const login = (username: string, password: string) => {
-    const found = LOCAL_USERS.find(
-      (u) => u.username === username && u.password === password
-    );
-    if (found) {
-      const { password: _, ...safeUser } = found;
-      setUser(safeUser as User);
-      localStorage.setItem('kms-user', JSON.stringify(safeUser));
-      return { success: true, user: safeUser as User };
-    }
-    return { success: false, error: 'Invalid username or password.' };
+// ── provider ─────────────────────────────────────────────────────────────────
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // On mount: migrate legacy data, then check token validity
+  useEffect(() => {
+    migrateLegacyUser();
+
+    const fetchUser = async () => {
+      if (authApi.isAuthenticated()) {
+        try {
+          const me = await authApi.getMe();
+          const mapped = profileToUser(me);
+          setUser(mapped);
+          saveStoredUser(mapped);
+        } catch (err: any) {
+          const status = err?.response?.status;
+          if (status === 401 || status === 403) {
+            authApi.logout();
+            clearStoredUser();
+            setUser(null);
+          } else {
+            // Network error etc. — fall back to cached profile
+            const cached = loadStoredUser();
+            if (cached) setUser(cached);
+          }
+        }
+      }
+      setIsLoading(false);
+    };
+    fetchUser();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<User> => {
+    await authApi.login(email, password);
+    const me = await authApi.getMe();
+    const mapped = profileToUser(me);
+    setUser(mapped);
+    saveStoredUser(mapped);
+    return mapped;
   };
 
   const googleLogin = (credential: string) => {
     try {
       const payload = decodeJwtPayload(credential);
-      const email = payload.email || '';
+      const email = payload.email || "";
 
       if (!email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
         return {
@@ -70,31 +141,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'viewer';
+      const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "viewer";
 
       const googleUser: User = {
-        name: payload.name,
+        id: 0,
         email,
+        name: payload.name || email,
         picture: payload.picture,
         role,
-        loginType: 'google',
+        acc_lvl: role === "admin" ? 0 : 1,
+        loginType: "google",
       };
 
       setUser(googleUser);
-      localStorage.setItem('kms-user', JSON.stringify(googleUser));
+      saveStoredUser(googleUser);
       return { success: true, user: googleUser };
     } catch {
-      return { success: false, error: 'Failed to process Google sign-in. Please try again.' };
+      return {
+        success: false,
+        error: "Failed to process Google sign-in. Please try again.",
+      };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authApi.logout();
+    clearStoredUser();
     setUser(null);
-    localStorage.removeItem('kms-user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        googleLogin,
+        logout,
+        isAdmin: user?.role === "admin" || user?.acc_lvl === 0,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -103,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

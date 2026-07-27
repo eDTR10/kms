@@ -1,10 +1,36 @@
 // @ts-nocheck
-import highlightsData from '../data/highlights.json';
+import api from './api';
 
-/** Returns the list of hero-slider office highlights. Swap the body for
- *  `const { data } = await axios.get('highlights'); return data;`
- *  once the backend endpoint exists — the shape already matches.
- */
 export async function getHighlights() {
-  return highlightsData.data;
+  const { data } = await api.get('kms/highlights/');
+  return data.results ?? data;
+}
+
+export async function createHighlight(formData) {
+  const { data } = await api.post('kms/highlights/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function updateHighlight(id, formData) {
+  const { data } = await api.patch(`kms/highlights/${id}/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function deleteHighlight(id) {
+  await api.delete(`kms/highlights/${id}/`);
+}
+
+export async function importHighlightsJson(jsonData) {
+  const payload = Array.isArray(jsonData) ? jsonData : jsonData?.data ?? jsonData;
+  const { data } = await api.post('kms/highlights/import-json/', payload);
+  return data;
+}
+
+export async function reorderHighlights(items) {
+  const { data } = await api.post('kms/highlights/reorder/', items);
+  return data;
 }

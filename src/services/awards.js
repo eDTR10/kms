@@ -1,10 +1,36 @@
 // @ts-nocheck
-import awardsData from '../data/awards.json';
+import api from './api';
 
-/** Returns the list of awards. Swap the body for
- *  `const { data } = await axios.get('awards'); return data;`
- *  once the backend endpoint exists — the shape already matches.
- */
 export async function getAwards() {
-  return awardsData.data;
+  const { data } = await api.get('kms/awards/');
+  return data.results ?? data;
+}
+
+export async function createAward(formData) {
+  const { data } = await api.post('kms/awards/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function updateAward(id, formData) {
+  const { data } = await api.patch(`kms/awards/${id}/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function deleteAward(id) {
+  await api.delete(`kms/awards/${id}/`);
+}
+
+export async function importAwardsJson(jsonData) {
+  const payload = Array.isArray(jsonData) ? jsonData : jsonData?.data ?? jsonData;
+  const { data } = await api.post('kms/awards/import-json/', payload);
+  return data;
+}
+
+export async function reorderAwards(items) {
+  const { data } = await api.post('kms/awards/reorder/', items);
+  return data;
 }
