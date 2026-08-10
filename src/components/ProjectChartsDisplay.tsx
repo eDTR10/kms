@@ -7,6 +7,7 @@ import {
   chartConfigFromBackend, CustomChartRenderer,
 } from '../screens/Admin/FreeWifi/FreeWifiCharts';
 import FreeWifiMap from './FreeWifiMap';
+import { Skeleton } from '../screens/Admin/Skeleton';
 
 const RAW_DATA_PAGE_SIZE = 50;
 
@@ -132,6 +133,50 @@ function ChartCard({ title, children }) {
   );
 }
 
+// Stand-in for Summary/Map/Breakdown while the three chart requests are in flight -
+// shaped like the cards that are about to replace it (exact section count/order settles
+// once the config loads, so this is a plausible best guess, not a precise match).
+function ChartsSkeleton() {
+  return (
+    <div className="space-y-6 mb-10">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <div className="p-8">
+          <Skeleton className="h-4 w-40 mb-6" />
+          <div className="grid grid-cols-4 gap-4 sm:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <Skeleton className="h-[500px] w-full rounded-none" />
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <Skeleton className="h-5 w-28" />
+        </div>
+        <div className="p-4 space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Public-facing Charts section for a project page — Summary Card, Map, and Breakdown
  * (whichever the admin has tagged a dataset for) plus any custom chart marked visible for
  * the public, all sourced from the same ProjectChartConfig/ProjectChartSource data the
@@ -156,7 +201,7 @@ export default function ProjectChartsDisplay({ slug }) {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) return null;
+  if (loading) return <ChartsSkeleton />;
 
   const source = chartSource || {};
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
