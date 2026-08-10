@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sun, Moon, Menu, X, ChevronDown, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, projectAdminPath } from '../context/AuthContext';
 import dictLogo from '../assets/project-logo/DICT Logo.png';
 
 const ABOUT_LINKS = [
@@ -22,6 +22,7 @@ const PROJECT_LINKS = [
   { label: 'eLGU', path: '/kms/projects/elgu' },
   { label: 'IIDB', path: '/kms/projects/iidb' },
   { label: 'NIPPSB', path: '/kms/projects/nippsb' },
+  { label: 'DRRM', path: '/kms/projects/drrm' },
 ];
 
 const SIMPLE_LINKS = [
@@ -31,7 +32,7 @@ const SIMPLE_LINKS = [
 
 export default function Navbar() {
   const { dark, toggleTheme } = useTheme();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isProjectAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -204,9 +205,9 @@ export default function Navbar() {
                         {user.email || user.role}
                       </p>
                     </div>
-                    {isAdmin && (
+                    {(isAdmin || (isProjectAdmin && user.projectSlug)) && (
                       <Link
-                        to="/kms/admin"
+                        to={isAdmin ? "/kms/admin" : projectAdminPath(user.projectSlug)}
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-primary/20"
                       >

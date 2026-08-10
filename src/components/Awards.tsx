@@ -36,7 +36,25 @@ function AwardThumb({ src, alt }) {
 
 function AwardLightboxContent({ item }) {
   const [imgBroken, setImgBroken] = useState(false);
-  const hasImage = item.image && !imgBroken;
+  const [imgIndex, setImgIndex] = useState(0);
+  // MOV gallery if this award has one, else fall back to the legacy single image.
+  const gallery = item.images?.length ? item.images.map((im) => im.image) : (item.image ? [item.image] : []);
+  const currentSrc = gallery[imgIndex];
+  const hasImage = currentSrc && !imgBroken;
+  const hasMultipleImages = gallery.length > 1;
+
+  const showImage = (i) => { setImgBroken(false); setImgIndex(i); };
+
+  // Auto-advance through the gallery. Restarts on every index change (manual
+  // or auto) so each photo gets a full interval on screen.
+  useEffect(() => {
+    if (!hasMultipleImages) return undefined;
+    const id = setInterval(() => {
+      setImgBroken(false);
+      setImgIndex((i) => (i + 1) % gallery.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [hasMultipleImages, gallery.length, imgIndex]);
 
   return (
     <motion.div
@@ -47,16 +65,49 @@ function AwardLightboxContent({ item }) {
       transition={{ duration: 0.2 }}
       className="absolute inset-0 bg-white flex items-end"
     >
-      {hasImage ? (
-        <img
-          src={item.image}
-          alt={item.title}
-          onError={() => setImgBroken(true)}
-          className="absolute inset-0 w-full h-[50vh] object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ffffff] to-[#ffffffef]" />
-      )}
+      <div className="absolute inset-x-0 top-0 h-[50vh] overflow-hidden">
+        {hasImage ? (
+          <img
+            src={currentSrc}
+            alt={item.title}
+            onError={() => setImgBroken(true)}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#ffffff] to-[#ffffffef]" />
+        )}
+        {hasMultipleImages && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); showImage((imgIndex - 1 + gallery.length) % gallery.length); }}
+              aria-label="Previous photo"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); showImage((imgIndex + 1) % gallery.length); }}
+              aria-label="Next photo"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <span className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-black/40 text-white text-[11px] font-semibold">
+              {imgIndex + 1} / {gallery.length}
+            </span>
+            <div className="absolute bottom-3 inset-x-0 flex justify-center gap-1.5 z-10">
+              {gallery.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); showImage(i); }}
+                  aria-label={`Photo ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${i === imgIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
       <div className="absolute top-20 inset-0 bg-gradient-to-t from-white via-white to-white/0" />
 
       <div className="relative h-[60vh] bottom-0 overflow-y-auto">
@@ -64,9 +115,14 @@ function AwardLightboxContent({ item }) {
           <h3 className="text-2xl sm:text-4xl font-black text-accent-foreground leading-tight drop-shadow-lg mb-2">
             {item.title}
           </h3>
-          <p className="text-sm text-accent-foreground/70 mb-4">
+          <p className="text-sm text-accent-foreground/70 mb-1">
             {item.issuer} &middot; {item.year}
           </p>
+          {(item.recognition_level || item.location || item.date_received) && (
+            <p className="text-xs text-accent-foreground/60 mb-4">
+              {[item.recognition_level, item.location, item.date_received].filter(Boolean).join(' · ')}
+            </p>
+          )}
           <p className="text-sm text-accent-foreground/90 leading-relaxed whitespace-pre-line">
             {item.description}
           </p>
@@ -130,7 +186,7 @@ function AwardLightbox({ items, index, onClose, onNext, onPrev }) {
         )}
 
         <AnimatePresence mode="wait">
-          <AwardLightboxContent item={item} />
+          <AwardLightboxContent key={item.id} item={item} />
         </AnimatePresence>
       </motion.div>
 
@@ -153,7 +209,14 @@ export default function Awards() {
   const [viewMode, setViewMode] = useState('cards');
 
   useEffect(() => {
-    getAwards().then(setItems);
+    // Cover image for thumbnails: first MOV image if any, else the legacy single
+    // `image` field (old records saved before the MOV gallery existed). Awards
+    // hidden by the admin (active === false) never reach the public site at all.
+    getAwards().then((data) => setItems(
+      data
+        .filter((item) => item.active !== false)
+        .map((item) => ({ ...item, coverImage: item.images?.[0]?.image || item.image || '' }))
+    ));
     getKmsSettings().then((s) => setViewMode(s.awards_style || 'cards')).catch(() => {});
   }, []);
 
@@ -179,7 +242,7 @@ export default function Awards() {
             Awards
           </h2>
           <p className="text-gray-500 dark:text-muted-foreground mt-3 text-lg">
-            Recognitions received by DICT Region 10
+            Recognitions received by DICT Region X
           </p>
           <div className="mt-4 h-1.5 w-16 bg-[#FCD116] dark:bg-primary rounded-full mx-auto dark:shadow-[0_0_10px_rgba(44,90,255,0.5)]" />
         </div>
@@ -201,7 +264,7 @@ export default function Awards() {
                   onClick={() => setSelectedIndex(i)}
                   className="group h-full flex flex-col text-left rounded-2xl border p-6 bg-white border-gray-200 text-gray-800 shadow-sm dark:bg-card dark:border-border dark:text-card-foreground dark:hover:border-primary/50 dark:hover:shadow-[0_8px_30px_rgba(44,90,255,0.15)] hover:-translate-y-1.5 transition-all duration-300"
                 >
-                  <AwardThumb src={item.image} alt={item.title} />
+                  <AwardThumb src={item.coverImage} alt={item.title} />
                   <div className="flex items-start gap-4 mb-3">
                     <span className="w-12 h-12 shrink-0 rounded-full bg-[#FCD116]/20 dark:bg-primary/10 flex items-center justify-center text-[#0038A8] dark:text-primary">
                       <Award size={22} />
@@ -232,8 +295,8 @@ export default function Awards() {
                     className="w-full group bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl p-5 flex items-center gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-[#0038A8]/40 dark:hover:border-primary/50 text-left"
                   >
                     <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-800">
-                      {item.image ? (
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                      {item.coverImage ? (
+                        <img src={item.coverImage} alt={item.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-[#0038A8] to-[#001233] flex items-center justify-center">
                           <Award size={24} className="text-white/50" />
@@ -264,8 +327,8 @@ export default function Awards() {
                     onClick={() => setSelectedIndex(i)}
                     className="group relative w-full h-56 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-[#0038A8]/40 dark:hover:border-primary/50 text-left"
                   >
-                    {item.image ? (
-                      <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    {item.coverImage ? (
+                      <img src={item.coverImage} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233] flex items-center justify-center">
                         <Award size={40} className="text-white/30" />
@@ -303,8 +366,8 @@ export default function Awards() {
                       onClick={() => setSelectedIndex(i)}
                       className="group relative h-full w-full rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 text-left"
                     >
-                      {item.image ? (
-                        <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      {item.coverImage ? (
+                        <img src={item.coverImage} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233] flex items-center justify-center">
                           <Award size={32} className="text-white/30" />
@@ -342,7 +405,7 @@ export default function Awards() {
                           className="w-full bg-white dark:bg-card rounded-xl border border-gray-100 dark:border-border p-5 shadow-sm hover:shadow-md transition-shadow text-left group"
                         >
                           <div className="flex items-start gap-4">
-                            {item.image && <img src={item.image} alt={item.title} className="w-20 h-20 rounded-lg object-cover shrink-0" />}
+                            {item.coverImage && <img src={item.coverImage} alt={item.title} className="w-20 h-20 rounded-lg object-cover shrink-0" />}
                             <div className="flex-1 min-w-0">
                               <span className="text-xs bg-[#0038A8] text-white px-2 py-0.5 rounded-full font-bold">{item.year}</span>
                               <h3 className="font-bold text-gray-900 dark:text-foreground text-sm mt-1">{item.title}</h3>
@@ -370,7 +433,7 @@ export default function Awards() {
                     onClick={() => setSelectedIndex(i)}
                     className="w-full bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow text-left group"
                   >
-                    {item.image && <img src={item.image} alt={item.title} className="w-full object-cover" style={{ height: `${180 + (i % 3) * 60}px` }} />}
+                    {item.coverImage && <img src={item.coverImage} alt={item.title} className="w-full object-cover" style={{ height: `${180 + (i % 3) * 60}px` }} />}
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs bg-[#0038A8] text-white px-2 py-0.5 rounded-full font-bold">{item.year}</span>
@@ -395,8 +458,8 @@ export default function Awards() {
                     onClick={() => setSelectedIndex(0)}
                     className="relative w-full rounded-2xl overflow-hidden h-72 lg:h-80 group text-left"
                   >
-                    {items[0].image ? (
-                      <img src={items[0].image} alt={items[0].title} className="absolute inset-0 w-full h-full object-cover" />
+                    {items[0].coverImage ? (
+                      <img src={items[0].coverImage} alt={items[0].title} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233]" />
                     )}
@@ -422,7 +485,7 @@ export default function Awards() {
                         onClick={() => setSelectedIndex(i + 1)}
                         className="w-full bg-white dark:bg-card rounded-xl border border-gray-100 dark:border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow text-left group"
                       >
-                        {item.image && <img src={item.image} alt={item.title} className="w-full h-32 object-cover" />}
+                        {item.coverImage && <img src={item.coverImage} alt={item.title} className="w-full h-32 object-cover" />}
                         <div className="p-3">
                           <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 px-2 py-0.5 rounded-full font-medium">{item.year}</span>
                           <h3 className="text-sm font-semibold text-gray-900 dark:text-foreground mt-1 truncate">{item.title}</h3>
@@ -446,8 +509,8 @@ export default function Awards() {
                     onClick={() => setSelectedIndex(i)}
                     className="group relative h-56 w-full rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-border hover:shadow-xl transition-all duration-300 text-left"
                   >
-                    {item.image ? (
-                      <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    {item.coverImage ? (
+                      <img src={item.coverImage} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233] flex items-center justify-center">
                         <Award size={32} className="text-white/30" />

@@ -1,8 +1,26 @@
 import { secureStorage } from "@/lib/secureStorage";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { authApi, UserProfile } from "../services/api";
+import { matchProjectByOfficeId } from "./../constants/kmsProjects"
 
 const AUTH_USER_STORAGE_KEY = "auth_user_profile";
+
+// Every project has its own hardcoded admin folder under /kms/admin/<slug>/* — Highlights
+// / Charts / Datasets tabs, same shape for all 8 projects (no project has a "settings"
+// route; that was a stale assumption that sent non-Free-Wi-Fi project admins to a
+// dead URL). Highlights is the first tab everywhere.
+
+/** Where to send a project admin right after login. */
+export function projectAdminPath(slug: string | null | undefined): string | null {
+  if (!slug) return null;
+  return `/kms/admin/${slug}/highlights`;
+}
+
+/** The route prefix a project admin is confined to (covers all of that project's tabs). */
+export function projectAdminPrefix(slug: string | null | undefined): string | null {
+  if (!slug) return null;
+  return `/kms/admin/${slug}`;
+}
 
 export interface User {
   id: number;
@@ -15,6 +33,14 @@ export interface User {
   position?: string;
   office?: number | null;
   is_staff?: boolean;
+  /** Office ids of the KMS project(s) this user administers (the `projects` M2M field
+   * from /users/me/ — distinct from `office`, which is just where they're stationed). */
+  projects?: number[];
+  /** Every KMS project slug matching an entry in `projects`, in the same order — only
+   * set for acc_lvl 2. A project admin can be assigned to more than one project. */
+  projectSlugs?: string[];
+  /** The first entry of projectSlugs — where a project admin lands right after login. */
+  projectSlug?: string | null;
 }
 
 interface AuthContextType {
@@ -25,6 +51,11 @@ interface AuthContextType {
   googleLogin: (credential: string) => { success: boolean; user?: User; error?: string };
   logout: () => Promise<void>;
   isAdmin: boolean;
+  /** acc_lvl 0 or 1 — sees/edits every project's admin panel. */
+  isSuperAdmin: boolean;
+  /** acc_lvl 2 — scoped to just the project(s) they're assigned to (user.projectSlugs),
+   * never anything else. Usually one project, but a user can be assigned to several. */
+  isProjectAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,7 +69,7 @@ const ALLOWED_DOMAIN = import.meta.env.VITE_ALLOWED_DOMAIN || "dict.gov.ph";
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function profileToUser(profile: UserProfile): User {
-  const role = profile.acc_lvl === 0 ? "admin" : "viewer";
+  const role = profile.acc_lvl <= 1 ? "admin" : profile.acc_lvl === 2 ? "project admin" : "viewer";
   return {
     id: profile.id,
     email: profile.email,
@@ -48,7 +79,19 @@ function profileToUser(profile: UserProfile): User {
     position: profile.position,
     office: profile.office,
     is_staff: profile.is_staff,
+    projects: profile.projects,
   };
+}
+
+/** For acc_lvl-2 users: every KMS project (if any) they've been tagged to administer,
+ * via `projects` (a list of office ids) — not `office`, which is just where they're
+ * stationed and often won't match any KMS project's office at all. A user can be
+ * assigned to more than one project, so this returns all of them, not just the first. */
+function resolveProjectSlugs(projectOfficeIds: number[] | null | undefined): string[] {
+  if (!projectOfficeIds || projectOfficeIds.length === 0) return [];
+  return projectOfficeIds
+    .map((id) => matchProjectByOfficeId(id)?.slug)
+    .filter((slug): slug is string => Boolean(slug));
 }
 
 function loadStoredUser(): User | null {
@@ -100,6 +143,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const me = await authApi.getMe();
           const mapped = profileToUser(me);
+          if (mapped.acc_lvl === 2) {
+            mapped.projectSlugs = resolveProjectSlugs(mapped.projects);
+            mapped.projectSlug = mapped.projectSlugs[0] ?? null;
+          }
           setUser(mapped);
           saveStoredUser(mapped);
         } catch (err: any) {
@@ -124,6 +171,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.login(email, password);
     const me = await authApi.getMe();
     const mapped = profileToUser(me);
+    if (mapped.acc_lvl === 2) {
+      mapped.projectSlugs = resolveProjectSlugs(mapped.projects);
+      mapped.projectSlug = mapped.projectSlugs[0] ?? null;
+    }
     setUser(mapped);
     saveStoredUser(mapped);
     return mapped;
@@ -149,7 +200,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: payload.name || email,
         picture: payload.picture,
         role,
-        acc_lvl: role === "admin" ? 0 : 1,
+        // acc_lvl 1 is now treated as super admin (see isSuperAdmin below), so a non-admin
+        // Google sign-in must land on the ordinary-user tier (3), not 1.
+        acc_lvl: role === "admin" ? 0 : 3,
         loginType: "google",
       };
 
@@ -179,7 +232,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         googleLogin,
         logout,
-        isAdmin: user?.role === "admin" || user?.acc_lvl === 0,
+        isAdmin: user != null && user.acc_lvl <= 1,
+        isSuperAdmin: user != null && user.acc_lvl <= 1,
+        isProjectAdmin: user?.acc_lvl === 2,
       }}
     >
       {children}

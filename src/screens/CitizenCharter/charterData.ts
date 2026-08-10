@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify"
 import charterData from "./CC_TARP_Regional_External_2025.json"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -86,11 +87,19 @@ export const citizenServices: CitizenService[] = mapJsonServices(
   charterDoc.services as unknown as JsonService[]
 )
 
+// Only "color" is kept on a style attribute - everything else (position,
+// expression(), url(), etc.) is stripped so an allowed <span style="..."> can't
+// be turned into a layout/overlay trick.
+DOMPurify.addHook("uponSanitizeAttribute", (_node, data) => {
+  if (data.attrName !== "style") return
+  const colorMatch = data.attrValue.match(/(?:^|;)\s*color\s*:\s*[^;]+/i)
+  data.attrValue = colorMatch ? colorMatch[0].replace(/^;\s*/, "") : ""
+})
+
 export const sanitizeHtml = (text: string | null | undefined): string => {
   if (!text) return ""
-  return text
-    .replace(/<br\s*\/?>/gi, "###BR###")
-    .replace(/<(?!\/?(b|strong|span)(\s[^>]*)?>)[^>]+>/gi, "")
-    .replace(/<span\s+style="(?!color)[^"]*"[^>]*>/gi, "<span>")
-    .replace(/###BR###/g, "<br/>")
+  return DOMPurify.sanitize(text, {
+    ALLOWED_TAGS: ["b", "strong", "span", "br"],
+    ALLOWED_ATTR: ["style"],
+  })
 }

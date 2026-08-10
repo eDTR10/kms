@@ -34,3 +34,16 @@ export async function reorderAwards(items) {
   const { data } = await api.post('kms/awards/reorder/', items);
   return data;
 }
+
+// ── Award MOV images (one award can have several, each URL or uploaded) ────────
+
+export async function createAwardImage(formData) {
+  const { data } = await api.post('kms/award-images/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function deleteAwardImage(id) {
+  await api.delete(`kms/award-images/${id}/`);
+}

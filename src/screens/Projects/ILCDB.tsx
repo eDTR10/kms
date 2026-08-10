@@ -1,12 +1,12 @@
 // @ts-nocheck
-import DashboardEmbed from '../../components/DashboardEmbed';
-import ProjectCarousel from '../../components/ProjectCarousel';
-import ILCDBIndicatorsDashboard from '../../components/ilcdb-dashboard/ILCDBIndicatorsDashboard';
+import ProjectHighlightsSlider from '../../components/ProjectHighlightsSlider';
+import ProjectChartsDisplay from '../../components/ProjectChartsDisplay';
 import logoIlcdb from '../../assets/project-logo/ILCDB.png';
+
 export default function ILCDB() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 dark:bg-gray-950">
-      <ProjectCarousel />
+      <ProjectHighlightsSlider slug="ilcdb" />
       <div className="mb-6 flex items-center gap-6">
         <div className="shrink-0 w-24 h-24 bg-[#0038A8] rounded-xl flex items-center justify-center p-2 shadow-md">
           <img src={logoIlcdb} alt="ILCDB" className="max-h-full max-w-full object-contain" />
@@ -21,15 +21,8 @@ export default function ILCDB() {
       </div>
 
       <div className="mb-10">
-        <ILCDBIndicatorsDashboard />
+        <ProjectChartsDisplay slug="ilcdb" />
       </div>
-
-      <DashboardEmbed
-        title="ILCDB Report"
-        embedUrl="https://datastudio.google.com/embed/reporting/f8914384-b24f-4008-a338-a7f7ac14b425/page/IXtzD"
-        reportUrl="https://datastudio.google.com/reporting/f8914384-b24f-4008-a338-a7f7ac14b425/page/IXtzD"
-      />
     </div>
   );
 }
-

@@ -1,0 +1,90 @@
+[
+    {
+        "officeID": 25,
+        "name": "ILCDB",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "a",
+        "city": "ICT Capacity and Industry Ecosystem Development and Management Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 26,
+        "name": "IIDB",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "a",
+        "city": "ICT Capacity and Industry Ecosystem Development and Management Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 27,
+        "name": "Cybersecurity / PNPKI",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "a",
+        "city": "ICT Governance Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 28,
+        "name": "NIPPSB",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "a",
+        "city": "ICT Governance Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 29,
+        "name": "Free Wi-Fi",
+        "officeMail": "budget@dict.gov.ph",
+        "street": "a",
+        "city": "ICT Systems and Information Infrastructure Development, Management, and Advisory Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 30,
+        "name": "NBP / CDO Govnet",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "a",
+        "city": "ICT Systems and Information Infrastructure Development, Management, and Advisory Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 31,
+        "name": "eLGU",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "a",
+        "city": "ICT Systems and Information Infrastructure Development, Management, and Advisory Program",
+        "province": "ICT Programs and Services",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    },
+    {
+        "officeID": 36,
+        "name": "eGov",
+        "officeMail": "otheroffice@gmail.com",
+        "street": "d",
+        "city": "ICT Systems and Information Infrastructure Development, Management, and Advisory Program",
+        "province": "City and Provincial ICT Offices",
+        "region": "Technical Operations Division",
+        "numUsers": 0,
+        "coordinates": ""
+    }
+]

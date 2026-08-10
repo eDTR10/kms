@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useMemo } from 'react';
-import { Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical, Plus, Trash2, X, Eye, EyeOff, Edit2 } from 'lucide-react';
+import { Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical, Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star } from 'lucide-react';
 import { getFreeWifiSummary } from '../../../services/freewifi';
 import {
   getFreeWifiLiveData, getFreeWifiMainData, getFreeWifiTargetData, getFreeWifiMasterlistData,
@@ -8,6 +8,11 @@ import {
 } from '../../../services/freewifiData';
 import { getKmsSettings, updateKmsSettings } from '../../../services/settings';
 import FreeWifiMap from '../../../components/FreeWifiMap';
+import {
+  getProjectOfficeId, getProjectDatasets,
+  getProjectChartConfigs, createProjectChartConfig, updateProjectChartConfig, deleteProjectChartConfig,
+  reorderProjectChartConfigs, getProjectChartSource, updateProjectChartSource,
+} from '../../../services/projects';
 
 export const PROVINCE_COLORS = {
   'Bukidnon': '#2563eb',
@@ -87,7 +92,9 @@ const CHART_TYPES = [
   ) },
 ];
 
-const AVAILABLE_FIELDS = [
+// Free Wi-Fi's own fixed field list — other projects derive theirs from whichever of
+// their own Datasets tables a chart is pointed at (see availableFieldsFor below).
+const FREEWIFI_AVAILABLE_FIELDS = [
   { value: 'province', label: 'Province' },
   { value: 'district', label: 'District' },
   { value: 'locality', label: 'Locality' },
@@ -195,6 +202,128 @@ export function computeProvinceBreakdown(records) {
   return byProvince;
 }
 
+// Resolves the three independent per-widget dataset tags (ProjectChartSource's
+// summary_dataset/map_dataset/breakdown_dataset) against this project's actual Datasets
+// tables into row arrays — used on initial load and again after saving Data Source, since
+// each built-in can point at a different table (or the same one).
+export function buildTaggedRecords(tables, source) {
+  const rowsFor = (datasetId) => (tables.find(t => t.id === datasetId)?.rows || []).map(r => ({ id: r.id, ...(r.values || {}) }));
+  return {
+    summary: rowsFor(source?.summary_dataset),
+    map: rowsFor(source?.map_dataset),
+    breakdown: rowsFor(source?.breakdown_dataset),
+  };
+}
+
+// Turns a Map-tagged table's raw rows into geocoded, tooltip-ready records — shared by
+// the admin widget and the public page so a coordinate-parsing fix (e.g. the combined
+// "lat, lng" column format) only has to happen in one place. Returns `mapped` (every row
+// with valid latitude/longitude) and `tooltipFieldDefs` (resolved {name,label} pairs for
+// the admin-picked hover-tooltip columns).
+export function resolveMapSites(records, source, taggedFields) {
+  const latField = source?.latitude_field, lngField = source?.longitude_field;
+  if (!latField || !lngField) return { mapped: [], tooltipFieldDefs: [] };
+  // Same field tagged for both = a combined "lat, lng" column (e.g.
+  // "8.486735683, 124.6322367") — split on the comma instead of reading two columns.
+  const combined = latField === lngField;
+  const mapped = records
+    .map(r => {
+      if (combined) {
+        const [rawLat, rawLng] = String(r[latField] ?? '').split(',');
+        return { ...r, latitude: Number(String(rawLat ?? '').trim()), longitude: Number(String(rawLng ?? '').trim()) };
+      }
+      return { ...r, latitude: Number(r[latField]), longitude: Number(r[lngField]) };
+    })
+    .filter(r => Number.isFinite(r.latitude) && Number.isFinite(r.longitude));
+  const tooltipFieldDefs = (source?.tooltip_fields || [])
+    .map(name => taggedFields.find(f => f.name === name))
+    .filter(Boolean)
+    .map(f => ({ name: f.name, label: f.label }));
+  return { mapped, tooltipFieldDefs };
+}
+
+// Generic (non-Free-Wi-Fi) Summary Card tile computation — shared by the live widget and
+// its style-editor preview so the preview always shows real numbers instead of placeholders.
+export function computeSummaryTiles(records, source, taggedFields) {
+  // Older saves stored plain field-name strings (sum-only) — normalize those too.
+  const tileConfigs = (source?.summary_fields || [])
+    .map(t => (typeof t === 'string' ? { field: t, agg: 'sum' } : t))
+    .filter(t => t.agg === 'count' || t.field);
+  // No tiles configured yet → fall back to a single row-count tile so the widget isn't
+  // blank before anyone visits "Data Source". Once tiles are configured, the first one IS
+  // the lead tile (e.g. a distinct-count "Total Active Locations" rather than the raw row
+  // count) — nothing is auto-prepended.
+  const tiles = tileConfigs.length
+    ? tileConfigs.map((cfg) => {
+        const fieldDef = (taggedFields || []).find(f => f.name === cfg.field);
+        let value = 0;
+        if (cfg.agg === 'count') {
+          value = records.length;
+        } else if (cfg.agg === 'distinct') {
+          value = new Set(records.map(r => String(r[cfg.field] ?? '').trim()).filter(Boolean)).size;
+        } else if (cfg.agg === 'count_equals') {
+          const target = String(cfg.equals ?? '').trim().toLowerCase();
+          value = records.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
+        } else {
+          value = records.reduce((s, r) => s + (Number(r[cfg.field]) || 0), 0);
+        }
+        return { label: cfg.label || fieldDef?.label || cfg.field || 'Count', value, highlight: Boolean(cfg.highlight) };
+      })
+    : [{ label: 'Total Records', value: records.length }];
+  // Tile 0 is always the lead (big number). The highlighted/accent tile is whichever tile
+  // got starred in "Data Source"; if none was, it defaults to the last tile.
+  const explicitAccentIndex = tiles.findIndex(t => t.highlight);
+  const accentIndex = tiles.length > 1 ? (explicitAccentIndex !== -1 ? explicitAccentIndex : tiles.length - 1) : -1;
+  const hasAccent = accentIndex !== -1;
+  return {
+    lead: tiles[0],
+    rest: tiles.filter((_, idx) => idx !== 0 && idx !== accentIndex),
+    accentTile: hasAccent ? tiles[accentIndex] : null,
+  };
+}
+
+// Renders the tiles (lead/rest/accent) computed above — used by both the live Summary
+// Card widget and its style-editor preview, so they're always visually identical. "Row"
+// is a single flex row that never wraps regardless of how many tiles are configured
+// (a fixed grid-cols count would wrap extra tiles onto their own row).
+export function renderSummaryCardBody({ lead, rest, accentTile }, style) {
+  const accentTextColor = contrastTextColor(style.accentColor);
+  if (style.orientation === 'stacked') {
+    return (
+      <div className="space-y-3">
+        <div><p className="text-sm text-white/70 mb-1">{lead.label}</p><p className="text-4xl font-black">{lead.value.toLocaleString()}</p></div>
+        {rest.map(t => (
+          <div key={t.label} className="bg-white/10 rounded-xl p-4 flex items-center justify-between">
+            <span className="text-sm text-white/70">{t.label}</span><span className="text-2xl font-black">{t.value.toLocaleString()}</span>
+          </div>
+        ))}
+        {accentTile && (
+          <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: style.accentColor }}>
+            <span className="text-sm" style={{ color: accentTextColor }}>{accentTile.label}</span>
+            <span className="text-2xl font-black" style={{ color: accentTextColor }}>{accentTile.value.toLocaleString()}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-nowrap gap-4 md:gap-6 overflow-x-auto pb-1">
+      <div className="flex-1 min-w-[120px]"><p className="text-sm text-white/70 mb-1 truncate">{lead.label}</p><p className="text-4xl font-black">{lead.value.toLocaleString()}</p></div>
+      {rest.map(t => (
+        <div key={t.label} className="flex-1 min-w-[120px] bg-white/10 rounded-xl p-4">
+          <p className="text-sm text-white/70 mb-1 truncate">{t.label}</p><p className="text-3xl font-black">{t.value.toLocaleString()}</p>
+        </div>
+      ))}
+      {accentTile && (
+        <div className="flex-1 min-w-[120px] rounded-xl p-4" style={{ backgroundColor: style.accentColor }}>
+          <p className="text-sm mb-1 truncate" style={{ color: accentTextColor }}>{accentTile.label}</p>
+          <p className="text-3xl font-black" style={{ color: accentTextColor }}>{accentTile.value.toLocaleString()}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Two custom charts showing the same type + fields are duplicates
 const chartSignature = (c) => `${c.chartType}|${c.field}|${c.secondaryField || ''}`;
 
@@ -213,6 +342,9 @@ export function chartConfigFromBackend(c) {
     showOnUser: c.show_on_user,
     showAllCategories: c.show_all_categories,
     visible: c.visible,
+    // Only present on ProjectChartConfig rows (the non-Free-Wi-Fi path) — which of a
+    // project's own Datasets tables this chart counts rows from.
+    dataset: c.dataset,
   };
 }
 
@@ -226,6 +358,7 @@ export function chartConfigToBackend(chart) {
     show_on_user: chart.showOnUser !== false,
     show_all_categories: !!chart.showAllCategories,
     visible: chart.visible !== false,
+    ...(chart.dataset != null ? { dataset: chart.dataset } : {}),
   };
 }
 
@@ -1158,7 +1291,7 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
 
 // Isolated so dragging a color picker only re-renders this small modal, not the whole
 // Charts page (allCharts list, every DraggableChart card) — that was the source of the lag.
-function SummaryStyleModal({ initialStyle, saving, previewStats, today, onSave, onClose }) {
+function SummaryStyleModal({ initialStyle, saving, renderPreview, onSave, onClose }) {
   const [draft, setDraft] = useState(initialStyle);
 
   return (
@@ -1247,11 +1380,7 @@ function SummaryStyleModal({ initialStyle, saving, previewStats, today, onSave, 
           <div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Preview</h4>
             <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/40 overflow-hidden">
-              <SummaryCard
-                stats={previewStats}
-                today={today} sourceLabel="Live Sites"
-                colorFrom={draft.colorFrom} colorTo={draft.colorTo} orientation={draft.orientation} accentColor={draft.accentColor}
-              />
+              {renderPreview(draft)}
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">Preview only — the actual chart won't change until you hit Save.</p>
           </div>
@@ -1272,20 +1401,420 @@ function SummaryStyleModal({ initialStyle, saving, previewStats, today, onSave, 
   );
 }
 
-export default function FreeWifiCharts() {
+// Raw rows behind a Breakdown click — paginated 50 rows at a time so a table with
+// thousands of rows never renders them all at once (rendered inline under Breakdown,
+// see the 'province-breakdown' case in renderGenericBuiltIn).
+const RAW_DATA_PAGE_SIZE = 50;
+
+// Non-Free-Wi-Fi only: "tag" which of this project's own Datasets tables feeds each of
+// the Summary/Map/Breakdown built-ins (independently — same table or three different
+// ones, admin's call), which of that table's columns power it, and its title. The
+// generic equivalent of Free Wi-Fi's per-built-in DATA_SOURCES picker.
+function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
+  // Summary Card
+  const [summaryDatasetId, setSummaryDatasetId] = useState(initial?.summary_dataset || '');
+  const [summaryTitle, setSummaryTitle] = useState(initial?.summary_title || '');
+  // Each tile: { field, agg: 'sum'|'distinct'|'count_equals'|'count', equals?, label, highlight? }.
+  // Position controls layout (tile 0 = big lead number); `highlight` marks the one tile
+  // rendered as the colored accent box (falls back to the last tile if none is marked, so
+  // older saves — plain field-name strings or objects without `highlight` — keep working).
+  const [summaryFields, setSummaryFields] = useState(
+    (initial?.summary_fields || []).map(t => (typeof t === 'string' ? { field: t, agg: 'sum', label: '' } : t))
+  );
+  const [dragTileIndex, setDragTileIndex] = useState(null);
+
+  // Map
+  const [mapDatasetId, setMapDatasetId] = useState(initial?.map_dataset || '');
+  const [mapTitle, setMapTitle] = useState(initial?.map_title || '');
+  const [latField, setLatField] = useState(initial?.latitude_field || '');
+  const [lngField, setLngField] = useState(initial?.longitude_field || '');
+  // Some tables store "lat, lng" together in one column (e.g. "8.486735683, 124.6322367")
+  // instead of two separate number columns — when tagged, latitude_field and
+  // longitude_field are saved as the same field name and the map view splits on the comma.
+  const [combinedCoords, setCombinedCoords] = useState(
+    Boolean(initial?.latitude_field) && initial.latitude_field === initial?.longitude_field
+  );
+  // Columns shown in the Map's hover tooltip, in the order they were picked. Empty = no
+  // tooltip on the dots at all.
+  const [tooltipFields, setTooltipFields] = useState(initial?.tooltip_fields || []);
+
+  // Breakdown
+  const [breakdownDatasetId, setBreakdownDatasetId] = useState(initial?.breakdown_dataset || '');
+  const [breakdownTitle, setBreakdownTitle] = useState(initial?.breakdown_title || '');
+  const [groupField, setGroupField] = useState(initial?.group_field || '');
+  // Columns shown in the Breakdown widget's raw-data table. Empty = show every column
+  // (unlike tooltipFields, since this preserves the pre-existing "show everything" default).
+  const [breakdownFields, setBreakdownFields] = useState(initial?.breakdown_fields || []);
+
+  const [saving, setSaving] = useState(false);
+
+  const summaryTable = tables.find(t => t.id === Number(summaryDatasetId));
+  const summaryTableFields = summaryTable?.fields || [];
+  const mapTable = tables.find(t => t.id === Number(mapDatasetId));
+  const mapTableFields = mapTable?.fields || [];
+  const breakdownTable = tables.find(t => t.id === Number(breakdownDatasetId));
+  const breakdownTableFields = breakdownTable?.fields || [];
+
+  const toggleTooltipField = (name) => {
+    setTooltipFields(prev => prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]);
+  };
+  const toggleBreakdownField = (name) => {
+    setBreakdownFields(prev => prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]);
+  };
+
+  const addSummaryTile = () => setSummaryFields(prev => [...prev, { field: '', agg: 'distinct', equals: '', label: '' }]);
+  const updateSummaryTile = (i, patch) => setSummaryFields(prev => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
+  const removeSummaryTile = (i) => setSummaryFields(prev => prev.filter((_, idx) => idx !== i));
+  const setHighlightTile = (i) => setSummaryFields(prev => prev.map((t, idx) => ({ ...t, highlight: idx === i })));
+  const handleTileDragOver = (e) => e.preventDefault();
+  const handleTileDrop = (dropIndex) => {
+    if (dragTileIndex === null || dragTileIndex === dropIndex) { setDragTileIndex(null); return; }
+    setSummaryFields(prev => {
+      const arr = [...prev];
+      const [moved] = arr.splice(dragTileIndex, 1);
+      arr.splice(dropIndex, 0, moved);
+      return arr;
+    });
+    setDragTileIndex(null);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave({
+        summary_dataset: summaryDatasetId ? Number(summaryDatasetId) : null,
+        summary_title: summaryTitle,
+        summary_fields: summaryFields.filter(t => t.agg === 'count' || t.field),
+        map_dataset: mapDatasetId ? Number(mapDatasetId) : null,
+        map_title: mapTitle,
+        latitude_field: latField,
+        longitude_field: combinedCoords ? latField : lngField,
+        tooltip_fields: tooltipFields,
+        breakdown_dataset: breakdownDatasetId ? Number(breakdownDatasetId) : null,
+        breakdown_title: breakdownTitle,
+        group_field: groupField,
+        breakdown_fields: breakdownFields,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Data Source</h3>
+          <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
+        </div>
+        <div className="p-6 space-y-5">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Each widget below can pull from a different one of this project's Datasets
+            tables — or the same one — entirely independently.
+          </p>
+
+          {/* Summary Card */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
+            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Summary Card</h4>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
+              <input value={summaryTitle} onChange={(e) => setSummaryTitle(e.target.value)} placeholder={builtInTitles.summary}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
+              <select value={summaryDatasetId} onChange={(e) => { setSummaryDatasetId(e.target.value); setSummaryFields([]); }}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                <option value="">Select table...</option>
+                {tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              {tables.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Create a table under the Datasets tab first.</p>}
+            </div>
+
+            {summaryTable && (
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Tiles</label>
+                <p className="text-[11px] text-gray-400 mb-2">
+                  Drag <GripVertical size={10} className="inline -mt-0.5" /> to reorder — the top tile is the
+                  big lead number. Click <Star size={10} className="inline -mt-0.5" /> on any other tile to make
+                  it the highlighted one (defaults to the bottom tile if none is starred). E.g. to reproduce Free
+                  Wi-Fi's card: "R10 Site ID" → Count unique values → "Total Active Locations" (top/lead),
+                  "Locality" → Count unique values → "Municipalities", "Province" → Count unique values →
+                  "Total Province", "Barangay" → Count unique values → "Barangays", "AP" → Count rows where
+                  equals "TRUE" → "Total Active APs" (starred/highlighted). Leave empty to just show a row count.
+                </p>
+                <div className="space-y-2">
+                  {summaryFields.map((t, i) => (
+                    <div key={i}
+                      onDragOver={handleTileDragOver}
+                      onDrop={() => handleTileDrop(i)}
+                      className={`flex flex-wrap items-center gap-2 p-2 border rounded-lg transition-colors ${
+                        dragTileIndex === i ? 'border-[#0038A8] opacity-60' : 'border-gray-200 dark:border-gray-700'
+                      }`}>
+                      <span draggable
+                        onDragStart={() => setDragTileIndex(i)}
+                        onDragEnd={() => setDragTileIndex(null)}
+                        className="cursor-grab active:cursor-grabbing shrink-0" title="Drag to reorder">
+                        <GripVertical size={14} className="text-gray-400" />
+                      </span>
+                      <select value={t.field} disabled={t.agg === 'count'} onChange={(e) => updateSummaryTile(i, { field: e.target.value })}
+                        className="flex-1 min-w-[110px] px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800 disabled:opacity-40">
+                        <option value="">Select column...</option>
+                        {summaryTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
+                      </select>
+                      <select value={t.agg} onChange={(e) => updateSummaryTile(i, { agg: e.target.value })}
+                        className="px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800">
+                        <option value="distinct">Count unique values</option>
+                        <option value="count_equals">Count rows where equals...</option>
+                        <option value="sum">Sum values</option>
+                        <option value="count">Count all rows</option>
+                      </select>
+                      {t.agg === 'count_equals' && (
+                        <input value={t.equals || ''} onChange={(e) => updateSummaryTile(i, { equals: e.target.value })}
+                          placeholder="e.g. TRUE" className="w-20 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                      )}
+                      <input value={t.label || ''} onChange={(e) => updateSummaryTile(i, { label: e.target.value })}
+                        placeholder="Tile label" className="w-28 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                      {i > 0 && (
+                        <button type="button" onClick={() => setHighlightTile(i)} title="Make this the highlighted tile"
+                          className={`shrink-0 ${t.highlight ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'}`}>
+                          <Star size={16} fill={t.highlight ? 'currentColor' : 'none'} />
+                        </button>
+                      )}
+                      <button type="button" onClick={() => removeSummaryTile(i)} className="text-gray-400 hover:text-red-500 shrink-0">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={addSummaryTile}
+                    className="text-xs font-medium text-[#0038A8] dark:text-blue-400 hover:underline">
+                    + Add tile
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Map */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
+            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Map</h4>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
+              <input value={mapTitle} onChange={(e) => setMapTitle(e.target.value)} placeholder={builtInTitles.map}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
+              <select value={mapDatasetId}
+                onChange={(e) => { setMapDatasetId(e.target.value); setLatField(''); setLngField(''); setCombinedCoords(false); setTooltipFields([]); }}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                <option value="">Select table...</option>
+                {tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              {tables.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Create a table under the Datasets tab first.</p>}
+            </div>
+
+            {mapTable && (
+              <>
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 cursor-pointer">
+                    <input type="checkbox" checked={combinedCoords}
+                      onChange={(e) => { setCombinedCoords(e.target.checked); setLngField(''); }}
+                      className="rounded" />
+                    Coordinates are stored in a single column (e.g. "8.486735683, 124.6322367")
+                  </label>
+
+                  {combinedCoords ? (
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Coordinates column</label>
+                      <select value={latField} onChange={(e) => setLatField(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                        <option value="">None</option>
+                        {mapTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
+                      </select>
+                      <p className="text-[11px] text-gray-400 mt-1">Value should be "latitude, longitude" — e.g. 8.486735683, 124.6322367</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Latitude column</label>
+                        <select value={latField} onChange={(e) => setLatField(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                          <option value="">None</option>
+                          {mapTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Longitude column</label>
+                        <select value={lngField} onChange={(e) => setLngField(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                          <option value="">None</option>
+                          {mapTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Hover tooltip <span className="text-gray-400">(columns shown when hovering a dot)</span>
+                  </label>
+                  {mapTableFields.length === 0 ? (
+                    <p className="text-xs text-gray-400">No columns on this table yet.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {mapTableFields.map(f => (
+                        <button key={f.id} type="button" onClick={() => toggleTooltipField(f.name)}
+                          className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                            tooltipFields.includes(f.name) ? 'bg-[#0038A8] text-white border-[#0038A8]' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                          }`}>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {tooltipFields.length === 0 ? "No fields selected — dots won't show a hover tooltip." : 'Shown in the order clicked.'}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Breakdown */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
+            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Breakdown</h4>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
+              <input value={breakdownTitle} onChange={(e) => setBreakdownTitle(e.target.value)} placeholder={builtInTitles['province-breakdown']}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
+              <select value={breakdownDatasetId}
+                onChange={(e) => { setBreakdownDatasetId(e.target.value); setGroupField(''); setBreakdownFields([]); }}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                <option value="">Select table...</option>
+                {tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              {tables.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Create a table under the Datasets tab first.</p>}
+            </div>
+
+            {breakdownTable && (
+              <>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">"Group by" column</label>
+                  <select value={groupField} onChange={(e) => setGroupField(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                    <option value="">None</option>
+                    {breakdownTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Raw-data columns <span className="text-gray-400">(shown when a group row is clicked)</span>
+                  </label>
+                  {breakdownTableFields.length === 0 ? (
+                    <p className="text-xs text-gray-400">No columns on this table yet.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {breakdownTableFields.map(f => (
+                        <button key={f.id} type="button" onClick={() => toggleBreakdownField(f.name)}
+                          className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                            breakdownFields.includes(f.name) ? 'bg-[#0038A8] text-white border-[#0038A8]' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                          }`}>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {breakdownFields.length === 0 ? 'None selected — every column will be shown.' : 'Shown in the order clicked.'}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving}
+              className="flex-1 px-4 py-2.5 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] disabled:opacity-50">
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={onClose} className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function FreeWifiCharts({ slug = 'free-wifi' }) {
+  // Free Wi-Fi's own FreeWifiLiveData/MainData/TargetData/MasterlistData/ChartConfig/
+  // KmsSettings-based fixed data source has been removed — it now goes through the
+  // exact same tagged-dataset path (ProjectChartConfig/ProjectChartSource) as every
+  // other project, via 'free-wifi' being just another entry in PROJECT_DATASET_ROW_MODELS
+  // on the backend. This is permanently false (not `slug === 'free-wifi'`) so every branch
+  // below that used to special-case Free Wi-Fi now takes the generic path instead — those
+  // branches (and the getFreeWifi*/services/freewifi(Data).js imports they call) are dead
+  // code kept only because other, still-live code in this file references the same
+  // variables; harmless since they can no longer execute.
+  const isFreeWifi = false;
+
   const [summary, setSummary] = useState(null);
   // Every dataset a built-in chart could be pointed at; 'live' stays the default and is
   // what custom charts (unaffected by this feature) keep using via the `sites` alias below.
+  // Non-Free-Wi-Fi projects have one entry per built-in ('summary'/'map'/'breakdown') since
+  // each can now be tagged to a different table — see chartSource's *_dataset fields.
   const [datasets, setDatasets] = useState({ live: [], main: [], target: [], masterlist: [] });
-  const sites = datasets.live;
+  const sites = isFreeWifi ? datasets.live : [];
+  const summarySites = datasets.summary || [];
+  const mapSites = datasets.map || [];
+  const breakdownSites = datasets.breakdown || [];
   const [loading, setLoading] = useState(true);
   const [dragIndex, setDragIndex] = useState(null);
-  // Chart-level search bar for the Province Breakdown built-in — filters which
-  // provinces show up and seeds each one's own search box (see ProvinceBreakdown).
+  // General search bar for the Breakdown built-in — matches a group's own label AND any
+  // row's value in the selected "Breakdown raw-data columns", so a group whose name
+  // doesn't match still shows up (and its raw-data table pre-filters to just the matching
+  // rows) if something inside it does.
   const [provinceSearch, setProvinceSearch] = useState('');
+  // Non-Free-Wi-Fi only: clicking a Breakdown row narrows the Map to that group's dots
+  // (cleared via the "Clear filter"/"Show all" chip on either widget) and expands an
+  // inline raw-data table under the Breakdown list, scoped to the same rows — just
+  // pagination state, since the search above already covers its content.
+  const [breakdownFilter, setBreakdownFilter] = useState(null);
+  const [rawDataPage, setRawDataPage] = useState(1);
 
-  // All charts in a single ordered list, deduped against stale saved state
+  // Non-Free-Wi-Fi only: this project's office id, its own Datasets-tab tables, and the
+  // "which table (+ which of its columns) feeds the built-ins" tagging (ProjectChartSource) —
+  // the generic equivalent of Free Wi-Fi's per-built-in DATA_SOURCES + KmsSettings fields.
+  const [officeId, setOfficeId] = useState(null);
+  const [genericTables, setGenericTables] = useState([]);
+  const [chartSource, setChartSource] = useState(null);
+  const [showDataSourceModal, setShowDataSourceModal] = useState(false);
+
+  const recordsByDataset = useMemo(() => {
+    const map = {};
+    genericTables.forEach((t) => { map[t.id] = (t.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) })); });
+    return map;
+  }, [genericTables]);
+
+  // Field list for the custom-chart builder: Free Wi-Fi's fixed list, or whichever table
+  // a given chart is pointed at (each project can have several Datasets tables, unlike
+  // Free Wi-Fi where custom charts implicitly always read Live Sites).
+  const availableFieldsFor = (datasetId) => {
+    if (isFreeWifi) return FREEWIFI_AVAILABLE_FIELDS;
+    const table = genericTables.find((t) => t.id === Number(datasetId));
+    return (table?.fields || []).map((f) => ({ value: f.name, label: f.label }));
+  };
+
+  // All charts in a single ordered list, deduped against stale saved state. Free Wi-Fi
+  // seeds from its per-browser cache first (then reconciles with the backend below);
+  // other projects always load fresh from the backend, so they start empty here.
   const [allCharts, setAllCharts] = useState(() => {
+    if (!isFreeWifi) return sanitizeCharts([]);
     try {
       const saved = localStorage.getItem('freewifi_all_charts');
       if (saved) return sanitizeCharts(JSON.parse(saved));
@@ -1296,39 +1825,65 @@ export default function FreeWifiCharts() {
   const [showAddChart, setShowAddChart] = useState(false);
   const [editingChart, setEditingChart] = useState(null);
   const [savingChart, setSavingChart] = useState(false);
-  const [newChart, setNewChart] = useState({ title: '', field: 'province', secondaryField: '', chartType: 'bar-horizontal', gridSize: 'full', showOnUser: true, showAllCategories: false });
+  const [newChart, setNewChart] = useState({
+    title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal',
+    gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '',
+  });
 
-  // Summary card appearance — published setting, same one the public page reads. The editing
-  // draft lives inside SummaryStyleModal itself (isolated re-renders while picking colors),
-  // so this is only ever the applied/saved value that drives the real chart.
+  // Summary card appearance — published setting, same one the public page reads (Free
+  // Wi-Fi only; other projects' equivalent lives on chartSource, no public page to match).
   const [summaryStyle, setSummaryStyle] = useState(DEFAULT_SUMMARY_STYLE);
   const [showSummaryStyle, setShowSummaryStyle] = useState(false);
   const [savingSummaryStyle, setSavingSummaryStyle] = useState(false);
 
   useEffect(() => {
+    if (isFreeWifi) {
+      Promise.all([
+        getFreeWifiSummary(),
+        getFreeWifiLiveData(),
+        getFreeWifiMainData().catch(() => []),
+        getFreeWifiTargetData().catch(() => []),
+        getFreeWifiMasterlistData().catch(() => []),
+      ])
+        .then(([s, live, main, target, masterlist]) => {
+          setSummary(s);
+          setDatasets({ live, main, target, masterlist: masterlist.map(normalizeMasterlistRecord) });
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+      return;
+    }
     Promise.all([
-      getFreeWifiSummary(),
-      getFreeWifiLiveData(),
-      getFreeWifiMainData().catch(() => []),
-      getFreeWifiTargetData().catch(() => []),
-      getFreeWifiMasterlistData().catch(() => []),
+      getProjectOfficeId(slug), getProjectDatasets(slug), getProjectChartSource(slug), getProjectChartConfigs(slug),
     ])
-      .then(([s, live, main, target, masterlist]) => {
-        setSummary(s);
-        setDatasets({ live, main, target, masterlist: masterlist.map(normalizeMasterlistRecord) });
+      .then(([id, tables, source, configs]) => {
+        setOfficeId(id);
+        setGenericTables(tables);
+        setChartSource(source);
+        setDatasets(buildTaggedRecords(tables, source));
+        setAllCharts(sanitizeCharts(configs.map(chartConfigFromBackend)));
+        setSummaryStyle({
+          colorFrom: source.color_from || '#0038A8',
+          colorTo: source.color_to || '#0055f1',
+          orientation: source.orientation || 'row',
+          accentColor: source.accent_color || '#FCD116',
+        });
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [slug]);
 
   useEffect(() => {
+    if (!isFreeWifi) return;
     localStorage.setItem('freewifi_all_charts', JSON.stringify(allCharts));
-  }, [allCharts]);
+  }, [allCharts, isFreeWifi]);
 
   // Reconcile with the backend: bring in charts created elsewhere (another browser/
   // session), and refresh ones already known here. Legacy local-only charts (string ids,
-  // predating server sync) are left alone until the admin re-saves them.
+  // predating server sync) are left alone until the admin re-saves them. Free Wi-Fi only —
+  // other projects already loaded fresh from the backend above, nothing to reconcile.
   useEffect(() => {
+    if (!isFreeWifi) return;
     getFreeWifiChartConfigs().then(configs => {
       setAllCharts(prev => {
         const merged = [...prev];
@@ -1340,11 +1895,13 @@ export default function FreeWifiCharts() {
         return sanitizeCharts(merged);
       });
     }).catch(console.error);
-  }, []);
+  }, [isFreeWifi]);
 
   // Pull in the published data-source setting for each built-in, so this admin's own
   // view matches whatever was last set (possibly from a different browser/session).
+  // Free Wi-Fi only — other projects' equivalent (chartSource) was already loaded above.
   useEffect(() => {
+    if (!isFreeWifi) return;
     getKmsSettings().then(settings => {
       setAllCharts(prev => prev.map(c => {
         const field = BUILTIN_SOURCE_SETTING[c.id];
@@ -1359,16 +1916,20 @@ export default function FreeWifiCharts() {
     }).catch(console.error);
   }, []);
 
-  // Distinct value count per field — drives chart-type recommendations
+  // Distinct value count per field — drives chart-type recommendations. Free Wi-Fi
+  // always counts against `sites`; other projects count against whichever table the
+  // chart being added/edited is currently pointed at.
   const fieldCardinality = useMemo(() => {
     const map = {};
-    AVAILABLE_FIELDS.forEach(f => {
+    const fields = isFreeWifi ? FREEWIFI_AVAILABLE_FIELDS : availableFieldsFor(newChart.dataset);
+    const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
+    fields.forEach(f => {
       const values = new Set();
-      sites.forEach(s => values.add(s[f.value] || 'N/A'));
+      records.forEach(s => values.add(s[f.value] ?? 'N/A'));
       map[f.value] = values.size;
     });
     return map;
-  }, [sites]);
+  }, [sites, isFreeWifi, newChart.dataset, recordsByDataset, genericTables]);
 
   // Custom charts are persisted server-side (FreeWifiChartConfig) so the public Free Wi-Fi
   // page can show them too. A chart with a numeric id is already backend-synced — anything
@@ -1376,15 +1937,19 @@ export default function FreeWifiCharts() {
   // there yet, so saving it now creates it for the first time rather than updating.
   const handleAddChart = async () => {
     if (!newChart.title.trim()) return alert('Title is required');
+    if (!isFreeWifi && !newChart.dataset) return alert('Choose a table first');
     const dup = allCharts.find(c => c.type === 'custom' && c.id !== editingChart?.id && chartSignature(c) === chartSignature(newChart));
     if (dup) return alert(`A chart with the same type and field already exists: "${dup.title}"`);
     setSavingChart(true);
     try {
       const isBackedChart = editingChart && typeof editingChart.id === 'number';
-      const payload = chartConfigToBackend(newChart);
-      const saved = isBackedChart
-        ? await updateFreeWifiChartConfig(editingChart.id, payload)
-        : await createFreeWifiChartConfig(payload);
+      const payload = {
+        ...chartConfigToBackend(newChart),
+        ...(isFreeWifi ? {} : { dataset: Number(newChart.dataset), ...(isBackedChart ? {} : { office: officeId, order: allCharts.length }) }),
+      };
+      const saved = isFreeWifi
+        ? (isBackedChart ? await updateFreeWifiChartConfig(editingChart.id, payload) : await createFreeWifiChartConfig(payload))
+        : (isBackedChart ? await updateProjectChartConfig(editingChart.id, payload) : await createProjectChartConfig(payload));
       const chart = chartConfigFromBackend(saved);
       if (editingChart) {
         setAllCharts(prev => prev.map(c => c.id === editingChart.id ? chart : c));
@@ -1393,7 +1958,7 @@ export default function FreeWifiCharts() {
       }
       setShowAddChart(false);
       setEditingChart(null);
-      setNewChart({ title: '', field: 'province', secondaryField: '', chartType: 'bar-horizontal', gridSize: 'full', showOnUser: true, showAllCategories: false });
+      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '' });
     } catch (err) {
       alert(`Save failed: ${err?.response?.data?.detail || err.message}`);
     } finally {
@@ -1405,22 +1970,29 @@ export default function FreeWifiCharts() {
     if (!confirm('Delete this chart?')) return;
     setAllCharts(prev => prev.filter(c => c.id !== id));
     if (typeof id === 'number') {
-      deleteFreeWifiChartConfig(id).catch(() => alert('Failed to delete on the server — it may reappear on next reload.'));
+      const del = isFreeWifi ? deleteFreeWifiChartConfig(id) : deleteProjectChartConfig(id);
+      del.catch(() => alert('Failed to delete on the server — it may reappear on next reload.'));
     }
   };
 
   const toggleVisibility = (id) => {
     setAllCharts(prev => prev.map(c => c.id === id ? { ...c, visible: !c.visible } : c));
+    if (!isFreeWifi && typeof id === 'number') {
+      const chart = allCharts.find(c => c.id === id);
+      updateProjectChartConfig(id, { visible: !chart?.visible }).catch(console.error);
+    }
   };
 
   const toggleUserVisibility = (id) => {
     setAllCharts(prev => prev.map(c => c.id === id ? { ...c, showOnUser: !c.showOnUser } : c));
   };
 
+  // Built-ins' data source. Free Wi-Fi lets each of the 3 built-ins point at a
+  // different one of its 4 fixed tables (published via KmsSettings, read-only on the
+  // public page). Other projects share ONE tagged table across all 3 (ProjectChartSource)
+  // — see the "Data Source" button/modal instead of a per-card picker.
   const setChartDataSource = (id, dataSource) => {
     setAllCharts(prev => prev.map(c => c.id === id ? { ...c, dataSource } : c));
-    // Built-ins' source is a published setting the public page reads read-only —
-    // custom charts don't have a source picker at all, so this only ever fires for built-ins.
     const settingField = BUILTIN_SOURCE_SETTING[id];
     if (settingField) {
       updateKmsSettings({ [settingField]: dataSource }).catch(console.error);
@@ -1430,12 +2002,19 @@ export default function FreeWifiCharts() {
   const handleSaveSummaryStyle = async (draft) => {
     setSavingSummaryStyle(true);
     try {
-      await updateKmsSettings({
-        freewifi_summary_color_from: draft.colorFrom,
-        freewifi_summary_color_to: draft.colorTo,
-        freewifi_summary_orientation: draft.orientation,
-        freewifi_summary_accent_color: draft.accentColor,
-      });
+      if (isFreeWifi) {
+        await updateKmsSettings({
+          freewifi_summary_color_from: draft.colorFrom,
+          freewifi_summary_color_to: draft.colorTo,
+          freewifi_summary_orientation: draft.orientation,
+          freewifi_summary_accent_color: draft.accentColor,
+        });
+      } else {
+        await updateProjectChartSource(slug, {
+          color_from: draft.colorFrom, color_to: draft.colorTo,
+          orientation: draft.orientation, accent_color: draft.accentColor,
+        });
+      }
       setSummaryStyle(draft);
       setShowSummaryStyle(false);
     } catch (err) {
@@ -1453,6 +2032,13 @@ export default function FreeWifiCharts() {
       const arr = [...prev];
       const [moved] = arr.splice(dragIndex, 1);
       arr.splice(dropIndex, 0, moved);
+      // Free Wi-Fi's order is a per-browser (localStorage) concept only — see the effect
+      // above. Other projects have no such fallback, so persist custom charts' relative
+      // order to the backend here (built-ins have no order of their own to save).
+      if (!isFreeWifi) {
+        const customOrder = arr.filter(c => c.type === 'custom').map((c, i) => ({ id: c.id, order: i }));
+        if (customOrder.length) reorderProjectChartConfigs(customOrder).catch(console.error);
+      }
       return arr;
     });
     setDragIndex(null);
@@ -1467,8 +2053,214 @@ export default function FreeWifiCharts() {
 
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  // Built-in titles for non-Free-Wi-Fi projects — the one piece of "premade chart"
+  // customization every project gets even before it tags a data source: renaming what
+  // Summary Card / Map / Breakdown are called. Blank falls back to a generic default.
+  const builtInTitles = {
+    summary: chartSource?.summary_title || 'Summary',
+    map: chartSource?.map_title || 'Map',
+    'province-breakdown': chartSource?.breakdown_title || 'Breakdown',
+  };
+
+  // The raw-data table for whichever Breakdown group is expanded — rendered inline right
+  // under that group's own row (accordion-style), not floated in a modal or shared at the
+  // bottom of the list. `query` is the general Breakdown search bar's value: if the group
+  // itself matched the query by its label, every row shows (searching "Bukidnon" should
+  // show all of Bukidnon); otherwise only rows whose own fields match it do (the group
+  // only qualified to be listed because something inside it matched).
+  const renderBreakdownRawData = (group, groupField, records, fieldDefs, query) => {
+    const groupRows = records.filter(r => (r[groupField] || 'N/A') === group);
+    const groupLabelMatches = query && group.toLowerCase().includes(query);
+    const filteredRows = !query || groupLabelMatches
+      ? groupRows
+      : groupRows.filter(r => fieldDefs.some(f => String(r[f.name] ?? '').toLowerCase().includes(query)));
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / RAW_DATA_PAGE_SIZE));
+    const page = Math.min(rawDataPage, totalPages);
+    const pageRows = filteredRows.slice((page - 1) * RAW_DATA_PAGE_SIZE, page * RAW_DATA_PAGE_SIZE);
+
+    return (
+      <div className="border-t border-gray-200 dark:border-gray-700 p-3">
+        <p className="text-xs text-gray-400 mb-3">
+          {filteredRows.length.toLocaleString()} row{filteredRows.length === 1 ? '' : 's'}
+          {query && !groupLabelMatches ? ` matching "${provinceSearch}"` : ''}
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800/50">
+                {fieldDefs.map(f => (
+                  <th key={f.id} className="text-left py-1.5 px-2 font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">{f.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.length === 0 ? (
+                <tr><td colSpan={fieldDefs.length || 1} className="text-center py-6 text-xs text-gray-400">No matching rows.</td></tr>
+              ) : pageRows.map((r, i) => (
+                <tr key={r.id ?? i} className="border-t border-gray-100 dark:border-gray-800">
+                  {fieldDefs.map(f => (
+                    <td key={f.id} className="py-1.5 px-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">{String(r[f.name] ?? '')}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {totalPages > 1 && (
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-[10px] text-gray-400">Page {page} of {totalPages}</p>
+            <div className="flex gap-1">
+              <button type="button" onClick={() => setRawDataPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="px-2 py-0.5 text-[10px] border rounded disabled:opacity-50">Prev</button>
+              <button type="button" onClick={() => setRawDataPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="px-2 py-0.5 text-[10px] border rounded disabled:opacity-50">Next</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Generic (non-Free-Wi-Fi) built-in rendering — sourced from whichever table + columns
+  // this project tagged via the "Data Source" button (ProjectChartSource), instead of
+  // Free Wi-Fi's fixed province/AP/coordinate fields.
+  const renderGenericBuiltIn = (chartId) => {
+    const source = chartSource || {};
+    switch (chartId) {
+      case 'summary': {
+        const records = summarySites;
+        const taggedFields = genericTables.find(t => t.id === source.summary_dataset)?.fields || [];
+        const tiles = computeSummaryTiles(records, source, taggedFields);
+        return (
+          <div className="rounded-2xl p-8 text-white -m-4" style={{ background: `linear-gradient(135deg, ${summaryStyle.colorFrom}, ${summaryStyle.colorTo})` }}>
+            <div className="flex items-center gap-2 mb-6">
+              <span className="text-sm font-medium text-white/70">SUMMARY</span>
+              <span className="text-sm text-white/50">as of</span>
+              <span className="text-sm font-medium">{today}</span>
+            </div>
+            {renderSummaryCardBody(tiles, summaryStyle)}
+          </div>
+        );
+      }
+      case 'map': {
+        const records = mapSites;
+        const taggedFields = genericTables.find(t => t.id === source.map_dataset)?.fields || [];
+        if (!source.latitude_field || !source.longitude_field) {
+          return <div className="py-16 text-center text-sm text-gray-400">No latitude/longitude columns tagged yet — set them via "Data Source" above.</div>;
+        }
+        const { mapped, tooltipFieldDefs } = resolveMapSites(records, source, taggedFields);
+        // A Breakdown row click sets breakdownFilter — hide every dot that doesn't belong
+        // to that group instead of showing everything.
+        const groupField = source.group_field;
+        const filteredMapped = breakdownFilter && groupField
+          ? mapped.filter(r => (r[groupField] || 'N/A') === breakdownFilter)
+          : mapped;
+        if (!filteredMapped.length) {
+          return (
+            <div className="py-16 text-center text-sm text-gray-400">
+              {breakdownFilter ? (
+                <>No coordinate data for "{breakdownFilter}". <button type="button" onClick={() => setBreakdownFilter(null)} className="text-[#0038A8] dark:text-blue-400 hover:underline">Show all</button></>
+              ) : 'No coordinate data available in this table.'}
+            </div>
+          );
+        }
+        return (
+          <div>
+            {breakdownFilter && (
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Showing <strong className="text-gray-700 dark:text-gray-300">{breakdownFilter}</strong> only ({filteredMapped.length.toLocaleString()} of {mapped.length.toLocaleString()})
+                </span>
+                <button type="button" onClick={() => setBreakdownFilter(null)}
+                  className="text-xs font-medium text-[#0038A8] dark:text-blue-400 hover:underline">
+                  Show all
+                </button>
+              </div>
+            )}
+            <div className="-m-4"><FreeWifiMap sites={filteredMapped} totalAPs={filteredMapped.length} height="500px" tooltipFields={tooltipFieldDefs} /></div>
+          </div>
+        );
+      }
+      case 'province-breakdown': {
+        if (!source.group_field) {
+          return <div className="py-16 text-center text-sm text-gray-400">No "group by" column tagged yet — set one via "Data Source" above.</div>;
+        }
+        const records = breakdownSites;
+        const taggedFields = genericTables.find(t => t.id === source.breakdown_dataset)?.fields || [];
+        const groupField = source.group_field;
+        // Columns for the raw-data table — from "Breakdown raw-data columns" in Data
+        // Source, or every tagged column if none were picked. Computed before `entries` so
+        // the search below can also match against them, not just each group's own label.
+        const rawDataFieldDefs = (source.breakdown_fields || []).length
+          ? source.breakdown_fields.map(name => taggedFields.find(f => f.name === name)).filter(Boolean)
+          : taggedFields;
+        const rowsByGroup = {};
+        records.forEach(r => {
+          const key = r[groupField] || 'N/A';
+          (rowsByGroup[key] = rowsByGroup[key] || []).push(r);
+        });
+        const maxCount = Math.max(...Object.values(rowsByGroup).map(rows => rows.length), 1);
+        const query = provinceSearch.trim().toLowerCase();
+        const entries = Object.entries(rowsByGroup)
+          .filter(([group, rows]) => !query
+            || group.toLowerCase().includes(query)
+            || rows.some(r => rawDataFieldDefs.some(f => String(r[f.name] ?? '').toLowerCase().includes(query))))
+          .map(([group, rows]) => [group, rows.length])
+          .sort((a, b) => b[1] - a[1]);
+        const groupLabel = taggedFields.find(f => f.name === groupField)?.label || groupField;
+        // Clicking a row's own header toggles it open/closed (accordion — only one group
+        // expanded at a time, matching how the Map filter already works).
+        const toggleGroup = (group) => {
+          if (breakdownFilter === group) {
+            setBreakdownFilter(null);
+          } else {
+            setBreakdownFilter(group);
+            setRawDataPage(1);
+          }
+        };
+
+        return (
+          <div className="space-y-3">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input type="text" placeholder={`Search by ${groupLabel} or raw data...`}
+                value={provinceSearch} onChange={(e) => { setProvinceSearch(e.target.value); setRawDataPage(1); }}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" />
+            </div>
+            {query && entries.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-4">No matches for "{provinceSearch}"</p>
+            )}
+            {entries.map(([group, count]) => {
+              const isActive = breakdownFilter === group;
+              return (
+                <div key={group} className={`border rounded-xl overflow-hidden transition-colors ${
+                  isActive ? 'border-[#0038A8]' : 'border-gray-200 dark:border-gray-700'
+                }`}>
+                  <button type="button" onClick={() => toggleGroup(group)}
+                    title="View raw data and filter the Map to this group"
+                    className="w-full flex items-center gap-4 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <span className="text-left font-medium text-gray-900 dark:text-white w-[200px] truncate">{group}</span>
+                    <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-[#0038A8]" style={{ width: `${(count / maxCount) * 100}%` }} />
+                    </div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 w-20 text-right shrink-0">{count} rows</span>
+                    {isActive ? <ChevronDown size={18} className="text-gray-400 shrink-0" /> : <ChevronRight size={18} className="text-gray-400 shrink-0" />}
+                  </button>
+                  {isActive && renderBreakdownRawData(group, groupField, records, rawDataFieldDefs, query)}
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+      default:
+        return null;
+    }
+  };
+
   // Render built-in chart content
   const renderBuiltIn = (chartId, dataSource = 'live') => {
+    if (!isFreeWifi) return renderGenericBuiltIn(chartId);
     const records = datasets[dataSource] || [];
     const sourceLabel = DATA_SOURCES.find(s => s.id === dataSource)?.label;
     switch (chartId) {
@@ -1547,11 +2339,39 @@ export default function FreeWifiCharts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Charts</h2>
-        <button onClick={() => setShowAddChart(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52]">
-          <Plus size={16} /> Add Custom Chart
-        </button>
+        <div className="flex items-center gap-2">
+          {!isFreeWifi && (
+            <button onClick={() => setShowDataSourceModal(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:border-[#0038A8]">
+              <Database size={16} />
+              {(chartSource?.summary_dataset || chartSource?.map_dataset || chartSource?.breakdown_dataset) ? 'Data Source' : 'Set Data Source'}
+            </button>
+          )}
+          <button onClick={() => setShowAddChart(true)} disabled={!isFreeWifi && genericTables.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] disabled:opacity-50">
+            <Plus size={16} /> Add Custom Chart
+          </button>
+        </div>
       </div>
+
+      {!isFreeWifi && showDataSourceModal && (
+        <DataSourceModal
+          tables={genericTables}
+          initial={chartSource}
+          builtInTitles={builtInTitles}
+          onClose={() => setShowDataSourceModal(false)}
+          onSave={async (draft) => {
+            try {
+              const saved = await updateProjectChartSource(slug, draft);
+              setChartSource(saved);
+              setDatasets(buildTaggedRecords(genericTables, saved));
+              setShowDataSourceModal(false);
+            } catch (err) {
+              alert(`Save failed: ${err?.response?.data?.detail || err.message}`);
+            }
+          }}
+        />
+      )}
 
       {/* Add/Edit Chart Modal */}
       {showAddChart && (
@@ -1634,25 +2454,38 @@ export default function FreeWifiCharts() {
                 );
               })()}
 
+              {!isFreeWifi && (
+                <div className="mb-4">
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
+                  <select value={newChart.dataset}
+                    onChange={(e) => setNewChart(c => ({ ...c, dataset: e.target.value, field: '', secondaryField: '' }))}
+                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
+                    <option value="">Select table...</option>
+                    {genericTables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Chart Title</label>
                 <input placeholder="e.g. Sites by Contract" value={newChart.title}
                   onChange={(e) => setNewChart(c => ({ ...c, title: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
               </div>
-              
+
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
                   Data Field {CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary ? '(Primary)' : ''}
                 </label>
-                <select value={newChart.field}
+                <select value={newChart.field} disabled={!isFreeWifi && !newChart.dataset}
                   onChange={(e) => {
                     const field = e.target.value;
                     const count = fieldCardinality[field] || 0;
                     setNewChart(c => ({ ...c, field, chartType: bestChartType(count, c.chartType) }));
                   }}
-                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                  {AVAILABLE_FIELDS.map(f => (
+                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 disabled:opacity-50">
+                  {!isFreeWifi && <option value="">Select field...</option>}
+                  {availableFieldsFor(newChart.dataset).map(f => (
                     <option key={f.value} value={f.value}>
                       {f.label} ({fieldCardinality[f.value] || 0} {(fieldCardinality[f.value] || 0) === 1 ? 'value' : 'values'})
                     </option>
@@ -1669,7 +2502,7 @@ export default function FreeWifiCharts() {
                   <select value={newChart.secondaryField} onChange={(e) => setNewChart(c => ({ ...c, secondaryField: e.target.value }))}
                     className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
                     <option value="">None</option>
-                    {AVAILABLE_FIELDS.filter(f => f.value !== newChart.field).map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    {availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                   </select>
                 </div>
               )}
@@ -1682,17 +2515,17 @@ export default function FreeWifiCharts() {
                     {GRID_SIZES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
                 </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={newChart.showOnUser}
-                      onChange={(e) => setNewChart(c => ({ ...c, showOnUser: e.target.checked }))}
-                      className="rounded border-gray-300" />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">Show on Dashboard</span>
-                  </label>
-                </div>
+                {isFreeWifi && (
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={newChart.showOnUser}
+                        onChange={(e) => setNewChart(c => ({ ...c, showOnUser: e.target.checked }))}
+                        className="rounded border-gray-300" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">Show on Dashboard</span>
+                    </label>
+                  </div>
+                )}
               </div>
-
-          
 
               <div className="flex gap-2">
                 <button onClick={handleAddChart} disabled={savingChart}
@@ -1715,7 +2548,7 @@ export default function FreeWifiCharts() {
                   </h4>
                   <CustomChartRenderer
                     chart={{ ...newChart, id: 'preview' }}
-                    sites={sites}
+                    sites={isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || [])}
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 mt-3 text-center">
@@ -1732,17 +2565,34 @@ export default function FreeWifiCharts() {
         <SummaryStyleModal
           initialStyle={summaryStyle}
           saving={savingSummaryStyle}
-          today={today}
-          previewStats={summary?.overall ? {
-            total_locations: summary.overall.total_locations || 0,
-            municipalities_count: summary.overall.municipalities_count || 0,
-            provinces_count: summary.overall.provinces_count || 0,
-            barangays_count: summary.overall.barangays_count || 0,
-            total_active_aps: summary.overall.total_sites || 0,
-            hasApField: true,
-          } : null}
           onSave={handleSaveSummaryStyle}
           onClose={() => setShowSummaryStyle(false)}
+          renderPreview={(draft) => isFreeWifi ? (
+            <SummaryCard
+              stats={summary?.overall ? {
+                total_locations: summary.overall.total_locations || 0,
+                municipalities_count: summary.overall.municipalities_count || 0,
+                provinces_count: summary.overall.provinces_count || 0,
+                barangays_count: summary.overall.barangays_count || 0,
+                total_active_aps: summary.overall.total_sites || 0,
+                hasApField: true,
+              } : null}
+              today={today} sourceLabel="Live Sites"
+              colorFrom={draft.colorFrom} colorTo={draft.colorTo} orientation={draft.orientation} accentColor={draft.accentColor}
+            />
+          ) : (
+            <div className="rounded-2xl p-8 text-white" style={{ background: `linear-gradient(135deg, ${draft.colorFrom}, ${draft.colorTo})` }}>
+              <div className="flex items-center gap-2 mb-6">
+                <span className="text-sm font-medium text-white/70">SUMMARY</span>
+                <span className="text-sm text-white/50">as of</span>
+                <span className="text-sm font-medium">{today}</span>
+              </div>
+              {renderSummaryCardBody(
+                computeSummaryTiles(summarySites, chartSource, genericTables.find(t => t.id === chartSource?.summary_dataset)?.fields || []),
+                draft
+              )}
+            </div>
+          )}
         />
       )}
 
@@ -1762,25 +2612,25 @@ export default function FreeWifiCharts() {
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
                 isDragging={dragIndex === index}
-                title={chart.label || chart.title}
+                title={isCustom ? chart.title : (isFreeWifi ? chart.label : builtInTitles[chart.id])}
                 subtitle={
                   isHidden ? 'Hidden - Click eye to show' :
-                  isCustom ? `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${AVAILABLE_FIELDS.find(f => f.value === chart.field)?.label}` : undefined
+                  isCustom ? `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label}` : undefined
                 }
                 isCustom={isCustom}
                 showOnUser={chart.showOnUser}
                 onEdit={isCustom ? () => {
-                  setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false });
+                  setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '' });
                   setEditingChart(chart);
                   setShowAddChart(true);
                 } : chart.id === 'summary' ? () => setShowSummaryStyle(true) : undefined}
                 onDelete={isCustom ? () => handleDeleteChart(chart.id) : undefined}
                 onToggleVisibility={() => toggleVisibility(chart.id)}
-                dataSource={!isCustom ? (chart.dataSource || 'live') : undefined}
-                onDataSourceChange={!isCustom ? (ds) => setChartDataSource(chart.id, ds) : undefined}
+                dataSource={isFreeWifi && !isCustom ? (chart.dataSource || 'live') : undefined}
+                onDataSourceChange={isFreeWifi && !isCustom ? (ds) => setChartDataSource(chart.id, ds) : undefined}
               >
                 {isCustom ? (
-                  <CustomChartRenderer chart={chart} sites={sites} />
+                  <CustomChartRenderer chart={chart} sites={isFreeWifi ? sites : (recordsByDataset[chart.dataset] || [])} />
                 ) : (
                   renderBuiltIn(chart.id, chart.dataSource || 'live')
                 )}

@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView, useMotionValue, useTransform, animate } from 'framer-motion';
-import { ChevronRight, FolderKanban, LayoutDashboard, MapPin, Building2 } from 'lucide-react';
+import { ChevronRight, FolderKanban, LayoutDashboard, MapPin, Building2, ShieldAlert } from 'lucide-react';
 import Carousel from '../components/Carousel';
 import HeroSlider from '../components/HeroSlider';
 import Accomplishments from '../components/Accomplishments';
@@ -17,7 +17,7 @@ import logoNBP from '../assets/project-logo/NBP.png';
 import logoeLGU from '../assets/project-logo/eLGU Logo.png';
 import logoIIDB from '../assets/project-logo/IIDB.png';
 import logoNIPPSB from '../assets/project-logo/NIPPSB.png';
-
+import logoDRRM from '../assets/project-logo/drrm.png';
 const PROJECTS = [
   {
     logo: logoFreeWifi,
@@ -75,6 +75,13 @@ const PROJECTS = [
     path: '/kms/projects/nippsb',
     accent: 'bg-[#1E477F]',
   },
+  {
+    logo: logoDRRM,
+    title: 'DRRM',
+    description: 'Disaster Risk Reduction and Management program dashboard.',
+    path: '/kms/projects/drrm',
+    accent: 'bg-[#CE1126]',
+  },
 ];
 
 const container = {
@@ -88,8 +95,8 @@ const card = {
 };
 
 const STATS = [
-  { label: 'Active Projects', value: '8', icon: FolderKanban },
-  { label: 'Dashboards', value: '8', icon: LayoutDashboard },
+  { label: 'Active Projects', value: '9', icon: FolderKanban },
+  { label: 'Dashboards', value: '9', icon: LayoutDashboard },
   { label: 'Region', value: '10', icon: MapPin },
   { label: 'Province Coverage', value: '7', icon: Building2 },
 ];
@@ -192,7 +199,7 @@ export default function Home() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {PROJECTS.map((project) => {
               const darkCard = 'dark:bg-card dark:border-border dark:text-card-foreground dark:hover:border-primary/50 dark:hover:shadow-[0_8px_30px_rgba(44,90,255,0.15)] bg-white border-gray-200 text-gray-800 shadow-sm';
@@ -208,11 +215,18 @@ export default function Home() {
                     {console.log(project.accent)}
                     {/* Logo banner */}
                     <div className="flex items-center justify-center h-28 relative overflow-hidden bg-slate-50 dark:bg-white p-6">
-                      <img
-                        src={project.logo}
-                        alt={project.title}
-                        className="max-h-14 max-w-[65%] object-contain relative z-10 group-hover:scale-105 transition-transform duration-500"
-                      />
+                      {project.logo ? (
+                        <img
+                          src={project.logo}
+                          alt={project.title}
+                          className="max-h-14 max-w-[65%] object-contain relative z-10 group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <project.icon
+                          size={44}
+                          className="text-[#0038A8] relative z-10 group-hover:scale-105 transition-transform duration-500"
+                        />
+                      )}
                     </div>
                     <div className="p-5 flex-1 flex flex-col">
                       <h3 className="font-bold text-lg leading-tight mb-2 dark:text-foreground group-hover:text-primary transition-colors">{project.title}</h3>

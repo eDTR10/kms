@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 import { Wifi, Search } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -24,6 +24,10 @@ export const PROVINCE_COLORS = {
 };
 
 const REGION_10_CENTER = [8.35, 124.65];
+// Bigger than Leaflet's old default (4px) so a dot is easy to hit with the mouse; grows
+// further on hover so it's obvious it's being targeted.
+const MAP_DOT_RADIUS = 6;
+const MAP_DOT_HOVER_RADIUS = 10;
 
 const selectStyles = {
   control: (base, state) => ({
@@ -59,7 +63,10 @@ function FitBounds({ sites }) {
   return null;
 }
 
-export default function FreeWifiMap({ sites, totalAPs, showFilters = true, height = '500px' }) {
+// `tooltipFields`: [{ name, label }, ...] — which of a site's own columns to show when
+// hovering its dot, and in what order. Admin-configurable per project via "Data Source".
+// Empty (the default) means no hover tooltip at all.
+export default function FreeWifiMap({ sites, totalAPs, showFilters = true, height = '500px', tooltipFields = [] }) {
   const [search, setSearch] = useState('');
   const [selectedProvinces, setSelectedProvinces] = useState([]);
   const [selectedDistricts, setSelectedDistricts] = useState([]);
@@ -235,26 +242,37 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
           <FitBounds sites={filteredSites} />
 
-          {filteredSites.map((site) => (
+          {filteredSites.map((site, i) => (
             <CircleMarker
-              key={site.id || site.r10_site_id}
+              // `id` is the row's real database id — falls back to r10_site_id + index
+              // since that alone isn't unique (one site can have several AP rows). A
+              // duplicate key here made React reconcile markers incorrectly on filter
+              // changes, leaving stale "ghost" dots from before the filter was applied.
+              key={site.id ?? `${site.r10_site_id || 'row'}-${i}`}
               center={[site.latitude, site.longitude]}
-              radius={4}
+              radius={MAP_DOT_RADIUS}
               pathOptions={{
                 color: PROVINCE_COLORS[site.province] || '#6b7280',
                 fillColor: PROVINCE_COLORS[site.province] || '#6b7280',
                 fillOpacity: 0.7,
                 weight: 1,
               }}
+              eventHandlers={{
+                mouseover: (e) => e.target.setRadius(MAP_DOT_HOVER_RADIUS),
+                mouseout: (e) => e.target.setRadius(MAP_DOT_RADIUS),
+              }}
             >
-              <Popup>
-                <div className="min-w-[200px]">
-                  <h3 className="font-bold text-sm mb-1">{site.site_name}</h3>
-                  <p className="text-xs text-gray-600">{site.r10_site_id} · {site.site_type}</p>
-                  <p className="text-xs text-gray-600">{site.province} · {site.district}</p>
-                  <p className="text-xs text-gray-600">{site.locality}, {site.barangay}</p>
-                </div>
-              </Popup>
+              {tooltipFields.length > 0 && (
+                <Tooltip direction="top" offset={[0, -4]} opacity={1}>
+                  <div className="min-w-[160px]">
+                    {tooltipFields.map(f => (
+                      <p key={f.name} className="text-xs text-gray-700 leading-snug">
+                        <span className="font-semibold">{f.label}:</span> {String(site[f.name] ?? '—')}
+                      </p>
+                    ))}
+                  </div>
+                </Tooltip>
+              )}
             </CircleMarker>
           ))}
         </MapContainer>
