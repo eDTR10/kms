@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Award, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, X, ArrowRight } from 'lucide-react';
 import { getAwards } from '../services/awards';
 import { getKmsSettings } from '../services/settings';
 
@@ -203,33 +204,41 @@ function AwardLightbox({ items, index, onClose, onNext, onPrev }) {
   );
 }
 
-export default function Awards() {
+// `limit`: cap how many render (the homepage teaser); omit for the full /kms/awards
+// page. When a cap actually hides some awards, a "View All Awards" link appears below
+// the grid — every one of the 8 view styles below renders from `displayItems`, so the
+// cap/link apply uniformly regardless of which style is active.
+// `hideInactive`: the admin's hide toggle (active === false) is a "leave it off the
+// homepage teaser" flag, not a full unpublish — the dedicated /kms/awards page is the
+// complete archive and always shows everything, so it passes hideInactive={false}.
+export default function Awards({ limit, hideInactive = true } = {}) {
   const [items, setItems] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [viewMode, setViewMode] = useState('cards');
 
   useEffect(() => {
     // Cover image for thumbnails: first MOV image if any, else the legacy single
-    // `image` field (old records saved before the MOV gallery existed). Awards
-    // hidden by the admin (active === false) never reach the public site at all.
+    // `image` field (old records saved before the MOV gallery existed).
     getAwards().then((data) => setItems(
-      data
-        .filter((item) => item.active !== false)
-        .map((item) => ({ ...item, coverImage: item.images?.[0]?.image || item.image || '' }))
+      data.map((item) => ({ ...item, coverImage: item.images?.[0]?.image || item.image || '' }))
     ));
     getKmsSettings().then((s) => setViewMode(s.awards_style || 'cards')).catch(() => {});
   }, []);
 
+  const visibleItems = hideInactive ? items.filter((item) => item.active !== false) : items;
+  const displayItems = limit ? visibleItems.slice(0, limit) : visibleItems;
+  const hasMore = Boolean(limit) && visibleItems.length > limit;
+
   const next = useCallback(
-    () => setSelectedIndex((i) => (i + 1) % items.length),
-    [items.length]
+    () => setSelectedIndex((i) => (i + 1) % displayItems.length),
+    [displayItems.length]
   );
   const prev = useCallback(
-    () => setSelectedIndex((i) => (i - 1 + items.length) % items.length),
-    [items.length]
+    () => setSelectedIndex((i) => (i - 1 + displayItems.length) % displayItems.length),
+    [displayItems.length]
   );
 
-  if (items.length === 0) return null;
+  if (visibleItems.length === 0) return null;
 
   return (
     <section id="awards" className="bg-gray-50 dark:bg-background py-20">
@@ -256,7 +265,7 @@ export default function Awards() {
           {/* ── Cards View (default) ────────────────────── */}
           {viewMode === 'cards' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item, i) => (
+              {displayItems.map((item, i) => (
                 <motion.button
                   key={item.id}
                   type="button"
@@ -287,7 +296,7 @@ export default function Awards() {
           {/* ── List View ───────────────────────────────── */}
           {viewMode === 'list' && (
             <div className="space-y-4">
-              {items.map((item, i) => (
+              {displayItems.map((item, i) => (
                 <motion.div key={item.id} variants={card}>
                   <button
                     type="button"
@@ -320,7 +329,7 @@ export default function Awards() {
           {/* ── Grid View ───────────────────────────────── */}
           {viewMode === 'grid' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {items.map((item, i) => (
+              {displayItems.map((item, i) => (
                 <motion.div key={item.id} variants={card}>
                   <button
                     type="button"
@@ -351,7 +360,7 @@ export default function Awards() {
           {/* ── Collage View ────────────────────────────── */}
           {viewMode === 'collage' && (
             <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] gap-4">
-              {items.map((item, i) => {
+              {displayItems.map((item, i) => {
                 const patterns = [
                   { gridColumn: 'span 2', gridRow: 'span 2' },
                   { gridColumn: 'span 1', gridRow: 'span 1' },
@@ -392,7 +401,7 @@ export default function Awards() {
               <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 -translate-x-1/2 hidden lg:block" />
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 lg:hidden" />
               <div className="space-y-8">
-                {items.map((item, i) => {
+                {displayItems.map((item, i) => {
                   const isLeft = i % 2 === 0;
                   return (
                     <motion.div key={item.id} variants={card} className={`relative flex items-start gap-4 lg:gap-0 ${isLeft ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}>
@@ -426,7 +435,7 @@ export default function Awards() {
           {/* ── Masonry View ────────────────────────────── */}
           {viewMode === 'masonry' && (
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-              {items.map((item, i) => (
+              {displayItems.map((item, i) => (
                 <motion.div key={item.id} variants={card} className="break-inside-avoid">
                   <button
                     type="button"
@@ -451,15 +460,15 @@ export default function Awards() {
           {/* ── Showcase View ───────────────────────────── */}
           {viewMode === 'showcase' && (
             <div className="space-y-6">
-              {items[0] && (
+              {displayItems[0] && (
                 <motion.div variants={card}>
                   <button
                     type="button"
                     onClick={() => setSelectedIndex(0)}
                     className="relative w-full rounded-2xl overflow-hidden h-72 lg:h-80 group text-left"
                   >
-                    {items[0].coverImage ? (
-                      <img src={items[0].coverImage} alt={items[0].title} className="absolute inset-0 w-full h-full object-cover" />
+                    {displayItems[0].coverImage ? (
+                      <img src={displayItems[0].coverImage} alt={displayItems[0].title} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233]" />
                     )}
@@ -467,18 +476,18 @@ export default function Awards() {
                     <div className="absolute bottom-0 inset-x-0 p-8">
                       <div className="flex items-center gap-3 mb-3">
                         <span className="px-3 py-1 rounded-full bg-[#FCD116] text-[#0038A8] text-xs font-black uppercase tracking-wider">Featured</span>
-                        <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold">{items[0].year}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold">{displayItems[0].year}</span>
                       </div>
-                      <h2 className="text-2xl lg:text-3xl font-black text-white mb-2">{items[0].title}</h2>
-                      <p className="text-sm text-white/70">{items[0].issuer}</p>
-                      <p className="text-sm text-white/80 max-w-2xl line-clamp-2 mt-2">{items[0].description}</p>
+                      <h2 className="text-2xl lg:text-3xl font-black text-white mb-2">{displayItems[0].title}</h2>
+                      <p className="text-sm text-white/70">{displayItems[0].issuer}</p>
+                      <p className="text-sm text-white/80 max-w-2xl line-clamp-2 mt-2">{displayItems[0].description}</p>
                     </div>
                   </button>
                 </motion.div>
               )}
-              {items.length > 1 && (
+              {displayItems.length > 1 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {items.slice(1).map((item, i) => (
+                  {displayItems.slice(1).map((item, i) => (
                     <motion.div key={item.id} variants={card}>
                       <button
                         type="button"
@@ -502,7 +511,7 @@ export default function Awards() {
           {/* ── Horizontal Scroll View ──────────────────── */}
           {viewMode === 'horizontal' && (
             <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory">
-              {items.map((item, i) => (
+              {displayItems.map((item, i) => (
                 <motion.div key={item.id} variants={card} className="flex-shrink-0 w-72 snap-start">
                   <button
                     type="button"
@@ -528,12 +537,23 @@ export default function Awards() {
             </div>
           )}
         </motion.div>
+
+        {hasMore && (
+          <div className="text-center mt-10">
+            <Link
+              to="/kms/awards"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0038A8] dark:bg-primary text-white font-semibold text-sm hover:bg-[#001a52] dark:hover:opacity-90 transition-colors"
+            >
+              View All Awards <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
         {selectedIndex !== null && (
           <AwardLightbox
-            items={items}
+            items={displayItems}
             index={selectedIndex}
             onClose={() => setSelectedIndex(null)}
             onNext={next}

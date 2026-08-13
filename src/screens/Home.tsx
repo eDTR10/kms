@@ -244,7 +244,7 @@ export default function Home() {
       </section>
 
       {/* Awards */}
-      <Awards />
+      <Awards limit={6} hideInactive />
 
       {/* Call to action */}
       <section className="bg-[#CE1126] dark:bg-card dark:border-t dark:border-border text-white py-16 relative overflow-hidden">

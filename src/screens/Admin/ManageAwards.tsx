@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, FileSpreadsheet, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Award, Eye, EyeOff, Columns3, Grid3x3, Clock, Rows3, Star, ArrowRight } from 'lucide-react';
 import {
   getAwards, createAward, updateAward, deleteAward, importAwardsJson, reorderAwards,
@@ -17,6 +17,18 @@ const STYLE_ICONS = {
   list: List, cards: Columns3, grid: Grid3x3, collage: LayoutGrid,
   timeline: Clock, masonry: Rows3, showcase: Star, horizontal: ArrowRight,
 };
+
+// "Manual" is the drag/arrow-reorderable order (the `order` field, what the public site
+// uses); every other option is a view-only computed sort — switching to one shows items
+// in that order but disables drag/arrows, since dragging a computed-sort view would end
+// up reordering by the wrong index and corrupt the real manual order underneath it.
+const SORT_OPTIONS = [
+  { value: 'manual', label: 'Manual (drag to reorder)' },
+  { value: 'year_desc', label: 'Year — Newest first' },
+  { value: 'year_asc', label: 'Year — Oldest first' },
+  { value: 'title_asc', label: 'Title — A to Z' },
+  { value: 'created_desc', label: 'Date added — Newest first' },
+];
 
 // Same simple parser used for Free Wi-Fi CSV imports elsewhere in this app. Note: it
 // splits rows on raw newlines, so a quoted cell containing an embedded line break
@@ -104,6 +116,20 @@ export default function ManageAwards() {
   const [viewStyle, setViewStyle] = useState('cards');
   const [savingStyle, setSavingStyle] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
+  const [sortBy, setSortBy] = useState('manual');
+
+  const canReorder = sortBy === 'manual';
+  const sortedItems = useMemo(() => {
+    if (sortBy === 'manual') return items;
+    const arr = [...items];
+    switch (sortBy) {
+      case 'year_desc': return arr.sort((a, b) => (b.year || 0) - (a.year || 0));
+      case 'year_asc': return arr.sort((a, b) => (a.year || 0) - (b.year || 0));
+      case 'title_asc': return arr.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'created_desc': return arr.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      default: return arr;
+    }
+  }, [items, sortBy]);
 
   useEffect(() => {
     fetchItems();
@@ -268,7 +294,13 @@ export default function ManageAwards() {
 
   const handleImport = () => (importFormat === 'csv' ? handleImportCsv() : handleImportJson());
 
+  // Both guarded on canReorder (sortBy === 'manual'): index/i passed in from the render
+  // is the item's position within whatever's currently displayed (sortedItems) — while a
+  // computed sort is active that position doesn't match `items`' real order, so acting on
+  // it here would silently reorder the wrong pair. Manual is the only sort where
+  // sortedItems === items, so index is safe to use directly against `items`.
   const moveItem = async (index, direction) => {
+    if (!canReorder) return;
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= items.length) return;
     const newItems = [...items];
@@ -278,10 +310,10 @@ export default function ManageAwards() {
     catch (err) { console.error(err); fetchItems(); }
   };
 
-  const handleDragStart = (index) => setDragIndex(index);
+  const handleDragStart = (index) => { if (canReorder) setDragIndex(index); };
   const handleDragOver = (e) => e.preventDefault();
   const handleDrop = async (dropIndex) => {
-    if (dragIndex === null || dragIndex === dropIndex) return;
+    if (!canReorder || dragIndex === null || dragIndex === dropIndex) return;
     const newItems = [...items];
     const [moved] = newItems.splice(dragIndex, 1);
     newItems.splice(dropIndex, 0, moved);
@@ -301,7 +333,7 @@ export default function ManageAwards() {
 
     if (isCompact) {
       return (
-        <div draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
+        <div draggable={canReorder} onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
           className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 shadow-sm group cursor-grab ${dragIndex === index ? 'opacity-50 scale-95' : isHidden ? 'opacity-50' : ''}`}>
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
             {item.coverImage ? <img src={item.coverImage} alt={item.title} className="w-full h-full object-cover" />
@@ -313,13 +345,13 @@ export default function ManageAwards() {
             {item.issuer && <p className="text-xs text-gray-400">{item.issuer}</p>}
           </div>
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => toggleActive(item)} title={isHidden ? 'Hidden — click to show' : 'Visible — click to hide'}
+              <button onClick={() => toggleActive(item)} title={isHidden ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
                 className={isHidden ? 'p-1.5 text-gray-400 hover:text-gray-700' : 'p-1.5 text-green-500 hover:text-green-600'}>
                 {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
-              <button onClick={() => moveItem(index, -1)} disabled={index === 0}
+              <button onClick={() => moveItem(index, -1)} disabled={!canReorder || index === 0}
                 className="p-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-20"><ArrowUp size={14} /></button>
-              <button onClick={() => moveItem(index, 1)} disabled={index === items.length - 1}
+              <button onClick={() => moveItem(index, 1)} disabled={!canReorder || index === sortedItems.length - 1}
                 className="p-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-20"><ArrowDown size={14} /></button>
               <button onClick={() => startEdit(item)} className="p-2 text-gray-400 hover:text-[#0038A8]"><Edit2 size={15} /></button>
               <button onClick={() => handleDelete(item.id)} className="p-2 text-red-400 hover:text-red-600"><Trash2 size={15} /></button>
@@ -330,7 +362,7 @@ export default function ManageAwards() {
 
     // Card / Grid / Collage — all use image-forward cards
     return (
-      <div draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
+      <div draggable={canReorder} onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
         className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-200 cursor-grab active:cursor-grabbing ${
           dragIndex === index ? 'border-[#0038A8] scale-95 opacity-60' : 'border-transparent hover:border-[#0038A8]/40'
         } ${isCollage ? 'h-full' : ''} ${isHidden ? 'opacity-50' : ''}`}>
@@ -355,11 +387,11 @@ export default function ManageAwards() {
         </div>
         {/* Hover actions */}
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); toggleActive(item); }} title={isHidden ? 'Hidden — click to show' : 'Visible — click to hide'}
+          <button onClick={(e) => { e.stopPropagation(); toggleActive(item); }} title={isHidden ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded">{isHidden ? <EyeOff size={12} /> : <Eye size={12} />}</button>
-          <button onClick={(e) => { e.stopPropagation(); moveItem(index, -1); }} disabled={index === 0}
+          <button onClick={(e) => { e.stopPropagation(); moveItem(index, -1); }} disabled={!canReorder || index === 0}
             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded disabled:opacity-30"><ArrowUp size={12} /></button>
-          <button onClick={(e) => { e.stopPropagation(); moveItem(index, 1); }} disabled={index === items.length - 1}
+          <button onClick={(e) => { e.stopPropagation(); moveItem(index, 1); }} disabled={!canReorder || index === sortedItems.length - 1}
             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded disabled:opacity-30"><ArrowDown size={12} /></button>
           <button onClick={(e) => { e.stopPropagation(); startEdit(item); }}
             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={12} /></button>
@@ -554,32 +586,41 @@ export default function ManageAwards() {
         </div>
       ) : (
         <div>
-          <p className="text-xs text-gray-400 mb-3 flex items-center gap-1.5">
-            <Eye size={12} /> Drag to reorder · Style: <strong>{AWARD_STYLES.find(s => s.id === viewStyle)?.label}</strong>
-            {savingStyle && <span className="text-[10px] text-gray-300 ml-1">(saving...)</span>}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <p className="text-xs text-gray-400 flex items-center gap-1.5">
+              <Eye size={12} /> {canReorder ? 'Drag to reorder' : 'Sorted — switch to Manual to drag-reorder'} · Style: <strong>{AWARD_STYLES.find(s => s.id === viewStyle)?.label}</strong>
+              {savingStyle && <span className="text-[10px] text-gray-300 ml-1">(saving...)</span>}
+            </p>
+            <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              Sort by
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
+          </div>
 
           {viewStyle === 'list' && (
             <div className="space-y-3">
-              {items.map((item, i) => <AwardItemCard key={item.id} item={item} index={i} variant="list" />)}
+              {sortedItems.map((item, i) => <AwardItemCard key={item.id} item={item} index={i} variant="list" />)}
             </div>
           )}
 
           {viewStyle === 'cards' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item, i) => <AwardItemCard key={item.id} item={item} index={i} variant="cards" />)}
+              {sortedItems.map((item, i) => <AwardItemCard key={item.id} item={item} index={i} variant="cards" />)}
             </div>
           )}
 
           {viewStyle === 'grid' && (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {items.map((item, i) => <AwardItemCard key={item.id} item={item} index={i} variant="grid" />)}
+              {sortedItems.map((item, i) => <AwardItemCard key={item.id} item={item} index={i} variant="grid" />)}
             </div>
           )}
 
           {viewStyle === 'collage' && (
             <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] gap-3">
-              {items.map((item, i) => {
+              {sortedItems.map((item, i) => {
                 const patterns = [
                   { gridColumn: 'span 2', gridRow: 'span 2' },
                   { gridColumn: 'span 1', gridRow: 'span 1' },
@@ -603,7 +644,7 @@ export default function ManageAwards() {
               <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 -translate-x-1/2 hidden lg:block" />
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 lg:hidden" />
               <div className="space-y-8">
-                {items.map((item, i) => {
+                {sortedItems.map((item, i) => {
                   const isLeft = i % 2 === 0;
                   return (
                     <div key={item.id} className={`relative flex items-start gap-4 lg:gap-0 ${isLeft ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}>
@@ -613,7 +654,7 @@ export default function ManageAwards() {
                       <div className="w-12 shrink-0 lg:hidden" />
                       {/* Card */}
                       <div className={`flex-1 lg:w-1/2 ${isLeft ? 'lg:pr-10' : 'lg:pl-10'}`}
-                        draggable onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
+                        draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
                         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm group hover:shadow-md transition-shadow ${dragIndex === i ? 'opacity-50 scale-95' : item.active === false ? 'opacity-50' : ''}`}>
                           <div className="flex items-start gap-4">
                             {item.coverImage && (
@@ -628,13 +669,13 @@ export default function ManageAwards() {
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
                             </div>
                             <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              <button onClick={() => toggleActive(item)} title={item.active === false ? 'Hidden — click to show' : 'Visible — click to hide'}
+                              <button onClick={() => toggleActive(item)} title={item.active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
                                 className={item.active === false ? 'p-1 text-gray-400 hover:text-gray-700' : 'p-1 text-green-500 hover:text-green-600'}>
                                 {item.active === false ? <EyeOff size={12} /> : <Eye size={12} />}
                               </button>
-                              <button onClick={() => moveItem(i, -1)} disabled={i === 0}
+                              <button onClick={() => moveItem(i, -1)} disabled={!canReorder || i === 0}
                                 className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20"><ArrowUp size={12} /></button>
-                              <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1}
+                              <button onClick={() => moveItem(i, 1)} disabled={!canReorder || i === sortedItems.length - 1}
                                 className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20"><ArrowDown size={12} /></button>
                               <button onClick={() => startEdit(item)} className="p-1 text-gray-400 hover:text-[#0038A8]"><Edit2 size={12} /></button>
                               <button onClick={() => handleDelete(item.id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 size={12} /></button>
@@ -654,9 +695,9 @@ export default function ManageAwards() {
           {/* ── Masonry (CSS columns) ────────────────────────────────────── */}
           {viewStyle === 'masonry' && (
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-              {items.map((item, i) => (
+              {sortedItems.map((item, i) => (
                 <div key={item.id} className="break-inside-avoid"
-                  draggable onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
+                  draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
                   <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group hover:shadow-md transition-shadow ${dragIndex === i ? 'opacity-50 scale-95' : item.active === false ? 'opacity-50' : ''}`}>
                     {item.coverImage && (
                       <img src={item.coverImage} alt={item.title}
@@ -672,13 +713,13 @@ export default function ManageAwards() {
                       <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>
                       {/* Hover actions */}
                       <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => toggleActive(item)} title={item.active === false ? 'Hidden — click to show' : 'Visible — click to hide'}
+                        <button onClick={() => toggleActive(item)} title={item.active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
                           className={item.active === false ? 'p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg' : 'p-1.5 bg-gray-100 dark:bg-gray-700 text-green-500 rounded-lg'}>
                           {item.active === false ? <EyeOff size={12} /> : <Eye size={12} />}
                         </button>
-                        <button onClick={() => moveItem(i, -1)} disabled={i === 0}
+                        <button onClick={() => moveItem(i, -1)} disabled={!canReorder || i === 0}
                           className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg disabled:opacity-20"><ArrowUp size={12} /></button>
-                        <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1}
+                        <button onClick={() => moveItem(i, 1)} disabled={!canReorder || i === sortedItems.length - 1}
                           className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg disabled:opacity-20"><ArrowDown size={12} /></button>
                         <button onClick={() => startEdit(item)}
                           className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg"><Edit2 size={12} /></button>
@@ -693,13 +734,13 @@ export default function ManageAwards() {
           )}
 
           {/* ── Showcase (featured first + grid) ─────────────────────────── */}
-          {viewStyle === 'showcase' && items.length > 0 && (
+          {viewStyle === 'showcase' && sortedItems.length > 0 && (
             <div className="space-y-6">
               {/* Featured first item */}
-              <div className={`relative rounded-2xl overflow-hidden h-72 lg:h-80 group ${items[0].active === false ? 'opacity-50' : ''}`}
-                draggable onDragStart={() => handleDragStart(0)} onDragOver={handleDragOver} onDrop={() => handleDrop(0)}>
-                {items[0].coverImage ? (
-                  <img src={items[0].coverImage} alt={items[0].title} className="absolute inset-0 w-full h-full object-cover" />
+              <div className={`relative rounded-2xl overflow-hidden h-72 lg:h-80 group ${sortedItems[0].active === false ? 'opacity-50' : ''}`}
+                draggable={canReorder} onDragStart={() => handleDragStart(0)} onDragOver={handleDragOver} onDrop={() => handleDrop(0)}>
+                {sortedItems[0].coverImage ? (
+                  <img src={sortedItems[0].coverImage} alt={sortedItems[0].title} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233]" />
                 )}
@@ -707,27 +748,27 @@ export default function ManageAwards() {
                 <div className="absolute bottom-0 inset-x-0 p-8">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="px-3 py-1 rounded-full bg-[#FCD116] text-[#0038A8] text-xs font-black uppercase tracking-wider">Featured</span>
-                    <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold">{items[0].year}</span>
-                    {items[0].issuer && <span className="text-white/70 text-xs">{items[0].issuer}</span>}
+                    <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold">{sortedItems[0].year}</span>
+                    {sortedItems[0].issuer && <span className="text-white/70 text-xs">{sortedItems[0].issuer}</span>}
                   </div>
-                  <h2 className="text-2xl lg:text-3xl font-black text-white mb-2">{items[0].title}</h2>
-                  <p className="text-sm text-white/80 max-w-2xl line-clamp-2">{items[0].description}</p>
+                  <h2 className="text-2xl lg:text-3xl font-black text-white mb-2">{sortedItems[0].title}</h2>
+                  <p className="text-sm text-white/80 max-w-2xl line-clamp-2">{sortedItems[0].description}</p>
                 </div>
                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => toggleActive(items[0])} title={items[0].active === false ? 'Hidden — click to show' : 'Visible — click to hide'}
-                    className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded">{items[0].active === false ? <EyeOff size={14} /> : <Eye size={14} />}</button>
-                  <button onClick={() => startEdit(items[0])}
+                  <button onClick={() => toggleActive(sortedItems[0])} title={sortedItems[0].active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
+                    className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded">{sortedItems[0].active === false ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                  <button onClick={() => startEdit(sortedItems[0])}
                     className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={14} /></button>
-                  <button onClick={() => handleDelete(items[0].id)}
+                  <button onClick={() => handleDelete(sortedItems[0].id)}
                     className="p-1.5 bg-red-500/60 hover:bg-red-500/80 text-white rounded"><Trash2 size={14} /></button>
                 </div>
               </div>
               {/* Rest in grid */}
-              {items.length > 1 && (
+              {sortedItems.length > 1 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {items.slice(1).map((item, i) => (
+                  {sortedItems.slice(1).map((item, i) => (
                     <div key={item.id}
-                      draggable onDragStart={() => handleDragStart(i + 1)} onDragOver={handleDragOver} onDrop={() => handleDrop(i + 1)}>
+                      draggable={canReorder} onDragStart={() => handleDragStart(i + 1)} onDragOver={handleDragOver} onDrop={() => handleDrop(i + 1)}>
                       <AwardItemCard item={item} index={i + 1} variant="cards" />
                     </div>
                   ))}
@@ -740,9 +781,9 @@ export default function ManageAwards() {
           {viewStyle === 'horizontal' && (
             <div className="overflow-x-auto pb-4 -mx-8 px-8">
               <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-                {items.map((item, i) => (
+                {sortedItems.map((item, i) => (
                   <div key={item.id} className="w-72 shrink-0"
-                    draggable onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
+                    draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
                     <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group hover:shadow-lg transition-all hover:-translate-y-1 h-full ${dragIndex === i ? 'opacity-50 scale-95' : item.active === false ? 'opacity-50' : ''}`}>
                       <div className="relative h-44 overflow-hidden">
                         {item.coverImage ? (
@@ -754,7 +795,7 @@ export default function ManageAwards() {
                         )}
                         <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#0038A8] text-white text-xs font-bold">{item.year}</span>
                         <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => toggleActive(item)} title={item.active === false ? 'Hidden — click to show' : 'Visible — click to hide'}
+                          <button onClick={() => toggleActive(item)} title={item.active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
                             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded">{item.active === false ? <EyeOff size={12} /> : <Eye size={12} />}</button>
                           <button onClick={() => startEdit(item)}
                             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={12} /></button>
@@ -767,9 +808,9 @@ export default function ManageAwards() {
                         <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-2">{item.title}</h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{item.description}</p>
                         <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => moveItem(i, -1)} disabled={i === 0}
+                          <button onClick={() => moveItem(i, -1)} disabled={!canReorder || i === 0}
                             className="px-2 py-1 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 rounded disabled:opacity-20">← Prev</button>
-                          <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1}
+                          <button onClick={() => moveItem(i, 1)} disabled={!canReorder || i === sortedItems.length - 1}
                             className="px-2 py-1 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 rounded disabled:opacity-20">Next →</button>
                         </div>
                       </div>

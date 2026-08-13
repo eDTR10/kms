@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronRight, ChevronDown, Wifi, Trophy, Star, Sparkles, Presentation, Image, BarChart3, Database, FileSpreadsheet, Layers, Users } from 'lucide-react';
+import { LogOut, ChevronRight, ChevronDown, Wifi, Trophy, Star, Sparkles, Presentation, Image, BarChart3, Database, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // Same 3-tab shape as Free Wi-Fi (Highlights / Charts / Datasets), each
@@ -43,13 +43,6 @@ const OTHER_LINKS = [
   { label: 'Highlights', path: '/kms/admin/highlights', icon: Sparkles },
 ];
 
-// KMS is the platform all the projects above live under, not a project itself —
-// acc_lvl 0 only (stricter than isSuperAdmin, which also covers acc_lvl 1).
-const KMS_LINKS = [
-  { label: 'Manage Projects', path: '/kms/admin/projects', icon: FileSpreadsheet },
-  { label: 'Manage Users', path: '/kms/admin/users', icon: Users },
-];
-
 export default function AdminLayout({ children }) {
   const { user, logout, isSuperAdmin, isProjectAdmin } = useAuth();
   const location = useLocation();
@@ -79,7 +72,6 @@ export default function AdminLayout({ children }) {
     ? PROJECTS.filter((p) => user?.projectSlugs?.includes(p.id))
     : PROJECTS;
   const visibleOtherLinks = isProjectAdmin && !isSuperAdmin ? [] : OTHER_LINKS;
-  const visibleKmsLinks = user?.acc_lvl === 0 ? KMS_LINKS : [];
 
   return (
     <div className="min-h-screen flex dark:bg-gray-950 bg-gray-100 transition-colors duration-300">
@@ -92,11 +84,11 @@ export default function AdminLayout({ children }) {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {/* KMS Section — the platform itself, acc_lvl 0 only */}
-          {visibleKmsLinks.length > 0 && (
-            <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-2 pb-1">KMS</p>
+          {/* Content Section */}
+          {visibleOtherLinks.length > 0 && (
+            <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-2 pb-1">Content</p>
           )}
-          {visibleKmsLinks.map(({ label, path, icon: Icon }) => (
+          {visibleOtherLinks.map(({ label, path, icon: Icon }) => (
             <Link
               key={path}
               to={path}
@@ -113,7 +105,7 @@ export default function AdminLayout({ children }) {
           ))}
 
           {/* Projects Section */}
-          <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-2 pb-1">Projects</p>
+          <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-4 pb-1">Projects</p>
           {visibleProjects.map((project) => {
             const isExpanded = expandedProjects.includes(project.id) || isProjectActive(project);
             const ProjectIcon = project.icon;
@@ -155,26 +147,6 @@ export default function AdminLayout({ children }) {
               </div>
             );
           })}
-
-          {/* Other Links */}
-          {visibleOtherLinks.length > 0 && (
-            <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-4 pb-1">Content</p>
-          )}
-          {visibleOtherLinks.map(({ label, path, icon: Icon }) => (
-            <Link
-              key={path}
-              to={path}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive(path)
-                  ? 'bg-white/15 text-white'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Icon size={16} />
-              {label}
-              {isActive(path) && <ChevronRight size={14} className="ml-auto" />}
-            </Link>
-          ))}
         </nav>
 
         <div className="p-3 border-t border-white/10">

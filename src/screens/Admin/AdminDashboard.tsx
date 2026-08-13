@@ -65,16 +65,8 @@ export default function AdminDashboard() {
             <h2 className="font-bold text-gray-900 dark:text-white text-sm">Quick Actions</h2>
           </div>
           <div className="p-5 space-y-3">
-            <a href="/kms/admin/projects"
-              className="block w-full text-center py-2.5 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] transition-colors">
-              Manage Projects
-            </a>
-            <a href="/kms/admin/users"
-              className="block w-full text-center py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-              Manage Users
-            </a>
             <a href="/kms/afd"
-              className="block w-full text-center py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              className="block w-full text-center py-2.5 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] transition-colors">
               View AFD Documents
             </a>
           </div>

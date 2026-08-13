@@ -5,7 +5,7 @@ import {
   Search, ChevronLeft, ChevronRight, Link2, RefreshCw,
 } from 'lucide-react';
 import {
-  getProjectOfficeId, getProjectDatasets, createProjectDataset, deleteProjectDataset,
+  getProjectOfficeId, getProjectDatasets, createProjectDataset, updateProjectDataset, deleteProjectDataset,
   createProjectDatasetField, deleteProjectDatasetField,
   createProjectDatasetRow, updateProjectDatasetRow, deleteProjectDatasetRow,
   importProjectDatasetCsv, syncProjectDatasetSheet,
@@ -449,8 +449,10 @@ export default function ProjectDatasets({ slug }) {
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Paste the URL of a Google Sheets tab, shared (Viewer is enough) with{' '}
                   <span className="font-mono">efas-sync@efas-488408.iam.gserviceaccount.com</span> — it doesn't need
-                  to be public. Syncing imports it the same way a CSV would — new columns are created automatically,
-                  existing ones are reused, and rows are added to.
+                  to be public. Each sync <strong>replaces</strong> this table's rows with exactly what's currently
+                  in the sheet — columns stay (new ones created automatically, existing ones reused), but any rows
+                  added by hand with "Add Row" will be removed on the next sync. Don't mix manual rows into a
+                  sheet-linked table.
                 </p>
                 <div className="flex items-center gap-2">
                   <input type="url" value={sheetUrlInput} onChange={(e) => setSheetUrlInput(e.target.value)}

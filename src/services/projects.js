@@ -167,3 +167,17 @@ export async function updateProjectChartSource(slug, settings) {
   const { data } = await api.patch('kms/project-chart-source/', settings, { params: { office: officeId } });
   return data;
 }
+
+// Custom Map marker icon — a separate multipart PATCH (vs. updateProjectChartSource's
+// plain JSON) since it's an actual file upload, converted/compressed server-side the same
+// way Award/Accomplishment images are.
+export async function uploadProjectChartSourceMarkerIcon(slug, file) {
+  const officeId = await getProjectOfficeId(slug);
+  const fd = new FormData();
+  fd.append('marker_icon_file', file);
+  const { data } = await api.patch('kms/project-chart-source/', fd, {
+    params: { office: officeId },
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}

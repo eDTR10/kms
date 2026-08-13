@@ -1,17 +1,22 @@
 // @ts-nocheck
 import { useState, useEffect, useMemo } from 'react';
-import { Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical, Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star } from 'lucide-react';
+import {
+  Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical,
+  Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star, Palette,
+} from 'lucide-react';
+import { MARKER_ICON_OPTIONS } from '../../../lib/markerIcons';
 import { getFreeWifiSummary } from '../../../services/freewifi';
 import {
   getFreeWifiLiveData, getFreeWifiMainData, getFreeWifiTargetData, getFreeWifiMasterlistData,
   getFreeWifiChartConfigs, createFreeWifiChartConfig, updateFreeWifiChartConfig, deleteFreeWifiChartConfig,
 } from '../../../services/freewifiData';
 import { getKmsSettings, updateKmsSettings } from '../../../services/settings';
-import FreeWifiMap from '../../../components/FreeWifiMap';
+import Select from 'react-select';
+import FreeWifiMap, { selectStyles } from '../../../components/FreeWifiMap';
 import {
-  getProjectOfficeId, getProjectDatasets,
+  getProjectOfficeId, getProjectDatasets, updateProjectDataset,
   getProjectChartConfigs, createProjectChartConfig, updateProjectChartConfig, deleteProjectChartConfig,
-  reorderProjectChartConfigs, getProjectChartSource, updateProjectChartSource,
+  reorderProjectChartConfigs, getProjectChartSource, updateProjectChartSource, uploadProjectChartSourceMarkerIcon,
 } from '../../../services/projects';
 
 export const PROVINCE_COLORS = {
@@ -69,6 +74,17 @@ const CHART_TYPES = [
   { id: 'cards', label: 'Stat Cards', needsSecondary: false, minItems: 1, maxItems: 4, category: 'summary', preview: () => (
     <div className="grid grid-cols-2 gap-1.5 w-full">{[0, 1, 2, 3].map(i => <div key={i} className="rounded p-1.5 text-center" style={{ backgroundColor: `${COLORS[i]}15` }}><div className="text-sm font-bold" style={{ color: COLORS[i] }}>100</div><div className="text-[6px] text-gray-400">Label</div></div>)}</div>
   ) },
+  // Unlike every other type above, this doesn't group/count `field`'s distinct values —
+  // it aggregates `field` via `agg` (sum/average/count/distinct/count-equals) into one
+  // number. minItems: 0 so it's never disabled by field-cardinality fit checks, which
+  // don't apply to it (see getChartFit) — an aggregate cares about the field's VALUES,
+  // not how many distinct ones there are.
+  { id: 'aggregate-cards', label: 'Value Card', needsSecondary: false, minItems: 0, category: 'summary', preview: () => (
+    <div className="w-full h-16 flex flex-col items-center justify-center gap-1.5">
+      <div className="h-5 w-14 rounded" style={{ backgroundColor: COLORS[0] }} />
+      <div className="h-1.5 w-9 rounded bg-gray-200 dark:bg-gray-600" />
+    </div>
+  ) },
   { id: 'list', label: 'Ranked List', needsSecondary: false, minItems: 1, maxItems: 10, category: 'data', preview: () => (
     <div className="space-y-1.5 w-full">{[0, 1, 2].map(i => <div key={i} className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i] }} /><div className="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded" /><div className="w-4 h-2 bg-gray-200 dark:bg-gray-600 rounded" /></div>)}</div>
   ) },
@@ -92,6 +108,78 @@ const CHART_TYPES = [
   ) },
 ];
 
+// Layouts for chart_type='aggregate-cards' (a single aggregated number, not a category
+// breakdown — see CHART_TYPES' own 'aggregate-cards' entry above, kept there only so
+// existing charts' chartType still resolves). Shown in their own "Card" picker instead of
+// mixed into the CHART_TYPES grid, since a card's chartType never changes — only its
+// cardDesign does — so "which chart type" and "which card design" are two separate
+// questions with two separate pickers, not one 22-tile grid. Rendered by AggregateValueCard.
+const CARD_DESIGNS = [
+  { id: 'big-number', label: 'Big Number', preview: () => (
+    <div className="w-full h-16 flex flex-col items-center justify-center gap-1.5">
+      <div className="h-5 w-14 rounded" style={{ backgroundColor: COLORS[0] }} />
+      <div className="h-1.5 w-9 rounded bg-gray-200 dark:bg-gray-600" />
+    </div>
+  ) },
+  { id: 'icon-number', label: 'Icon + Number', preview: () => (
+    <div className="w-full h-16 flex flex-col items-center justify-center gap-1.5">
+      <MapPin size={16} color={COLORS[0]} />
+      <div className="h-4 w-12 rounded" style={{ backgroundColor: COLORS[0] }} />
+      <div className="h-1.5 w-8 rounded bg-gray-200 dark:bg-gray-600" />
+    </div>
+  ) },
+  { id: 'colored-bg', label: 'Colored Background', preview: () => (
+    <div className="w-full h-16 rounded-lg flex flex-col items-center justify-center gap-1.5" style={{ backgroundColor: COLORS[0] }}>
+      <div className="h-4 w-12 rounded bg-white/90" />
+      <div className="h-1.5 w-8 rounded bg-white/50" />
+    </div>
+  ) },
+  { id: 'progress', label: 'Progress / Target', preview: () => (
+    <div className="w-full h-16 flex flex-col items-center justify-center gap-2 px-2">
+      <div className="h-1.5 w-9 rounded bg-gray-200 dark:bg-gray-600" />
+      <div className="h-2.5 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: '62%', backgroundColor: COLORS[0] }} />
+      </div>
+    </div>
+  ) },
+  { id: 'compact-row', label: 'Compact Row', preview: () => (
+    <div className="w-full h-16 flex items-center justify-center gap-2 px-2">
+      <div className="h-5 w-10 rounded shrink-0" style={{ backgroundColor: COLORS[0] }} />
+      <div className="flex-1 space-y-1"><div className="h-1.5 w-full rounded bg-gray-200 dark:bg-gray-600" /><div className="h-1.5 w-2/3 rounded bg-gray-200 dark:bg-gray-600" /></div>
+    </div>
+  ) },
+];
+
+// react-select expects {value, label} options and a single selected option object (or
+// null), rather than the bare string this file's state has always stored — these two
+// convert between the two shapes so every plain <select> below can become a <Select>
+// (see selectStyles, imported from FreeWifiMap.tsx) without restructuring how its value
+// is held in state.
+const toOptions = (values, labelFor = (v) => v) => values.map((v) => ({ value: v, label: labelFor(v) }));
+const selectValue = (options, current) => options.find((o) => o.value === current) || null;
+
+// Distinct, non-blank values of `field` across `records` — populates the "equals" dropdown
+// for the count_equals aggregation (Summary Card tiles / Value Card), so an admin picks an
+// actual value from the data instead of free-typing something that has to match it exactly.
+const distinctFieldValues = (records, field) =>
+  [...new Set((records || []).map((r) => r[field]))]
+    .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
+    .map(String)
+    .sort();
+
+// Admin-set filter conditions — a list of {field, value} pairs, ANDed together (a row only
+// counts if it matches EVERY condition). One shared implementation for every place
+// conditions apply: ProjectChartConfig.conditions (custom charts, in CustomChartRenderer),
+// each Summary Card tile's own conditions (in computeSummaryTiles), and
+// ProjectChartSource.map_conditions/breakdown_conditions (in resolveMapSites and the
+// Breakdown widgets) — so "what counts as a match" can't drift between them.
+export function filterRecordsByConditions(records, conditions) {
+  const active = (conditions || []).filter((c) => c.field);
+  if (!active.length) return records;
+  return records.filter((r) => active.every((c) =>
+    String(r[c.field] ?? '').trim().toLowerCase() === String(c.value ?? '').trim().toLowerCase()));
+}
+
 // Free Wi-Fi's own fixed field list — other projects derive theirs from whichever of
 // their own Datasets tables a chart is pointed at (see availableFieldsFor below).
 const FREEWIFI_AVAILABLE_FIELDS = [
@@ -112,9 +200,26 @@ const FREEWIFI_AVAILABLE_FIELDS = [
 ];
 
 const GRID_SIZES = [
-  { id: 'full', label: 'Full Width' },
-  { id: 'half', label: 'Half Width' },
+  { id: 'full', label: 'Full Width (1/1)' },
+  { id: 'half', label: 'Half Width (1/2)' },
+  { id: 'third', label: 'One Third (1/3)' },
+  { id: 'quarter', label: 'One Quarter (1/4)' },
 ];
+const GRID_SIZE_OPTIONS = GRID_SIZES.map(s => ({ value: s.id, label: s.label }));
+
+// Maps a custom chart's saved gridSize to its column span in the 12-col chart grid —
+// shared by the admin preview and the public page (ProjectChartsDisplay.tsx) so a size
+// can never render differently between them again (Half Width used to do nothing at all
+// on the public page, because it had its own separate, incomplete copy of this mapping).
+// Only ever called for custom charts — built-ins are always full width on both sides.
+export function gridSizeClass(gridSize) {
+  switch (gridSize) {
+    case 'quarter': return 'col-span-12 lg:col-span-3';
+    case 'third': return 'col-span-12 lg:col-span-4';
+    case 'half': return 'col-span-12 lg:col-span-6';
+    default: return 'col-span-12';
+  }
+}
 
 // Built-in chart definitions
 const BUILT_IN_CHARTS = [
@@ -129,6 +234,31 @@ export const DATA_SOURCES = [
   { id: 'main', label: 'Main Database' },
   { id: 'target', label: 'Target' },
   { id: 'masterlist', label: 'Masterlist' },
+];
+const DATA_SOURCE_OPTIONS = DATA_SOURCES.map(s => ({ value: s.id, label: s.label }));
+
+// Aggregation option lists — Summary Card tiles don't offer "Average" (that vocabulary was
+// only ever added for the Value Card), everything else overlaps.
+const TILE_AGG_OPTIONS = [
+  { value: 'distinct', label: 'Count unique values' },
+  { value: 'count_equals', label: 'Count rows where equals...' },
+  { value: 'sum', label: 'Sum values' },
+  { value: 'count', label: 'Count all rows' },
+];
+const CARD_AGG_OPTIONS = [
+  { value: 'sum', label: 'Sum values' },
+  { value: 'average', label: 'Average values' },
+  { value: 'count', label: 'Count all rows' },
+  { value: 'distinct', label: 'Count unique values' },
+  { value: 'count_equals', label: 'Count rows where equals...' },
+];
+
+// A general filter (GlobalDateFilterBar) is either an 'exact' dropdown of a column's
+// distinct values, or a 'range' From/To pair (dates, compared as timestamps) — see
+// FilterSettingsModal and filterTablesByGeneralFilter.
+const FILTER_TYPE_OPTIONS = [
+  { value: 'exact', label: 'Exact value (dropdown)' },
+  { value: 'range', label: 'Range (From/To)' },
 ];
 
 // Built-in charts' data-source picks are published settings (KmsSettings), not per-browser
@@ -218,15 +348,21 @@ export function buildTaggedRecords(tables, source) {
 // Turns a Map-tagged table's raw rows into geocoded, tooltip-ready records — shared by
 // the admin widget and the public page so a coordinate-parsing fix (e.g. the combined
 // "lat, lng" column format) only has to happen in one place. Returns `mapped` (every row
-// with valid latitude/longitude) and `tooltipFieldDefs` (resolved {name,label} pairs for
-// the admin-picked hover-tooltip columns).
+// with valid latitude/longitude), `tooltipFieldDefs` (resolved {name,label} pairs for the
+// admin-picked hover-tooltip columns), `filterFieldDefs` (same shape, for the columns
+// FreeWifiMap should render as filter dropdowns — see map_filter_fields), and
+// `colorFieldDef` (same shape or null, for the admin-picked marker-color/legend column —
+// see map_color_field; independent of filterFieldDefs, doesn't have to be one of them).
 export function resolveMapSites(records, source, taggedFields) {
   const latField = source?.latitude_field, lngField = source?.longitude_field;
-  if (!latField || !lngField) return { mapped: [], tooltipFieldDefs: [] };
+  if (!latField || !lngField) return { mapped: [], tooltipFieldDefs: [], filterFieldDefs: [], colorFieldDef: null };
+  // Admin-set floor under map_filter_fields (those are visitor-interactive dropdowns;
+  // this always applies regardless of what a visitor picks there) — see map_conditions.
+  const conditioned = filterRecordsByConditions(records, source?.map_conditions);
   // Same field tagged for both = a combined "lat, lng" column (e.g.
   // "8.486735683, 124.6322367") — split on the comma instead of reading two columns.
   const combined = latField === lngField;
-  const mapped = records
+  const mapped = conditioned
     .map(r => {
       if (combined) {
         const [rawLat, rawLng] = String(r[latField] ?? '').split(',');
@@ -239,7 +375,128 @@ export function resolveMapSites(records, source, taggedFields) {
     .map(name => taggedFields.find(f => f.name === name))
     .filter(Boolean)
     .map(f => ({ name: f.name, label: f.label }));
-  return { mapped, tooltipFieldDefs };
+  const filterFieldDefs = (source?.map_filter_fields || [])
+    .map(name => taggedFields.find(f => f.name === name))
+    .filter(Boolean)
+    .map(f => ({ name: f.name, label: f.label }));
+  const colorFieldRaw = source?.map_color_field && taggedFields.find(f => f.name === source.map_color_field);
+  const colorFieldDef = colorFieldRaw ? { name: colorFieldRaw.name, label: colorFieldRaw.label } : null;
+  return { mapped, tooltipFieldDefs, filterFieldDefs, colorFieldDef };
+}
+
+// Charts page's admin-defined filters — applied once, upstream of every built-in AND
+// custom chart, by filtering each table's own rows before anything downstream reads them.
+// `filters` = ProjectChartSource.general_filters: [{label, type: 'range'|'exact'}, ...].
+// `values` = { [label]: {from,to} for 'range' | string for 'exact' }. A row must match
+// EVERY filter that has a value set (AND across active filters), read via that table's OWN
+// tagged column for that filter's label (ProjectDataset.general_filter_fields) — a filter
+// the table hasn't tagged, or one with nothing entered, doesn't constrain it. There's no
+// special-cased date concept anymore: what used to be the hardcoded From/To filter is just
+// whichever filter(s) the admin gave type='range', using the exact same mechanism as any
+// other filter. Shared by the admin preview and the public page so both filter identically.
+export function filterTablesByGeneralFilter(tables, filters, values) {
+  const typeByLabel = {};
+  (filters || []).forEach((f) => { typeByLabel[f.label] = f.type; });
+  const active = Object.entries(values || {}).filter(([label, v]) =>
+    typeByLabel[label] === 'range' ? Boolean(v?.from || v?.to) : Boolean(v));
+  if (!active.length) return tables;
+  return tables.map((t) => {
+    const fieldMap = t.general_filter_fields || {};
+    const applicable = active.filter(([label]) => fieldMap[label]);
+    if (!applicable.length) return t;
+    const rows = (t.rows || []).filter((r) => applicable.every(([label, val]) => {
+      const raw = r.values?.[fieldMap[label]];
+      if (typeByLabel[label] === 'range') {
+        if (!raw) return false;
+        const time = new Date(raw).getTime();
+        if (Number.isNaN(time)) return false;
+        const fromTime = val.from ? new Date(val.from).getTime() : -Infinity;
+        // Inclusive through the end of the "To" day — a bare date has no time component,
+        // so without this, picking the same day for From and To would match nothing.
+        const toTime = val.to ? new Date(val.to).getTime() + (24 * 60 * 60 * 1000 - 1) : Infinity;
+        return time >= fromTime && time <= toTime;
+      }
+      return String(raw ?? '').trim().toLowerCase() === String(val).trim().toLowerCase();
+    }));
+    return { ...t, rows };
+  });
+}
+
+// The Summary Card's "as of" label — the active range, if a range-type filter is set and
+// has a value, so the card is honest about which slice of data it's summarizing instead of
+// always claiming to be current; falls back to `today` (the real calendar date) otherwise,
+// since that's genuinely what an unfiltered summary is "as of". Shared by the admin preview
+// (both the live widget and its style-editor preview) and the public page.
+export function summaryAsOfLabel(dateFrom, dateTo, today) {
+  const fmt = (iso) => new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  if (dateFrom && dateTo) return `${fmt(dateFrom)} – ${fmt(dateTo)}`;
+  if (dateFrom) return `${fmt(dateFrom)} onward`;
+  if (dateTo) return `through ${fmt(dateTo)}`;
+  return today;
+}
+
+// { [filterLabel]: [{value,label}, ...] } — one option list per 'exact'-type filter, each
+// the union of distinct values across every table that tagged a column for THAT label
+// (tables can call the same concept by different column names). 'range' filters don't need
+// discrete options (they're date inputs). Computed from the full, unfiltered table list so
+// picking a value doesn't shrink what's offered by another filter.
+export function generalFilterOptionsFor(tables, filters) {
+  const result = {};
+  (filters || []).forEach(({ label, type }) => {
+    if (type === 'range') return;
+    const values = new Set();
+    (tables || []).forEach((t) => {
+      const field = (t.general_filter_fields || {})[label];
+      if (!field) return;
+      (t.rows || []).forEach((r) => {
+        const v = r.values?.[field];
+        if (v !== null && v !== undefined && String(v).trim() !== '') values.add(String(v));
+      });
+    });
+    result[label] = [...values].sort().map((v) => ({ value: v, label: v }));
+  });
+  return result;
+}
+
+// Filter bar rendered above every chart on the Charts page (built-in and custom) — shared
+// between the admin preview and the public page. Renders one control per admin-defined
+// filter: a From/To date pair for type='range', a searchable dropdown for type='exact'.
+// Nothing configured means an (almost) empty bar — see the admin's own always-visible
+// wrapper around this for the "add a filter" entry point when that's the case.
+export function GlobalDateFilterBar({ filters = [], values = {}, onChange, onClear, generalFilterOptions = {} }) {
+  const hasFilter = filters.some((f) => {
+    const v = values[f.label];
+    return f.type === 'range' ? Boolean(v?.from || v?.to) : Boolean(v);
+  });
+  return (
+    <div className="flex flex-wrap items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Filters</span>
+      {filters.length === 0 && (
+        <span className="text-xs text-gray-400">None configured yet.</span>
+      )}
+      {filters.map((f) => f.type === 'range' ? (
+        <div key={f.label} className="flex flex-wrap items-center gap-1.5">
+          <label className="text-xs text-gray-500 dark:text-gray-400">{f.label} from</label>
+          <input type="date" value={values[f.label]?.from || ''}
+            onChange={(e) => onChange(f.label, { ...(values[f.label] || {}), from: e.target.value })}
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+          <label className="text-xs text-gray-500 dark:text-gray-400">to</label>
+          <input type="date" value={values[f.label]?.to || ''}
+            onChange={(e) => onChange(f.label, { ...(values[f.label] || {}), to: e.target.value })}
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+        </div>
+      ) : (
+        <div key={f.label} className="min-w-[160px]">
+          <Select value={selectValue(generalFilterOptions[f.label] || [], values[f.label] || '')}
+            onChange={(opt) => onChange(f.label, opt ? opt.value : '')}
+            options={generalFilterOptions[f.label] || []} placeholder={f.label} isClearable styles={selectStyles} />
+        </div>
+      ))}
+      {hasFilter && (
+        <button type="button" onClick={onClear} className="text-xs font-medium text-red-500 hover:underline">Clear</button>
+      )}
+    </div>
+  );
 }
 
 // Generic (non-Free-Wi-Fi) Summary Card tile computation — shared by the live widget and
@@ -256,16 +513,19 @@ export function computeSummaryTiles(records, source, taggedFields) {
   const tiles = tileConfigs.length
     ? tileConfigs.map((cfg) => {
         const fieldDef = (taggedFields || []).find(f => f.name === cfg.field);
+        // Each tile can carry its own filter conditions, independent of every other
+        // tile's — e.g. one tile counts all rows, another only Province = Bukidnon rows.
+        const rows = filterRecordsByConditions(records, cfg.conditions);
         let value = 0;
         if (cfg.agg === 'count') {
-          value = records.length;
+          value = rows.length;
         } else if (cfg.agg === 'distinct') {
-          value = new Set(records.map(r => String(r[cfg.field] ?? '').trim()).filter(Boolean)).size;
+          value = new Set(rows.map(r => String(r[cfg.field] ?? '').trim()).filter(Boolean)).size;
         } else if (cfg.agg === 'count_equals') {
           const target = String(cfg.equals ?? '').trim().toLowerCase();
-          value = records.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
+          value = rows.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
         } else {
-          value = records.reduce((s, r) => s + (Number(r[cfg.field]) || 0), 0);
+          value = rows.reduce((s, r) => s + (Number(r[cfg.field]) || 0), 0);
         }
         return { label: cfg.label || fieldDef?.label || cfg.field || 'Count', value, highlight: Boolean(cfg.highlight) };
       })
@@ -325,7 +585,14 @@ export function renderSummaryCardBody({ lead, rest, accentTile }, style) {
 }
 
 // Two custom charts showing the same type + fields are duplicates
-const chartSignature = (c) => `${c.chartType}|${c.field}|${c.secondaryField || ''}`;
+// Value Cards on the same field but a different aggregation (e.g. Sum vs. Average of
+// "budget") are legitimately different charts, not duplicates — include agg/equals so
+// they don't collide under one signature. Same reasoning for conditions: "Sum of Budget
+// where Province=Bukidnon" and "Sum of Budget where Province=Misamis" are different
+// charts even though type/field/agg all match.
+const chartSignature = (c) => `${c.chartType}|${c.field}|${c.secondaryField || ''}` +
+  (c.chartType === 'aggregate-cards' ? `|${c.agg || 'sum'}|${c.equals || ''}` : '') +
+  `|${JSON.stringify(c.conditions || [])}`;
 
 // Backend chart-config rows are snake_case; the renderer/local state use this camelCase
 // shape. `id` stays numeric (a real backend id) so it's distinguishable from the legacy
@@ -338,6 +605,23 @@ export function chartConfigFromBackend(c) {
     chartType: c.chart_type,
     field: c.field,
     secondaryField: c.secondary_field || '',
+    // Only meaningful for chart_type='aggregate-cards' — see ProjectChartConfig's model
+    // docstring. Defaulted here (not left undefined) so the "Add Custom Chart" modal's
+    // Aggregation select always has a valid value even for charts saved before this
+    // existed.
+    agg: c.agg || 'sum',
+    equals: c.agg_equals || '',
+    // Only meaningful for chart_type='aggregate-cards' — which of CARD_DESIGNS this Value
+    // Card uses (blank/'big-number' is the original plain-number look), plus that design's
+    // own settings: cardIcon (icon-number), cardColor (all designs but big-number), and
+    // cardTarget (progress).
+    cardDesign: c.card_design || 'big-number',
+    cardIcon: c.card_icon || '',
+    cardColor: c.card_color || '',
+    cardTarget: c.card_target || '',
+    // {field, value} pairs, ANDed together, narrowing which rows this chart counts —
+    // independent of chart_type, unlike agg/agg_equals. See CustomChartRenderer.
+    conditions: c.conditions || [],
     gridSize: c.grid_size || 'full',
     showOnUser: c.show_on_user,
     showAllCategories: c.show_all_categories,
@@ -349,11 +633,19 @@ export function chartConfigFromBackend(c) {
 }
 
 export function chartConfigToBackend(chart) {
+  const isCard = chart.chartType === 'aggregate-cards';
   return {
     title: chart.title,
     chart_type: chart.chartType,
     field: chart.field,
     secondary_field: chart.secondaryField || '',
+    agg: isCard ? (chart.agg || 'sum') : '',
+    agg_equals: isCard ? (chart.equals || '') : '',
+    card_design: isCard ? (chart.cardDesign || 'big-number') : '',
+    card_icon: isCard ? (chart.cardIcon || '') : '',
+    card_color: isCard ? (chart.cardColor || '') : '',
+    card_target: isCard ? (chart.cardTarget || '') : '',
+    conditions: (chart.conditions || []).filter(cond => cond.field),
     grid_size: chart.gridSize || 'full',
     show_on_user: chart.showOnUser !== false,
     show_all_categories: !!chart.showAllCategories,
@@ -362,9 +654,27 @@ export function chartConfigToBackend(chart) {
   };
 }
 
-// Clean a saved chart list: drop duplicate ids, duplicate custom configs,
-// and stale built-ins; guarantee every current built-in appears exactly once
-function sanitizeCharts(charts) {
+// Applies a saved display order (ProjectChartSource.chart_order: a flat list of chart
+// ids, built-ins and custom mixed together) to a list of chart-like items keyed by `id`.
+// Items not present in `chartOrder` (new charts created since it was last saved, or
+// before it's ever been saved at all) are appended after, in whatever order they were
+// passed in — never dropped just for being unlisted. Shared by the admin preview and the
+// public page so both display in the exact same sequence.
+export function sortByChartOrder(items, chartOrder) {
+  const byId = new Map(items.map(item => [item.id, item]));
+  const ordered = [];
+  const remaining = new Set(byId.keys());
+  (chartOrder || []).forEach(id => {
+    if (remaining.has(id)) { ordered.push(byId.get(id)); remaining.delete(id); }
+  });
+  remaining.forEach(id => ordered.push(byId.get(id)));
+  return ordered;
+}
+
+// Clean a saved chart list: drop duplicate ids, duplicate custom configs, and stale
+// built-ins; guarantee every current built-in appears exactly once; then apply chartOrder
+// (see sortByChartOrder) so built-ins and custom charts display in one combined sequence.
+function sanitizeCharts(charts, chartOrder) {
   const seenIds = new Set();
   const seenConfigs = new Set();
   const result = [];
@@ -386,7 +696,7 @@ function sanitizeCharts(charts) {
   BUILT_IN_CHARTS.forEach(b => {
     if (!seenIds.has(b.id)) result.push({ ...b, visible: true, dataSource: 'live' });
   });
-  return result;
+  return sortByChartOrder(result, chartOrder);
 }
 
 // How well a chart type fits a field with `count` distinct values
@@ -593,13 +903,114 @@ export function ProvinceBreakdown({ province, data, sites, color, maxSites, hasA
   );
 }
 
+// Single aggregate number for chart_type='aggregate-cards' — same aggregation
+// vocabulary as ProjectChartSource's Summary Card tiles (computeSummaryTiles above),
+// just producing one plain value instead of a tile list.
+function computeAggregateValue(records, field, agg) {
+  if (agg === 'count') return records.length;
+  if (agg === 'distinct') return new Set(records.map(r => String(r[field] ?? '').trim()).filter(Boolean)).size;
+  if (agg === 'average') {
+    // Number('') is 0, not NaN — blank cells must be filtered out as strings first, or
+    // they'd silently count as zero-valued rows and drag the average down instead of
+    // being excluded as "no data" (rows with a real value are what an average means).
+    const nums = records
+      .map(r => r[field])
+      .filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+      .map(Number)
+      .filter(Number.isFinite);
+    return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+  }
+  return records.reduce((s, r) => s + (Number(r[field]) || 0), 0); // sum (default)
+}
+
+// KPI tile for chart_type='aggregate-cards' — one big number (e.g. "Total Budget:
+// ₱2.4M"), the chart's own Title (rendered by the enclosing ChartCard/DraggableChart)
+// is the label, so this only needs to render the value itself.
+function AggregateValueCard({ chart, sites }) {
+  const agg = chart.agg || 'sum';
+  const value = agg === 'count_equals'
+    ? sites.filter(r => String(r[chart.field] ?? '').trim().toLowerCase() === String(chart.equals ?? '').trim().toLowerCase()).length
+    : computeAggregateValue(sites, chart.field, agg);
+  const display = agg === 'average'
+    ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+    : Math.round(value).toLocaleString();
+  const color = chart.cardColor || '#0038A8';
+  const design = chart.cardDesign || 'big-number';
+  const Icon = chart.cardIcon ? MARKER_ICON_OPTIONS.find(o => o.name === chart.cardIcon)?.Icon : null;
+
+  if (design === 'colored-bg') {
+    return (
+      <div className="flex items-center justify-center py-8 rounded-xl" style={{ backgroundColor: color }}>
+        <p className="text-5xl font-black" style={{ color: contrastTextColor(color) }}>{display}</p>
+      </div>
+    );
+  }
+
+  if (design === 'icon-number') {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-8">
+        {Icon && <Icon size={28} color={color} />}
+        <p className="text-5xl font-black" style={{ color }}>{display}</p>
+      </div>
+    );
+  }
+
+  if (design === 'progress') {
+    const target = Number(chart.cardTarget) || 0;
+    const pct = target > 0 ? Math.min(100, Math.max(0, (value / target) * 100)) : 0;
+    return (
+      <div className="py-8 px-6">
+        <p className="text-3xl font-black text-center mb-3" style={{ color }}>
+          {display}{target > 0 && <span className="text-lg font-medium text-gray-400"> / {Math.round(target).toLocaleString()}</span>}
+        </p>
+        <div className="h-3 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+        </div>
+        {target > 0 && <p className="text-xs text-gray-400 text-center mt-1.5">{Math.round(pct)}%</p>}
+      </div>
+    );
+  }
+
+  if (design === 'compact-row') {
+    return (
+      <div className="flex items-center gap-3 py-6 px-4">
+        {Icon && <Icon size={24} color={color} className="shrink-0" />}
+        <p className="text-4xl font-black shrink-0" style={{ color }}>{display}</p>
+        {chart.title && <p className="text-sm text-gray-500 dark:text-gray-400 min-w-0">{chart.title}</p>}
+      </div>
+    );
+  }
+
+  // 'big-number' — the original plain design.
+  return (
+    <div className="flex items-center justify-center py-8">
+      <p className="text-5xl font-black" style={{ color }}>{display}</p>
+    </div>
+  );
+}
+
 // Custom Chart Renderer with hover tooltips
 export function CustomChartRenderer({ chart, sites }) {
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [hoveredItem, setHoveredItem] = useState(null);
 
+  // Optional admin-set filter conditions (see ProjectChartConfig.conditions), applied
+  // before any type-specific logic below — the aggregation branch (aggregate-cards) and
+  // the fieldData tally branch both just read filteredSites instead of sites.
+  const filteredSites = filterRecordsByConditions(sites, chart.conditions);
+
+  // chart_type='aggregate-cards' aggregates `field`'s VALUES into one number instead of
+  // counting occurrences of its distinct values — bypasses the fieldData/sorted pipeline
+  // every other chart type below is built on, since that pipeline doesn't apply to it.
+  // (After the two useState calls above, not before — an early return earlier would skip
+  // hooks conditionally between renders, since the live chart-builder preview re-renders
+  // this same instance as the admin switches chart types.)
+  if (chart.chartType === 'aggregate-cards') {
+    return <AggregateValueCard chart={chart} sites={filteredSites} />;
+  }
+
   const fieldData = {};
-  sites.forEach(s => {
+  filteredSites.forEach(s => {
     const key = s[chart.field] || 'N/A';
     fieldData[key] = (fieldData[key] || 0) + 1;
   });
@@ -625,7 +1036,7 @@ export function CustomChartRenderer({ chart, sites }) {
   const getSubGroups = (primaryLabel) => {
     if (!chart.secondaryField) return null;
     const subData = {};
-    sites.filter(s => (s[chart.field] || 'N/A') === primaryLabel).forEach(s => {
+    filteredSites.filter(s => (s[chart.field] || 'N/A') === primaryLabel).forEach(s => {
       const subKey = s[chart.secondaryField] || 'N/A';
       subData[subKey] = (subData[subKey] || 0) + 1;
     });
@@ -1226,7 +1637,7 @@ export function CustomChartRenderer({ chart, sites }) {
 }
 
 // Wrapper for draggable chart
-function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, children, title, subtitle, onEdit, onDelete, onToggleVisibility, showOnUser, isCustom, dataSource, onDataSourceChange }) {
+function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, children, title, subtitle, onEdit, onEditStyle, onDelete, onToggleVisibility, showOnUser, isCustom, dataSource, onDataSourceChange }) {
   return (
     <div
       onDragOver={onDragOver}
@@ -1253,15 +1664,19 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
           </div>
           <div className="flex items-center gap-2">
             {onDataSourceChange && (
-              <select value={dataSource} onChange={(e) => onDataSourceChange(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                title="Data source"
-                className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                {DATA_SOURCES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
+              <div className="w-36" onClick={(e) => e.stopPropagation()} title="Data source">
+                <Select value={selectValue(DATA_SOURCE_OPTIONS, dataSource)}
+                  onChange={(opt) => onDataSourceChange(opt.value)}
+                  options={DATA_SOURCE_OPTIONS} isSearchable={false} styles={selectStyles} />
+              </div>
+            )}
+            {onEditStyle && (
+              <button onClick={onEditStyle} className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit style">
+                <Palette size={14} />
+              </button>
             )}
             {onEdit && (
-              <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit">
+              <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit settings">
                 <Edit2 size={14} />
               </button>
             )}
@@ -1406,11 +1821,241 @@ function SummaryStyleModal({ initialStyle, saving, renderPreview, onSave, onClos
 // see the 'province-breakdown' case in renderGenericBuiltIn).
 const RAW_DATA_PAGE_SIZE = 50;
 
+// Admin UI for one {field, value} AND-list — reused everywhere conditions are editable:
+// each custom chart, each Summary Card tile, and the whole Map/Breakdown widgets. `fieldOptions`
+// is the {value,label} list for the "Column" dropdown; `valuesFor(field)` returns that
+// field's own {value,label} list for the "Value" dropdown (typically distinctFieldValues
+// wrapped in toOptions, computed against whichever table/records this instance concerns).
+function ConditionsEditor({ conditions, onChange, fieldOptions, valuesFor }) {
+  const add = () => onChange([...(conditions || []), { field: '', value: '' }]);
+  const update = (i, patch) => onChange((conditions || []).map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const remove = (i) => onChange((conditions || []).filter((_, idx) => idx !== i));
+  return (
+    <div className="space-y-2">
+      {(conditions || []).map((cond, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <div className="flex-1 min-w-[110px]">
+            <Select value={selectValue(fieldOptions, cond.field)}
+              onChange={(opt) => update(i, { field: opt ? opt.value : '', value: '' })}
+              options={fieldOptions} placeholder="Column..." isClearable styles={selectStyles} />
+          </div>
+          <span className="text-xs text-gray-400 shrink-0">=</span>
+          <div className="flex-1 min-w-[110px]">
+            <Select value={selectValue(valuesFor(cond.field), cond.value)}
+              onChange={(opt) => update(i, { value: opt ? opt.value : '' })}
+              options={valuesFor(cond.field)} isDisabled={!cond.field}
+              placeholder="Value..." isClearable styles={selectStyles} />
+          </div>
+          <button type="button" onClick={() => remove(i)} className="text-gray-400 hover:text-red-500 shrink-0">
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={add} className="text-xs font-medium text-[#0038A8] dark:text-blue-400 hover:underline">
+        + Add condition{(conditions || []).length > 0 ? ' (AND)' : ''}
+      </button>
+    </div>
+  );
+}
+
+// Dedicated settings surface for the Charts page's general filters (each one's name + which
+// column each table tags for it) — same "pencil icon opens a focused modal" pattern the
+// built-in Summary/Map/Breakdown widgets got earlier. Doesn't reuse DataSourceModal's
+// focusSection sections since this isn't scoped to one widget's one table — it can tag ANY
+// of the project's tables, including ones only a custom chart points at, for ANY number of
+// filters. Everything here is a local draft, only written on Save (Cancel discards it) —
+// unlike the marker-icon-style "apply immediately" pickers elsewhere, since adding/removing
+// filters and retagging several tables at once is much easier to get right as one commit.
+function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved }) {
+  // Each filter is { label, type: 'exact'|'range' } — 'range' is what the old hardcoded
+  // From/To date filter now is, just no longer special-cased (admin can name it "Date" or
+  // anything else, and add as many range filters as they want, e.g. "Installation Date"
+  // AND "Renewal Date" both independently).
+  const [filters, setFilters] = useState(
+    initialFilters && initialFilters.length ? initialFilters.map((f) => ({ ...f })) : []
+  );
+  // { [tableId]: { [filterLabel]: columnName } }
+  const [tableFields, setTableFields] = useState(() => {
+    const map = {};
+    tables.forEach((t) => { map[t.id] = { ...(t.general_filter_fields || {}) }; });
+    return map;
+  });
+  const [saving, setSaving] = useState(false);
+
+  const addFilter = () => setFilters((prev) => [...prev, { label: '', type: 'exact' }]);
+  const updateFilter = (i, patch) => setFilters((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  const removeFilter = (i) => {
+    const removedLabel = filters[i].label;
+    setFilters((prev) => prev.filter((_, idx) => idx !== i));
+    // Drop that label's column tags too, so a removed filter doesn't leave orphaned tags
+    // a re-added filter with the same name would otherwise silently inherit.
+    setTableFields((prev) => {
+      const next = {};
+      Object.entries(prev).forEach(([tableId, fieldMap]) => {
+        const rest = { ...fieldMap };
+        delete rest[removedLabel];
+        next[tableId] = rest;
+      });
+      return next;
+    });
+  };
+  const setTableColumn = (tableId, label, column) => {
+    setTableFields((prev) => ({ ...prev, [tableId]: { ...(prev[tableId] || {}), [label]: column } }));
+  };
+
+  const cleanFilters = filters
+    .map((f) => ({ label: f.label.trim(), type: f.type === 'range' ? 'range' : 'exact' }))
+    .filter((f) => f.label);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateProjectChartSource(slug, { general_filters: cleanFilters });
+      const labels = cleanFilters.map((f) => f.label);
+      await Promise.all(tables.map((t) => {
+        const fieldMap = tableFields[t.id] || {};
+        const cleaned = {};
+        labels.forEach((label) => { if (fieldMap[label]) cleaned[label] = fieldMap[label]; });
+        return updateProjectDataset(t.id, { general_filter_fields: cleaned });
+      }));
+      await onSaved();
+    } catch (err) {
+      alert('Failed to save filter settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Filter Settings</h3>
+          <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
+        </div>
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+              Filters <span className="text-gray-400">(each becomes its own control on the Charts page, e.g. "Province" or "Date")</span>
+            </label>
+            <div className="space-y-2">
+              {filters.map((f, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input value={f.label} onChange={(e) => updateFilter(i, { label: e.target.value })}
+                    placeholder="e.g. Province" className="flex-1 px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                  <div className="w-48 shrink-0">
+                    <Select value={selectValue(FILTER_TYPE_OPTIONS, f.type)}
+                      onChange={(opt) => updateFilter(i, { type: opt.value })}
+                      options={FILTER_TYPE_OPTIONS} isSearchable={false} styles={selectStyles} />
+                  </div>
+                  <button type="button" onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-500 shrink-0">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={addFilter} className="text-xs font-medium text-[#0038A8] dark:text-blue-400 hover:underline">
+                + Add filter
+              </button>
+              {filters.length === 0 && (
+                <p className="text-[11px] text-gray-400">No filters yet — the Charts page won't show a filter bar until you add one.</p>
+              )}
+            </div>
+          </div>
+
+          {cleanFilters.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                Column per table <span className="text-gray-400">(which of each table's own columns feeds each filter — blank means that table isn't affected by it)</span>
+              </label>
+              {tables.length === 0 ? (
+                <p className="text-xs text-gray-400">Create a table under the Datasets tab first.</p>
+              ) : (
+                <div className="space-y-3">
+                  {tables.map((t) => (
+                    <div key={t.id} className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 truncate" title={t.name}>{t.name}</p>
+                      <div className="space-y-1.5">
+                        {cleanFilters.map(({ label }) => (
+                          <div key={label} className="flex items-center gap-2">
+                            <span className="w-20 shrink-0 text-[11px] text-gray-500 dark:text-gray-400 truncate" title={label}>{label}</span>
+                            <div className="flex-1">
+                              <Select
+                                value={selectValue(toOptions((t.fields || []).map(f => f.name), (n) => (t.fields || []).find(f => f.name === n)?.label), (tableFields[t.id] || {})[label] || '')}
+                                onChange={(opt) => setTableColumn(t.id, label, opt ? opt.value : '')}
+                                options={toOptions((t.fields || []).map(f => f.name), (n) => (t.fields || []).find(f => f.name === n)?.label)}
+                                placeholder="None" isClearable styles={selectStyles} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving}
+              className="flex-1 px-4 py-2.5 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] disabled:opacity-50">
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={onClose} className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Non-Free-Wi-Fi only: "tag" which of this project's own Datasets tables feeds each of
 // the Summary/Map/Breakdown built-ins (independently — same table or three different
 // ones, admin's call), which of that table's columns power it, and its title. The
 // generic equivalent of Free Wi-Fi's per-built-in DATA_SOURCES picker.
-function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
+// `focusSection`: null shows all 3 widget sections (the "Data Source" button — first-time
+// setup or editing more than one widget at once); 'summary'/'map'/'breakdown' shows only
+// that one (each built-in chart's own "Edit" button) so a quick tweak doesn't require
+// wading through the other two widgets' settings. Every section's state/save logic stays
+// exactly the same either way — Save always submits the full draft, so a hidden section's
+// fields just pass through unchanged instead of being read from a smaller draft shape.
+function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = null, onSave, onClose, onDatasetUpdated, onChartSourceUpdated }) {
+  // Custom Map marker icon (one image for every dot, replacing the default colored
+  // circle) — file upload and URL both apply immediately, rather than waiting for the
+  // modal's own Save button, since they're a separate multipart endpoint / a standalone
+  // field that isn't part of the JSON draft
+  // Save already sends.
+  const [markerIcon, setMarkerIcon] = useState(initial?.marker_icon || '');
+  const [markerIconUrlInput, setMarkerIconUrlInput] = useState(initial?.marker_icon || '');
+  const [markerIconName, setMarkerIconName] = useState(initial?.marker_icon_name || '');
+  const [markerIconColor, setMarkerIconColor] = useState(initial?.marker_icon_color || '#0038A8');
+  const [savingMarkerIcon, setSavingMarkerIcon] = useState(false);
+  const applyMarkerIconUpdate = async (fn) => {
+    setSavingMarkerIcon(true);
+    try {
+      const updated = await fn();
+      setMarkerIcon(updated.marker_icon || '');
+      setMarkerIconUrlInput(updated.marker_icon || '');
+      setMarkerIconName(updated.marker_icon_name || '');
+      setMarkerIconColor(updated.marker_icon_color || '#0038A8');
+      if (onChartSourceUpdated) onChartSourceUpdated(updated);
+    } catch (err) {
+      alert('Failed to update the marker icon.');
+    } finally {
+      setSavingMarkerIcon(false);
+    }
+  };
+  // Image and Lucide-icon are mutually exclusive — picking one clears the other (the
+  // backend enforces this too; see ProjectChartSourceView.patch), so there's never a
+  // question of which one actually shows on the map.
+  const uploadMarkerIconFile = (file) => applyMarkerIconUpdate(() => uploadProjectChartSourceMarkerIcon(slug, file));
+  const setMarkerIconUrl = () => applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon: markerIconUrlInput.trim() }));
+  const clearMarkerIcon = () => applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon: '', marker_icon_name: '' }));
+  const selectMarkerIconName = (name) => applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon_name: name, marker_icon_color: markerIconColor }));
+  const changeMarkerIconColor = (color) => {
+    setMarkerIconColor(color);
+    if (markerIconName) applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon_color: color }));
+  };
+
   // Summary Card
   const [summaryDatasetId, setSummaryDatasetId] = useState(initial?.summary_dataset || '');
   const [summaryTitle, setSummaryTitle] = useState(initial?.summary_title || '');
@@ -1437,6 +2082,18 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
   // Columns shown in the Map's hover tooltip, in the order they were picked. Empty = no
   // tooltip on the dots at all.
   const [tooltipFields, setTooltipFields] = useState(initial?.tooltip_fields || []);
+  // Columns FreeWifiMap renders as its filter dropdowns, in selection order. Generic
+  // replacement for the old hardcoded province/district/locality/barangay filters — any
+  // project's own columns work, no need to rename sheet headers to match. Empty = no
+  // filter dropdowns.
+  const [filterFields, setFilterFields] = useState(initial?.map_filter_fields || []);
+  // Which single column drives per-marker color + the legend — picked independently of
+  // filterFields (doesn't have to be a filter dropdown, or any of them). Empty = every
+  // marker uses the default color, no legend.
+  const [mapColorField, setMapColorField] = useState(initial?.map_color_field || '');
+  // Admin-set floor under filterFields (those are visitor-interactive; this always
+  // applies) — narrows which rows plot on the Map at all. See ConditionsEditor.
+  const [mapConditions, setMapConditions] = useState(initial?.map_conditions || []);
 
   // Breakdown
   const [breakdownDatasetId, setBreakdownDatasetId] = useState(initial?.breakdown_dataset || '');
@@ -1445,6 +2102,9 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
   // Columns shown in the Breakdown widget's raw-data table. Empty = show every column
   // (unlike tooltipFields, since this preserves the pre-existing "show everything" default).
   const [breakdownFields, setBreakdownFields] = useState(initial?.breakdown_fields || []);
+  // Narrows which rows the Breakdown widget groups/counts at all, before group_field
+  // splits them. See ConditionsEditor.
+  const [breakdownConditions, setBreakdownConditions] = useState(initial?.breakdown_conditions || []);
 
   const [saving, setSaving] = useState(false);
 
@@ -1458,11 +2118,14 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
   const toggleTooltipField = (name) => {
     setTooltipFields(prev => prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]);
   };
+  const toggleFilterField = (name) => {
+    setFilterFields(prev => prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]);
+  };
   const toggleBreakdownField = (name) => {
     setBreakdownFields(prev => prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]);
   };
 
-  const addSummaryTile = () => setSummaryFields(prev => [...prev, { field: '', agg: 'distinct', equals: '', label: '' }]);
+  const addSummaryTile = () => setSummaryFields(prev => [...prev, { field: '', agg: 'distinct', equals: '', label: '', conditions: [] }]);
   const updateSummaryTile = (i, patch) => setSummaryFields(prev => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
   const removeSummaryTile = (i) => setSummaryFields(prev => prev.filter((_, idx) => idx !== i));
   const setHighlightTile = (i) => setSummaryFields(prev => prev.map((t, idx) => ({ ...t, highlight: idx === i })));
@@ -1484,16 +2147,21 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
       await onSave({
         summary_dataset: summaryDatasetId ? Number(summaryDatasetId) : null,
         summary_title: summaryTitle,
-        summary_fields: summaryFields.filter(t => t.agg === 'count' || t.field),
+        summary_fields: summaryFields.filter(t => t.agg === 'count' || t.field)
+          .map(t => ({ ...t, conditions: (t.conditions || []).filter(c => c.field) })),
         map_dataset: mapDatasetId ? Number(mapDatasetId) : null,
         map_title: mapTitle,
         latitude_field: latField,
         longitude_field: combinedCoords ? latField : lngField,
         tooltip_fields: tooltipFields,
+        map_filter_fields: filterFields,
+        map_color_field: mapColorField,
+        map_conditions: mapConditions.filter(c => c.field),
         breakdown_dataset: breakdownDatasetId ? Number(breakdownDatasetId) : null,
         breakdown_title: breakdownTitle,
         group_field: groupField,
         breakdown_fields: breakdownFields,
+        breakdown_conditions: breakdownConditions.filter(c => c.field),
       });
     } finally {
       setSaving(false);
@@ -1504,16 +2172,24 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
     <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Data Source</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+            {focusSection === 'summary' ? 'Summary Card Settings'
+              : focusSection === 'map' ? 'Map Settings'
+              : focusSection === 'breakdown' ? 'Breakdown Settings'
+              : 'Data Source'}
+          </h3>
           <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-5">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Each widget below can pull from a different one of this project's Datasets
-            tables — or the same one — entirely independently.
-          </p>
+          {!focusSection && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Each widget below can pull from a different one of this project's Datasets
+              tables — or the same one — entirely independently.
+            </p>
+          )}
 
           {/* Summary Card */}
+          {(!focusSection || focusSection === 'summary') && (
           <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
             <h4 className="text-sm font-bold text-gray-900 dark:text-white">Summary Card</h4>
             <div>
@@ -1523,67 +2199,70 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
-              <select value={summaryDatasetId} onChange={(e) => { setSummaryDatasetId(e.target.value); setSummaryFields([]); }}
-                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                <option value="">Select table...</option>
-                {tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select value={selectValue(toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name), summaryDatasetId ? Number(summaryDatasetId) : null)}
+                onChange={(opt) => { setSummaryDatasetId(opt ? opt.value : ''); setSummaryFields([]); }}
+                options={toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name)}
+                placeholder="Select table..." isClearable styles={selectStyles} />
               {tables.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Create a table under the Datasets tab first.</p>}
             </div>
 
             {summaryTable && (
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Tiles</label>
-                <p className="text-[11px] text-gray-400 mb-2">
-                  Drag <GripVertical size={10} className="inline -mt-0.5" /> to reorder — the top tile is the
-                  big lead number. Click <Star size={10} className="inline -mt-0.5" /> on any other tile to make
-                  it the highlighted one (defaults to the bottom tile if none is starred). E.g. to reproduce Free
-                  Wi-Fi's card: "R10 Site ID" → Count unique values → "Total Active Locations" (top/lead),
-                  "Locality" → Count unique values → "Municipalities", "Province" → Count unique values →
-                  "Total Province", "Barangay" → Count unique values → "Barangays", "AP" → Count rows where
-                  equals "TRUE" → "Total Active APs" (starred/highlighted). Leave empty to just show a row count.
-                </p>
+                
                 <div className="space-y-2">
                   {summaryFields.map((t, i) => (
                     <div key={i}
                       onDragOver={handleTileDragOver}
                       onDrop={() => handleTileDrop(i)}
-                      className={`flex flex-wrap items-center gap-2 p-2 border rounded-lg transition-colors ${
+                      className={`p-2 border rounded-lg transition-colors ${
                         dragTileIndex === i ? 'border-[#0038A8] opacity-60' : 'border-gray-200 dark:border-gray-700'
                       }`}>
-                      <span draggable
-                        onDragStart={() => setDragTileIndex(i)}
-                        onDragEnd={() => setDragTileIndex(null)}
-                        className="cursor-grab active:cursor-grabbing shrink-0" title="Drag to reorder">
-                        <GripVertical size={14} className="text-gray-400" />
-                      </span>
-                      <select value={t.field} disabled={t.agg === 'count'} onChange={(e) => updateSummaryTile(i, { field: e.target.value })}
-                        className="flex-1 min-w-[110px] px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800 disabled:opacity-40">
-                        <option value="">Select column...</option>
-                        {summaryTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
-                      </select>
-                      <select value={t.agg} onChange={(e) => updateSummaryTile(i, { agg: e.target.value })}
-                        className="px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800">
-                        <option value="distinct">Count unique values</option>
-                        <option value="count_equals">Count rows where equals...</option>
-                        <option value="sum">Sum values</option>
-                        <option value="count">Count all rows</option>
-                      </select>
-                      {t.agg === 'count_equals' && (
-                        <input value={t.equals || ''} onChange={(e) => updateSummaryTile(i, { equals: e.target.value })}
-                          placeholder="e.g. TRUE" className="w-20 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
-                      )}
-                      <input value={t.label || ''} onChange={(e) => updateSummaryTile(i, { label: e.target.value })}
-                        placeholder="Tile label" className="w-28 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
-                      {i > 0 && (
-                        <button type="button" onClick={() => setHighlightTile(i)} title="Make this the highlighted tile"
-                          className={`shrink-0 ${t.highlight ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'}`}>
-                          <Star size={16} fill={t.highlight ? 'currentColor' : 'none'} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span draggable
+                          onDragStart={() => setDragTileIndex(i)}
+                          onDragEnd={() => setDragTileIndex(null)}
+                          className="cursor-grab active:cursor-grabbing shrink-0" title="Drag to reorder">
+                          <GripVertical size={14} className="text-gray-400" />
+                        </span>
+                        <div className="flex-1 min-w-[110px]">
+                          <Select value={selectValue(toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label), t.field)}
+                            onChange={(opt) => updateSummaryTile(i, { field: opt ? opt.value : '' })}
+                            isDisabled={t.agg === 'count'}
+                            options={toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label)}
+                            placeholder="Select column..." isClearable styles={selectStyles} />
+                        </div>
+                        <div className="w-52">
+                          <Select value={selectValue(TILE_AGG_OPTIONS, t.agg)}
+                            onChange={(opt) => updateSummaryTile(i, { agg: opt.value })}
+                            options={TILE_AGG_OPTIONS} isSearchable={false} styles={selectStyles} />
+                        </div>
+                        {t.agg === 'count_equals' && (
+                          <div className="w-32">
+                            <Select value={selectValue(toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), t.field)), t.equals || '')}
+                              onChange={(opt) => updateSummaryTile(i, { equals: opt ? opt.value : '' })}
+                              options={toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), t.field))}
+                              placeholder="Value..." isClearable styles={selectStyles} />
+                          </div>
+                        )}
+                        <input value={t.label || ''} onChange={(e) => updateSummaryTile(i, { label: e.target.value })}
+                          placeholder="Tile label" className="w-28 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                        {i > 0 && (
+                          <button type="button" onClick={() => setHighlightTile(i)} title="Make this the highlighted tile"
+                            className={`shrink-0 ${t.highlight ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'}`}>
+                            <Star size={16} fill={t.highlight ? 'currentColor' : 'none'} />
+                          </button>
+                        )}
+                        <button type="button" onClick={() => removeSummaryTile(i)} className="text-gray-400 hover:text-red-500 shrink-0">
+                          <X size={14} />
                         </button>
-                      )}
-                      <button type="button" onClick={() => removeSummaryTile(i)} className="text-gray-400 hover:text-red-500 shrink-0">
-                        <X size={14} />
-                      </button>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-[10px] text-gray-400 mb-1">Filter rows for this tile (optional — independent of every other tile's own filter)</p>
+                        <ConditionsEditor conditions={t.conditions} onChange={(next) => updateSummaryTile(i, { conditions: next })}
+                          fieldOptions={toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label)}
+                          valuesFor={(field) => toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), field))} />
+                      </div>
                     </div>
                   ))}
                   <button type="button" onClick={addSummaryTile}
@@ -1594,8 +2273,10 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
               </div>
             )}
           </div>
+          )}
 
           {/* Map */}
+          {(!focusSection || focusSection === 'map') && (
           <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
             <h4 className="text-sm font-bold text-gray-900 dark:text-white">Map</h4>
             <div>
@@ -1605,13 +2286,72 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
-              <select value={mapDatasetId}
-                onChange={(e) => { setMapDatasetId(e.target.value); setLatField(''); setLngField(''); setCombinedCoords(false); setTooltipFields([]); }}
-                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                <option value="">Select table...</option>
-                {tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select value={selectValue(toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name), mapDatasetId ? Number(mapDatasetId) : null)}
+                onChange={(opt) => { setMapDatasetId(opt ? opt.value : ''); setLatField(''); setLngField(''); setCombinedCoords(false); setTooltipFields([]); setFilterFields([]); setMapColorField(''); setMapConditions([]); }}
+                options={toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name)}
+                placeholder="Select table..." isClearable styles={selectStyles} />
               {tables.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Create a table under the Datasets tab first.</p>}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                Marker icon <span className="text-gray-400">(replaces the default colored dot for every marker)</span>
+              </label>
+              <div className="flex items-center gap-3">
+                {markerIcon ? (
+                  <img src={markerIcon} alt="Marker icon" className="w-9 h-9 rounded object-contain border border-gray-200 dark:border-gray-700 shrink-0" />
+                ) : markerIconName ? (
+                  <div className="w-9 h-9 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shrink-0 flex items-center justify-center">
+                    {(() => {
+                      const SelectedIcon = MARKER_ICON_OPTIONS.find(o => o.name === markerIconName)?.Icon;
+                      return SelectedIcon ? <SelectedIcon size={18} color={markerIconColor} /> : null;
+                    })()}
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[#0038A8] shrink-0" title="Default marker" />
+                )}
+                <label className={`px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:border-[#0038A8] ${savingMarkerIcon ? 'opacity-50 pointer-events-none' : ''}`}>
+                  Upload image
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMarkerIconFile(f); e.target.value = ''; }} />
+                </label>
+                {(markerIcon || markerIconName) && (
+                  <button type="button" onClick={clearMarkerIcon} disabled={savingMarkerIcon}
+                    className="text-xs font-medium text-red-500 hover:underline disabled:opacity-50">
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input value={markerIconUrlInput} onChange={(e) => setMarkerIconUrlInput(e.target.value)}
+                  placeholder="...or paste an image URL"
+                  className="flex-1 px-3 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                <button type="button" onClick={setMarkerIconUrl}
+                  disabled={savingMarkerIcon || markerIconUrlInput.trim() === markerIcon}
+                  className="px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-40">
+                  {savingMarkerIcon ? 'Saving...' : 'Set'}
+                </button>
+              </div>
+
+              <div className="mt-3">
+                <p className="text-[11px] text-gray-400 mb-1.5">...or pick an icon (any color):</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input type="color" value={markerIconColor} onChange={(e) => changeMarkerIconColor(e.target.value)}
+                    disabled={savingMarkerIcon}
+                    className="w-8 h-8 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer disabled:opacity-50"
+                    title="Icon color" />
+                  {MARKER_ICON_OPTIONS.map(({ name, Icon }) => (
+                    <button key={name} type="button" onClick={() => selectMarkerIconName(name)} disabled={savingMarkerIcon}
+                      title={name}
+                      className={`w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${
+                        markerIconName === name ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                      }`}>
+                      <Icon size={16} color={markerIconName === name ? markerIconColor : undefined}
+                        className={markerIconName === name ? '' : 'text-gray-500 dark:text-gray-400'} />
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {mapTable && (
@@ -1627,30 +2367,27 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
                   {combinedCoords ? (
                     <div>
                       <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Coordinates column</label>
-                      <select value={latField} onChange={(e) => setLatField(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                        <option value="">None</option>
-                        {mapTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
-                      </select>
+                      <Select value={selectValue(toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label), latField)}
+                        onChange={(opt) => setLatField(opt ? opt.value : '')}
+                        options={toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label)}
+                        placeholder="None" isClearable styles={selectStyles} />
                       <p className="text-[11px] text-gray-400 mt-1">Value should be "latitude, longitude" — e.g. 8.486735683, 124.6322367</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Latitude column</label>
-                        <select value={latField} onChange={(e) => setLatField(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                          <option value="">None</option>
-                          {mapTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
-                        </select>
+                        <Select value={selectValue(toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label), latField)}
+                          onChange={(opt) => setLatField(opt ? opt.value : '')}
+                          options={toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label)}
+                          placeholder="None" isClearable styles={selectStyles} />
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Longitude column</label>
-                        <select value={lngField} onChange={(e) => setLngField(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                          <option value="">None</option>
-                          {mapTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
-                        </select>
+                        <Select value={selectValue(toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label), lngField)}
+                          onChange={(opt) => setLngField(opt ? opt.value : '')}
+                          options={toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label)}
+                          placeholder="None" isClearable styles={selectStyles} />
                       </div>
                     </div>
                   )}
@@ -1678,11 +2415,57 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
                     {tooltipFields.length === 0 ? "No fields selected — dots won't show a hover tooltip." : 'Shown in the order clicked.'}
                   </p>
                 </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Filter dropdowns <span className="text-gray-400">(columns visitors can filter the map by)</span>
+                  </label>
+                  {mapTableFields.length === 0 ? (
+                    <p className="text-xs text-gray-400">No columns on this table yet.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {mapTableFields.map(f => (
+                        <button key={f.id} type="button" onClick={() => toggleFilterField(f.name)}
+                          className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                            filterFields.includes(f.name) ? 'bg-[#0038A8] text-white border-[#0038A8]' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                          }`}>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {filterFields.length === 0
+                      ? 'No fields selected — the map shows an unfiltered search box only.'
+                      : 'Shown in the order clicked.'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Group / color map by <span className="text-gray-400">(sets marker color + the legend — any column, doesn't need to be a filter dropdown above)</span>
+                  </label>
+                  <Select value={selectValue(toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label), mapColorField)}
+                    onChange={(opt) => setMapColorField(opt ? opt.value : '')}
+                    options={toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label)}
+                    placeholder="None — every marker uses the default color" isClearable styles={selectStyles} />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Filter rows <span className="text-gray-400">(optional — only rows matching every condition plot on the Map at all, regardless of what a visitor picks above)</span>
+                  </label>
+                  <ConditionsEditor conditions={mapConditions} onChange={setMapConditions}
+                    fieldOptions={toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label)}
+                    valuesFor={(field) => toOptions(distinctFieldValues((mapTable?.rows || []).map(r => r.values || {}), field))} />
+                </div>
               </>
             )}
           </div>
+          )}
 
           {/* Breakdown */}
+          {(!focusSection || focusSection === 'breakdown') && (
           <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
             <h4 className="text-sm font-bold text-gray-900 dark:text-white">Breakdown</h4>
             <div>
@@ -1692,12 +2475,10 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
-              <select value={breakdownDatasetId}
-                onChange={(e) => { setBreakdownDatasetId(e.target.value); setGroupField(''); setBreakdownFields([]); }}
-                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                <option value="">Select table...</option>
-                {tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select value={selectValue(toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name), breakdownDatasetId ? Number(breakdownDatasetId) : null)}
+                onChange={(opt) => { setBreakdownDatasetId(opt ? opt.value : ''); setGroupField(''); setBreakdownFields([]); setBreakdownConditions([]); }}
+                options={toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name)}
+                placeholder="Select table..." isClearable styles={selectStyles} />
               {tables.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Create a table under the Datasets tab first.</p>}
             </div>
 
@@ -1705,11 +2486,19 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
               <>
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">"Group by" column</label>
-                  <select value={groupField} onChange={(e) => setGroupField(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                    <option value="">None</option>
-                    {breakdownTableFields.map(f => <option key={f.id} value={f.name}>{f.label}</option>)}
-                  </select>
+                  <Select value={selectValue(toOptions(breakdownTableFields.map(f => f.name), (n) => breakdownTableFields.find(f => f.name === n)?.label), groupField)}
+                    onChange={(opt) => setGroupField(opt ? opt.value : '')}
+                    options={toOptions(breakdownTableFields.map(f => f.name), (n) => breakdownTableFields.find(f => f.name === n)?.label)}
+                    placeholder="None" isClearable styles={selectStyles} />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Filter rows <span className="text-gray-400">(optional — only rows matching every condition are grouped/counted)</span>
+                  </label>
+                  <ConditionsEditor conditions={breakdownConditions} onChange={setBreakdownConditions}
+                    fieldOptions={toOptions(breakdownTableFields.map(f => f.name), (n) => breakdownTableFields.find(f => f.name === n)?.label)}
+                    valuesFor={(field) => toOptions(distinctFieldValues((breakdownTable?.rows || []).map(r => r.values || {}), field))} />
                 </div>
 
                 <div>
@@ -1737,6 +2526,7 @@ function DataSourceModal({ tables, initial, builtInTitles, onSave, onClose }) {
               </>
             )}
           </div>
+          )}
 
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={saving}
@@ -1793,13 +2583,42 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   const [officeId, setOfficeId] = useState(null);
   const [genericTables, setGenericTables] = useState([]);
   const [chartSource, setChartSource] = useState(null);
-  const [showDataSourceModal, setShowDataSourceModal] = useState(false);
+  // false = closed; 'all' = every widget (the "Data Source" button); 'summary'/'map'/
+  // 'breakdown' = just that one built-in chart's own settings (its "Edit" button) — see
+  // DataSourceModal's focusSection prop.
+  const [dataSourceModalSection, setDataSourceModalSection] = useState(false);
+
+  // Charts page's admin-defined filters (see GlobalDateFilterBar/FilterSettingsModal) —
+  // applied upstream of every built-in AND custom chart. `generalFilterValues` is
+  // { [label]: {from,to} for a 'range' filter | string for an 'exact' one }. Options come
+  // from the FULL table list (not yet filtered) so they don't shrink as filters apply.
+  // Non-Free-Wi-Fi only, same as the rest of this block.
+  const [generalFilterValues, setGeneralFilterValues] = useState({});
+  const generalFilterLabels = chartSource?.general_filters || [];
+  const generalFilterOptions = useMemo(
+    () => generalFilterOptionsFor(genericTables, generalFilterLabels),
+    [genericTables, generalFilterLabels]
+  );
+  // Filter bar's own "pencil" settings modal (add/remove filters + per-table column tags)
+  // — see FilterSettingsModal, same pattern as each built-in chart's own Edit button.
+  const [showFilterSettings, setShowFilterSettings] = useState(false);
+  const filteredGenericTables = useMemo(
+    () => filterTablesByGeneralFilter(genericTables, generalFilterLabels, generalFilterValues),
+    [genericTables, generalFilterLabels, generalFilterValues]
+  );
 
   const recordsByDataset = useMemo(() => {
     const map = {};
-    genericTables.forEach((t) => { map[t.id] = (t.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) })); });
+    filteredGenericTables.forEach((t) => { map[t.id] = (t.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) })); });
     return map;
-  }, [genericTables]);
+  }, [filteredGenericTables]);
+
+  // Re-derive the built-ins' record sets whenever a filter changes — same computation the
+  // initial load / Data Source save already run, just also reacting to filteredGenericTables.
+  useEffect(() => {
+    if (isFreeWifi || !chartSource) return;
+    setDatasets(buildTaggedRecords(filteredGenericTables, chartSource));
+  }, [isFreeWifi, filteredGenericTables, chartSource]);
 
   // Field list for the custom-chart builder: Free Wi-Fi's fixed list, or whichever table
   // a given chart is pointed at (each project can have several Datasets tables, unlike
@@ -1827,6 +2646,9 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   const [savingChart, setSavingChart] = useState(false);
   const [newChart, setNewChart] = useState({
     title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal',
+    agg: 'sum', equals: '',
+    cardDesign: 'big-number', cardIcon: '', cardColor: '#0038A8', cardTarget: '',
+    conditions: [],
     gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '',
   });
 
@@ -1861,7 +2683,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         setGenericTables(tables);
         setChartSource(source);
         setDatasets(buildTaggedRecords(tables, source));
-        setAllCharts(sanitizeCharts(configs.map(chartConfigFromBackend)));
+        setAllCharts(sanitizeCharts(configs.map(chartConfigFromBackend), source.chart_order));
         setSummaryStyle({
           colorFrom: source.color_from || '#0038A8',
           colorTo: source.color_to || '#0055f1',
@@ -1958,7 +2780,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       }
       setShowAddChart(false);
       setEditingChart(null);
-      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '' });
+      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal', agg: 'sum', equals: '', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '' });
     } catch (err) {
       alert(`Save failed: ${err?.response?.data?.detail || err.message}`);
     } finally {
@@ -2033,11 +2855,18 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       const [moved] = arr.splice(dragIndex, 1);
       arr.splice(dropIndex, 0, moved);
       // Free Wi-Fi's order is a per-browser (localStorage) concept only — see the effect
-      // above. Other projects have no such fallback, so persist custom charts' relative
-      // order to the backend here (built-ins have no order of their own to save).
+      // above. Other projects have no such fallback, so persist to the backend here:
+      // custom charts' own relative order (ProjectChartConfig.order, read elsewhere) AND
+      // the full combined built-in+custom sequence (ProjectChartSource.chart_order) — the
+      // former alone can't place a custom chart above/below a built-in, only against other
+      // custom charts, which is why built-ins used to always end up last on reload.
       if (!isFreeWifi) {
         const customOrder = arr.filter(c => c.type === 'custom').map((c, i) => ({ id: c.id, order: i }));
         if (customOrder.length) reorderProjectChartConfigs(customOrder).catch(console.error);
+        const chartOrder = arr.map(c => c.id);
+        updateProjectChartSource(slug, { chart_order: chartOrder })
+          .then(saved => setChartSource(saved))
+          .catch(console.error);
       }
       return arr;
     });
@@ -2136,7 +2965,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
             <div className="flex items-center gap-2 mb-6">
               <span className="text-sm font-medium text-white/70">SUMMARY</span>
               <span className="text-sm text-white/50">as of</span>
-              <span className="text-sm font-medium">{today}</span>
+              <span className="text-sm font-medium">{summaryAsOfLabel(summaryDateFrom, summaryDateTo, today)}</span>
             </div>
             {renderSummaryCardBody(tiles, summaryStyle)}
           </div>
@@ -2148,7 +2977,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         if (!source.latitude_field || !source.longitude_field) {
           return <div className="py-16 text-center text-sm text-gray-400">No latitude/longitude columns tagged yet — set them via "Data Source" above.</div>;
         }
-        const { mapped, tooltipFieldDefs } = resolveMapSites(records, source, taggedFields);
+        const { mapped, tooltipFieldDefs, filterFieldDefs, colorFieldDef } = resolveMapSites(records, source, taggedFields);
         // A Breakdown row click sets breakdownFilter — hide every dot that doesn't belong
         // to that group instead of showing everything.
         const groupField = source.group_field;
@@ -2177,7 +3006,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </button>
               </div>
             )}
-            <div className="-m-4"><FreeWifiMap sites={filteredMapped} totalAPs={filteredMapped.length} height="500px" tooltipFields={tooltipFieldDefs} /></div>
+            <div className="-m-4"><FreeWifiMap sites={filteredMapped} totalAPs={filteredMapped.length} height="500px" tooltipFields={tooltipFieldDefs} filterFields={filterFieldDefs} colorField={colorFieldDef} markerIcon={source.marker_icon} markerIconName={source.marker_icon_name} markerIconColor={source.marker_icon_color} /></div>
           </div>
         );
       }
@@ -2185,7 +3014,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         if (!source.group_field) {
           return <div className="py-16 text-center text-sm text-gray-400">No "group by" column tagged yet — set one via "Data Source" above.</div>;
         }
-        const records = breakdownSites;
+        const records = filterRecordsByConditions(breakdownSites, source.breakdown_conditions);
         const taggedFields = genericTables.find(t => t.id === source.breakdown_dataset)?.fields || [];
         const groupField = source.group_field;
         // Columns for the raw-data table — from "Breakdown raw-data columns" in Data
@@ -2239,7 +3068,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   <button type="button" onClick={() => toggleGroup(group)}
                     title="View raw data and filter the Map to this group"
                     className="w-full flex items-center gap-4 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <span className="text-left font-medium text-gray-900 dark:text-white w-[200px] truncate">{group}</span>
+                    <span className="text-left font-medium text-gray-900 dark:text-white w-[200px] shrink-0">{group}</span>
                     <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-[#0038A8]" style={{ width: `${(count / maxCount) * 100}%` }} />
                     </div>
@@ -2334,6 +3163,29 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     }
   };
 
+  // Whether the Add/Edit Chart modal's type picker is in "Card" mode (a single aggregated
+  // value, CARD_DESIGNS) vs "Chart" mode (a category breakdown, CHART_TYPES) — see the
+  // Chart/Card toggle in that modal below.
+  const isCardMode = newChart.chartType === 'aggregate-cards';
+
+  // Whether the filter bar shows on the PUBLIC Charts page (ProjectChartSource.
+  // show_filter_bar — undefined on charts saved before this existed, so `!== false` keeps
+  // the always-shown default). The admin's own copy below stays visible regardless, since
+  // it's also how the admin filters what THEY see while building/testing charts here.
+  const dateFilterVisible = chartSource?.show_filter_bar !== false;
+  const toggleDateFilterVisibility = () => {
+    updateProjectChartSource(slug, { show_filter_bar: !dateFilterVisible })
+      .then(setChartSource)
+      .catch(console.error);
+  };
+  // The Summary Card's "as of" label reflects whichever range-type filter is currently
+  // active (if any) — not tied to a filter literally named "Date", since the admin can
+  // name/add range filters freely now. Uses the first one with a value set.
+  const activeRangeFilter = generalFilterLabels.find(
+    (f) => f.type === 'range' && (generalFilterValues[f.label]?.from || generalFilterValues[f.label]?.to)
+  );
+  const summaryDateFrom = activeRangeFilter ? (generalFilterValues[activeRangeFilter.label]?.from || '') : '';
+  const summaryDateTo = activeRangeFilter ? (generalFilterValues[activeRangeFilter.label]?.to || '') : '';
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -2341,7 +3193,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Charts</h2>
         <div className="flex items-center gap-2">
           {!isFreeWifi && (
-            <button onClick={() => setShowDataSourceModal(true)}
+            <button onClick={() => setDataSourceModalSection('all')}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:border-[#0038A8]">
               <Database size={16} />
               {(chartSource?.summary_dataset || chartSource?.map_dataset || chartSource?.breakdown_dataset) ? 'Data Source' : 'Set Data Source'}
@@ -2354,18 +3206,64 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         </div>
       </div>
 
-      {!isFreeWifi && showDataSourceModal && (
+      {!isFreeWifi && (
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <GlobalDateFilterBar
+              filters={generalFilterLabels}
+              values={generalFilterValues}
+              onChange={(label, value) => setGeneralFilterValues(prev => ({ ...prev, [label]: value }))}
+              onClear={() => setGeneralFilterValues({})}
+              generalFilterOptions={generalFilterOptions}
+            />
+          </div>
+          <button type="button" onClick={() => setShowFilterSettings(true)} title="Edit filter settings"
+            className="shrink-0 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-[#0038A8] hover:border-gray-300 transition-colors">
+            <Edit2 size={16} />
+          </button>
+          <button type="button" onClick={toggleDateFilterVisibility}
+            title={dateFilterVisible ? 'Visible on the public Charts page — click to hide' : 'Hidden on the public Charts page — click to show'}
+            className={`shrink-0 p-2.5 rounded-lg border transition-colors ${
+              dateFilterVisible
+                ? 'text-green-600 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20'
+                : 'text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}>
+            {dateFilterVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+          </button>
+        </div>
+      )}
+
+      {!isFreeWifi && showFilterSettings && (
+        <FilterSettingsModal
+          slug={slug}
+          tables={genericTables}
+          initialFilters={generalFilterLabels}
+          onClose={() => setShowFilterSettings(false)}
+          onSaved={async () => {
+            const [source, ds] = await Promise.all([getProjectChartSource(slug), getProjectDatasets(slug)]);
+            setChartSource(source);
+            setGenericTables(ds);
+            setShowFilterSettings(false);
+          }}
+        />
+      )}
+
+      {!isFreeWifi && dataSourceModalSection && (
         <DataSourceModal
+          slug={slug}
           tables={genericTables}
           initial={chartSource}
           builtInTitles={builtInTitles}
-          onClose={() => setShowDataSourceModal(false)}
+          focusSection={dataSourceModalSection === 'all' ? null : dataSourceModalSection}
+          onClose={() => setDataSourceModalSection(false)}
+          onDatasetUpdated={async () => setGenericTables(await getProjectDatasets(slug))}
+          onChartSourceUpdated={(updated) => setChartSource(updated)}
           onSave={async (draft) => {
             try {
               const saved = await updateProjectChartSource(slug, draft);
               setChartSource(saved);
               setDatasets(buildTaggedRecords(genericTables, saved));
-              setShowDataSourceModal(false);
+              setDataSourceModalSection(false);
             } catch (err) {
               alert(`Save failed: ${err?.response?.data?.detail || err.message}`);
             }
@@ -2385,10 +3283,32 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
             <div className="flex">
               {/* Left Side - Settings */}
               <div className="flex-1 p-6 border-r border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto">
+                {/* Chart vs Card — two different questions (which visualization vs. which
+                    single-value layout), so two separate pickers instead of one grid mixing
+                    16 chart types with 5 card designs. Switching modes swaps chartType
+                    between a chart default and the fixed 'aggregate-cards' id. */}
+                <div className="flex gap-2 mb-4">
+                  <button type="button"
+                    onClick={() => { if (isCardMode) setNewChart(c => ({ ...c, chartType: 'bar-horizontal' })); }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
+                      !isCardMode ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 text-[#0038A8] dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                    }`}>
+                    Chart
+                  </button>
+                  <button type="button"
+                    onClick={() => { if (!isCardMode) setNewChart(c => ({ ...c, chartType: 'aggregate-cards', cardDesign: c.cardDesign || 'big-number' })); }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
+                      isCardMode ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 text-[#0038A8] dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                    }`}>
+                    Card
+                  </button>
+                </div>
+
                 {/* Chart Type Selection */}
+                {!isCardMode && (
                 <div className="mb-5">
                   <div className="grid grid-cols-5 gap-2">
-                    {CHART_TYPES.map((type) => {
+                    {CHART_TYPES.filter(t => t.id !== 'aggregate-cards').map((type) => {
                       const count = fieldCardinality[newChart.field] || 0;
                       const fit = getChartFit(type, count);
                       const isDisabled = fit.status === 'disabled';
@@ -2414,11 +3334,33 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     })}
               </div>
             </div>
+                )}
+
+                {/* Card Design Selection */}
+                {isCardMode && (
+                <div className="mb-5">
+                  <div className="grid grid-cols-5 gap-2">
+                    {CARD_DESIGNS.map((design) => (
+                      <button key={design.id} type="button"
+                        onClick={() => setNewChart(c => ({ ...c, cardDesign: design.id }))}
+                        title={design.label}
+                        className={`p-3 rounded-xl border-2 transition-all ${
+                          newChart.cardDesign === design.id
+                            ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                        }`}>
+                        <div className="h-16 flex items-center justify-center mb-2">{design.preview()}</div>
+                        <p className="text-[10px] font-bold text-gray-900 dark:text-white text-center">{design.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                )}
 
             {/* Chart Settings */}
             <div className="space-y-4">
               {/* Chart Type Info */}
-              {(() => {
+              {!isCardMode && (() => {
                 const selectedType = CHART_TYPES.find(t => t.id === newChart.chartType);
                 if (!selectedType) return null;
                 const count = fieldCardinality[newChart.field] || 0;
@@ -2457,12 +3399,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
               {!isFreeWifi && (
                 <div className="mb-4">
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
-                  <select value={newChart.dataset}
-                    onChange={(e) => setNewChart(c => ({ ...c, dataset: e.target.value, field: '', secondaryField: '' }))}
-                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                    <option value="">Select table...</option>
-                    {genericTables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                  <Select value={selectValue(toOptions(genericTables.map(t => t.id), (id) => genericTables.find(t => t.id === id)?.name), newChart.dataset ? Number(newChart.dataset) : null)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, dataset: opt ? opt.value : '', field: '', secondaryField: '' }))}
+                    options={toOptions(genericTables.map(t => t.id), (id) => genericTables.find(t => t.id === id)?.name)}
+                    placeholder="Select table..." isClearable styles={selectStyles} />
                 </div>
               )}
 
@@ -2477,21 +3417,105 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
                   Data Field {CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary ? '(Primary)' : ''}
                 </label>
-                <select value={newChart.field} disabled={!isFreeWifi && !newChart.dataset}
-                  onChange={(e) => {
-                    const field = e.target.value;
+                <Select
+                  value={selectValue(availableFieldsFor(newChart.dataset).map(f => ({
+                    value: f.value, label: `${f.label} (${fieldCardinality[f.value] || 0} ${(fieldCardinality[f.value] || 0) === 1 ? 'value' : 'values'})`,
+                  })), newChart.field)}
+                  isDisabled={(!isFreeWifi && !newChart.dataset) || (newChart.chartType === 'aggregate-cards' && newChart.agg === 'count')}
+                  onChange={(opt) => {
+                    const field = opt ? opt.value : '';
                     const count = fieldCardinality[field] || 0;
                     setNewChart(c => ({ ...c, field, chartType: bestChartType(count, c.chartType) }));
                   }}
-                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 disabled:opacity-50">
-                  {!isFreeWifi && <option value="">Select field...</option>}
-                  {availableFieldsFor(newChart.dataset).map(f => (
-                    <option key={f.value} value={f.value}>
-                      {f.label} ({fieldCardinality[f.value] || 0} {(fieldCardinality[f.value] || 0) === 1 ? 'value' : 'values'})
-                    </option>
-                  ))}
-                </select>
+                  options={availableFieldsFor(newChart.dataset).map(f => ({
+                    value: f.value, label: `${f.label} (${fieldCardinality[f.value] || 0} ${(fieldCardinality[f.value] || 0) === 1 ? 'value' : 'values'})`,
+                  }))}
+                  placeholder="Select field..." isClearable styles={selectStyles} />
               </div>
+
+              {/* Filter rows — independent of chart type/aggregation: narrows which rows
+                  this chart counts/aggregates down to only the ones matching EVERY
+                  condition (AND), before whatever that chart type does with them. E.g. a
+                  bar chart of "Contract" can be scoped to just Province = Bukidnon, or a
+                  Value Card's Sum can be scoped to Province = Bukidnon AND Status = Active
+                  — same idea as the old count_equals special case, generalized so it
+                  applies to any chart and stacks past one condition. */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                  Filter rows <span className="text-gray-400">(optional — only rows matching every condition are counted)</span>
+                </label>
+                <ConditionsEditor conditions={newChart.conditions}
+                  onChange={(next) => setNewChart(c => ({ ...c, conditions: next }))}
+                  fieldOptions={toOptions(availableFieldsFor(newChart.dataset).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
+                  valuesFor={(field) => toOptions(distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), field))} />
+              </div>
+
+              {/* Aggregation (Value Card only) — same vocabulary as the Summary Card tile
+                  editor: Sum/Average/Count all rows/Count unique values/Count where equals. */}
+              {newChart.chartType === 'aggregate-cards' && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Aggregation</label>
+                  <Select value={selectValue(CARD_AGG_OPTIONS, newChart.agg)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, agg: opt.value }))}
+                    options={CARD_AGG_OPTIONS} isSearchable={false} styles={selectStyles} />
+                  {newChart.agg === 'count_equals' && (
+                    <div className="mt-2">
+                      <Select
+                        value={selectValue(toOptions(distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field)), newChart.equals)}
+                        onChange={(opt) => setNewChart(c => ({ ...c, equals: opt ? opt.value : '' }))}
+                        options={toOptions(distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field))}
+                        placeholder="Value..." isClearable styles={selectStyles} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Card design settings — accent color applies to every CARD_DESIGNS layout;
+                  the icon picker and target input only matter for the designs that use
+                  them (icon-number / progress respectively). Same Lucide icon list as the
+                  Map's marker-icon picker, reused rather than duplicated. */}
+              {isCardMode && (
+                <div className="space-y-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Accent color</label>
+                    <div className="flex items-center gap-3">
+                      <input type="color" value={newChart.cardColor || '#0038A8'}
+                        onChange={(e) => setNewChart(c => ({ ...c, cardColor: e.target.value }))}
+                        className="w-10 h-10 shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                      <input type="text" value={newChart.cardColor || '#0038A8'}
+                        onChange={(e) => setNewChart(c => ({ ...c, cardColor: e.target.value }))}
+                        className="flex-1 px-3 py-2 text-sm font-mono border rounded-lg bg-white dark:bg-gray-800" />
+                    </div>
+                  </div>
+
+                  {newChart.cardDesign === 'icon-number' && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Icon</label>
+                      <div className="flex flex-wrap gap-2">
+                        {MARKER_ICON_OPTIONS.map(({ name, Icon }) => (
+                          <button key={name} type="button" onClick={() => setNewChart(c => ({ ...c, cardIcon: name }))} title={name}
+                            className={`w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center transition-colors ${
+                              newChart.cardIcon === name ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                            }`}>
+                            <Icon size={16} color={newChart.cardIcon === name ? (newChart.cardColor || '#0038A8') : undefined}
+                              className={newChart.cardIcon === name ? '' : 'text-gray-500 dark:text-gray-400'} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {newChart.cardDesign === 'progress' && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Target value</label>
+                      <input type="number" value={newChart.cardTarget}
+                        onChange={(e) => setNewChart(c => ({ ...c, cardTarget: e.target.value }))}
+                        placeholder="e.g. 1000" className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                      <p className="text-[11px] text-gray-400 mt-1">Shown as "value / target" with a fill bar.</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Show secondary field only for charts that need it */}
               {CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && (
@@ -2499,21 +3523,20 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
                     Secondary Field <span className="text-gray-400">(for grouping/breakdown)</span>
                   </label>
-                  <select value={newChart.secondaryField} onChange={(e) => setNewChart(c => ({ ...c, secondaryField: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                    <option value="">None</option>
-                    {availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                  </select>
+                  <Select
+                    value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.secondaryField)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, secondaryField: opt ? opt.value : '' }))}
+                    options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
+                    placeholder="None" isClearable styles={selectStyles} />
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Grid Size</label>
-                  <select value={newChart.gridSize} onChange={(e) => setNewChart(c => ({ ...c, gridSize: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800">
-                    {GRID_SIZES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                  </select>
+                  <Select value={selectValue(GRID_SIZE_OPTIONS, newChart.gridSize)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, gridSize: opt.value }))}
+                    options={GRID_SIZE_OPTIONS} isSearchable={false} styles={selectStyles} />
                 </div>
                 {isFreeWifi && (
                   <div className="flex items-end">
@@ -2585,7 +3608,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
               <div className="flex items-center gap-2 mb-6">
                 <span className="text-sm font-medium text-white/70">SUMMARY</span>
                 <span className="text-sm text-white/50">as of</span>
-                <span className="text-sm font-medium">{today}</span>
+                <span className="text-sm font-medium">{summaryAsOfLabel(summaryDateFrom, summaryDateTo, today)}</span>
               </div>
               {renderSummaryCardBody(
                 computeSummaryTiles(summarySites, chartSource, genericTables.find(t => t.id === chartSource?.summary_dataset)?.fields || []),
@@ -2600,7 +3623,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       <div className="grid grid-cols-12 gap-6">
         {allCharts.map((chart, index) => {
           const isCustom = chart.type === 'custom';
-          const gridSize = isCustom ? (chart.gridSize === 'half' ? 'col-span-12 lg:col-span-6' : 'col-span-12') : 'col-span-12';
+          const gridSize = isCustom ? gridSizeClass(chart.gridSize) : 'col-span-12';
           const isHidden = !chart.visible;
 
           return (
@@ -2620,10 +3643,15 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 isCustom={isCustom}
                 showOnUser={chart.showOnUser}
                 onEdit={isCustom ? () => {
-                  setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '' });
+                  setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '' });
                   setEditingChart(chart);
                   setShowAddChart(true);
-                } : chart.id === 'summary' ? () => setShowSummaryStyle(true) : undefined}
+                // Built-ins: opens the same Data Source modal as the "Data Source" button,
+                // just scoped to this one widget's own section (see focusSection) instead
+                // of showing all three — a direct per-chart edit that still shares the
+                // exact same settings/save logic as the full modal, not a separate copy.
+                } : !isFreeWifi ? () => setDataSourceModalSection(chart.id === 'province-breakdown' ? 'breakdown' : chart.id) : undefined}
+                onEditStyle={!isCustom && chart.id === 'summary' ? () => setShowSummaryStyle(true) : undefined}
                 onDelete={isCustom ? () => handleDeleteChart(chart.id) : undefined}
                 onToggleVisibility={() => toggleVisibility(chart.id)}
                 dataSource={isFreeWifi && !isCustom ? (chart.dataSource || 'live') : undefined}

@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './screens/Home';
 import AboutUs from './screens/AboutUs';
 import Maps from './screens/Maps';
+import AllAwards from './screens/AllAwards';
 import AFD from './screens/AFD';
 import Login from './screens/Login';
 
@@ -271,6 +272,7 @@ function App() {
               <Routes>
                 <Route path="/kms" element={<Home />} />
                 <Route path="/kms/about" element={<AboutUs />} />
+                <Route path="/kms/awards" element={<AllAwards />} />
                 <Route path="/kms/maps" element={<Maps />} />
                 <Route path="/kms/afd" element={<AFD />} />
                 <Route path="/kms/projects/free-wifi" element={<FreeWifi />} />
