@@ -119,6 +119,48 @@
   background: #424242;
 }
 
+/* Chart labels that would otherwise be ellipsis-truncated scroll horizontally instead
+   (see CustomChartRenderer in FreeWifiCharts.tsx) — a thin scrollbar keeps that from
+   looking like a full-size page scrollbar crammed into a small label box. */
+.chart-h-scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+.chart-h-scroll::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+.chart-h-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+/* The chart's own plot canvas (Line/Area/bar-vertical/bar-grouped in
+   CustomChartRenderer) scrolls horizontally when it's wider than its card — this keeps
+   that scrollbar slim instead of the browser's full-size default, which otherwise reads
+   as a big, out-of-place bar under a small chart. */
+.chart-canvas-scroll {
+  overflow-x: auto;
+  /* Explicit, not left to default: per spec, if overflow-x is anything but visible/clip
+     and overflow-y is left at its visible default, the browser silently computes
+     overflow-y as auto too — so any content that overflows vertically even by a
+     sub-pixel (e.g. a number label sitting just above a peak dot in Line/Area) pops up
+     an unwanted vertical scrollbar alongside the intended horizontal one. */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.chart-canvas-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.chart-canvas-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chart-canvas-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
 :root {
   font-family: 'Inter', sans-serif;
   line-height: 1.5;

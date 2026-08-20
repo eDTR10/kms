@@ -406,7 +406,7 @@ export default function Accomplishments() {
   const [activePattern, setActivePattern] = useState('classic');
 
   useEffect(() => {
-    getAccomplishments().then(setItems);
+    getAccomplishments().then((data) => setItems(data.filter((item) => item.active !== false)));
     getKmsSettings().then((s) => {
       const styleId = s.accomplishments_style || 'collage-1';
       setActivePattern(STYLE_TO_PATTERN[styleId] || 'classic');

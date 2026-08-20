@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Eye, Rows3, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Eye, EyeOff, Rows3, ArrowRight, Star } from 'lucide-react';
 import { getHighlights, createHighlight, updateHighlight, deleteHighlight, importHighlightsJson, reorderHighlights } from '../../services/highlights';
 import { getKmsSettings, updateKmsSettings } from '../../services/settings';
 import { HIGHLIGHT_STYLES } from '../../lib/gridStyles';
@@ -27,6 +27,9 @@ export default function ManageHighlights() {
   const [viewMode, setViewMode] = useState('list');
   const [savingStyle, setSavingStyle] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
+  const [activeView, setActiveView] = useState('show');
+  const [hiddenSearch, setHiddenSearch] = useState('');
+  const [hiddenSort, setHiddenSort] = useState('recent');
 
   useEffect(() => {
     fetchItems();
@@ -79,6 +82,21 @@ export default function ManageHighlights() {
     try { await deleteHighlight(id); setItems((p) => p.filter((i) => i.id !== id)); } catch (err) { console.error(err); }
   };
 
+  const toggleActive = async (item) => {
+    const currentlyActive = item.active !== false;
+    const nextActive = !currentlyActive;
+    setItems((p) => p.map((i) => (i.id === item.id ? { ...i, active: nextActive } : i)));
+    try {
+      const fd = new FormData();
+      fd.append('active', nextActive);
+      await updateHighlight(item.id, fd);
+    } catch (err) {
+      console.error(err);
+      setItems((p) => p.map((i) => (i.id === item.id ? { ...i, active: currentlyActive } : i)));
+      alert('Failed to update — reverted');
+    }
+  };
+
   const handleDragStart = (index) => setDragIndex(index);
   const handleDragOver = (e) => e.preventDefault();
   const handleDrop = async (dropIndex) => {
@@ -122,6 +140,22 @@ export default function ManageHighlights() {
   };
 
 
+
+  const hiddenHighlights = items.filter((i) => i.active === false);
+  const filteredHiddenHighlights = (() => {
+    let list = hiddenHighlights;
+    if (hiddenSearch.trim()) {
+      const q = hiddenSearch.trim().toLowerCase();
+      list = list.filter((i) => i.title?.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q));
+    }
+    const sorted = [...list];
+    switch (hiddenSort) {
+      case 'title_asc': sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '')); break;
+      case 'title_desc': sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '')); break;
+      default: sorted.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+    }
+    return sorted;
+  })();
 
   return (
     <div className="p-8">
@@ -229,8 +263,81 @@ export default function ManageHighlights() {
         </div>
       )}
 
+      {!loading && (
+        <div className="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 mb-4">
+          <button type="button" onClick={() => setActiveView('show')}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeView === 'show' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            }`}>
+            Show
+          </button>
+          <button type="button" onClick={() => setActiveView('hidden')}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeView === 'hidden' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            }`}>
+            Hidden ({hiddenHighlights.length})
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-gray-400">Loading...</p>
+      ) : activeView === 'hidden' ? (
+        <div>
+          {hiddenHighlights.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <input type="text" placeholder="Search hidden highlights..." value={hiddenSearch} onChange={(e) => setHiddenSearch(e.target.value)}
+                className="flex-1 min-w-[160px] px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />
+              <select value={hiddenSort} onChange={(e) => setHiddenSort(e.target.value)}
+                className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <option value="recent">Recently hidden</option>
+                <option value="title_asc">Title — A to Z</option>
+                <option value="title_desc">Title — Z to A</option>
+              </select>
+            </div>
+          )}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            {hiddenHighlights.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4">Nothing hidden — highlights you hide from the slider will show up here.</p>
+            ) : filteredHiddenHighlights.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4">No hidden highlights match "{hiddenSearch}".</p>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredHiddenHighlights.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3 p-3 px-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {item.image ? (
+                        <img src={item.image} alt={item.title} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                          <Star size={16} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{item.title}</p>
+                        {item.description && <p className="text-[10px] text-gray-400 truncate">{item.description}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button type="button" onClick={() => toggleActive(item)}
+                        className="p-1.5 text-gray-400 hover:text-green-500 transition-colors" title="Click to show on slider">
+                        <EyeOff size={14} />
+                      </button>
+                      <button type="button" onClick={() => startEdit(item)}
+                        className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit">
+                        <Edit2 size={14} />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(item.id)}
+                        className="p-1.5 text-red-400 hover:text-red-600 transition-colors" title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : items.length === 0 ? (
         <div className="text-center py-14 text-gray-400 dark:text-gray-600">
           <Image size={42} className="mx-auto mb-3 opacity-40" />
@@ -238,7 +345,7 @@ export default function ManageHighlights() {
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item, index) => (
+          {items.map((item, index) => item.active === false ? null : (
             <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 shadow-sm">
               <div className="w-20 h-14 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
                 {item.image ? <img src={item.image} alt={item.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400"><Image size={20} /></div>}
@@ -247,11 +354,14 @@ export default function ManageHighlights() {
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{item.title}</p>
                 {item.description && <p className="text-xs text-gray-400 truncate mt-0.5">{item.description}</p>}
               </div>
-              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => moveItem(index, -1)} disabled={index === 0}
                   className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-20 transition-colors"><ArrowUp size={14} /></button>
                 <button onClick={() => moveItem(index, 1)} disabled={index === items.length - 1}
                   className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-20 transition-colors"><ArrowDown size={14} /></button>
+                <button onClick={() => toggleActive(item)} className="p-2 text-gray-400 hover:text-amber-500 transition-colors" title="Click to hide">
+                  <Eye size={15} />
+                </button>
                 <button onClick={() => startEdit(item)} className="p-2 text-gray-400 hover:text-[#0038A8] dark:hover:text-blue-400 transition-colors"><Edit2 size={15} /></button>
                 <button onClick={() => handleDelete(item.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><Trash2 size={15} /></button>
               </div>

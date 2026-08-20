@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
-import { Save, Image, Eye, EyeOff, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
+import { Save, Image, Eye, EyeOff, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, Palette } from 'lucide-react';
 import {
   getProjectOfficeId, getProjectHighlights, createProjectHighlight, updateProjectHighlight, deleteProjectHighlight,
   reorderProjectHighlights, getProjectSliderDesign, updateProjectSliderDesign,
@@ -511,6 +511,10 @@ export default function ProjectHighlights({ slug }) {
   const [imageMode, setImageMode] = useState('url');
   const [activeTab, setActiveTab] = useState('highlights');
   const [saving, setSaving] = useState(false);
+  // Collapsible "Hidden" section below the main list (same pattern as the Charts and
+  // Awards admin screens) — a quick-glance place to find and restore highlights hidden
+  // from the project page, instead of hunting for the dimmed ones in the main list.
+  const [showHidden, setShowHidden] = useState(false);
 
   useEffect(() => {
     setLoadError(null);
@@ -636,6 +640,8 @@ export default function ProjectHighlights({ slug }) {
       </div>
     );
   }
+
+  const hiddenHighlights = highlights.filter((h) => !h.active);
 
   return (
     <div className="space-y-6">
@@ -769,6 +775,53 @@ export default function ProjectHighlights({ slug }) {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Hidden highlights — a quick-glance list of everything currently hidden from
+              the project page, so reviewing/restoring them doesn't mean hunting for the
+              dimmed ones in the main list above. */}
+          {hiddenHighlights.length > 0 && (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <button type="button" onClick={() => setShowHidden((v) => !v)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
+                  <EyeOff size={16} className="text-gray-400" /> Hidden ({hiddenHighlights.length})
+                </span>
+                {showHidden ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+              </button>
+              {showHidden && (
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {hiddenHighlights.map((highlight) => (
+                    <div key={highlight.id} className="flex items-center gap-4 p-3 px-4">
+                      <div className="w-14 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
+                        {highlight.image ? (
+                          <img src={highlight.image} alt={highlight.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400"><Image size={14} /></div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{highlight.title}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button type="button" onClick={() => toggleActive(highlight.id)}
+                          className="p-1.5 text-gray-400 hover:text-green-500 transition-colors" title="Click to show">
+                          <EyeOff size={14} />
+                        </button>
+                        <button type="button" onClick={() => handleEdit(highlight)}
+                          className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit">
+                          <Edit2 size={14} />
+                        </button>
+                        <button type="button" onClick={() => handleDelete(highlight.id)}
+                          className="p-1.5 text-red-400 hover:text-red-600 transition-colors" title="Delete">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

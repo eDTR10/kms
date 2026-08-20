@@ -1,26 +1,26 @@
 // @ts-nocheck
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { BarChart3, Database, Image } from 'lucide-react';
-import logoIidb from '../../../assets/project-logo/IIDB.png';
+import logoSvsi from '../../../assets/project-logo/svsi.jpg';
 
 const TABS = [
-  { label: 'Highlights', path: '/kms/admin/iidb/highlights', icon: Image },
-  { label: 'Charts', path: '/kms/admin/iidb/charts', icon: BarChart3 },
-  { label: 'Datasets', path: '/kms/admin/iidb/datasets', icon: Database },
+  { label: 'Highlights', path: '/kms/admin/svsi/highlights', icon: Image },
+  { label: 'Charts', path: '/kms/admin/svsi/charts', icon: BarChart3 },
+  { label: 'Datasets', path: '/kms/admin/svsi/datasets', icon: Database },
 ];
 
-export default function IIDBLayout() {
+export default function SVSILayout() {
   const location = useLocation();
 
   return (
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-[#f8f8f8] flex items-center justify-center p-1.5">
-          <img src={logoIidb} alt="IIDB" className="max-h-full max-w-full object-contain" />
+        <div className="w-12 h-12 rounded-xl bg-[#0E7490] flex items-center justify-center p-1.5">
+          <img src={logoSvsi} alt="SVSI" className="max-h-full max-w-full object-contain rounded" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white">IIDB</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">SVSI</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">Project admin</p>
         </div>
       </div>

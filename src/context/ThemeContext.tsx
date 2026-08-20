@@ -1,32 +1,25 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
 
 interface ThemeContextType {
   dark: boolean;
-  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// KMS is light-mode only — no toggle, no stored/system preference. `dark` stays here
+// (rather than deleting useTheme entirely) purely so every existing `dark ? ... : ...`
+// branch and `dark:` Tailwind class throughout the app keeps working unchanged, just
+// permanently resolved to its light-mode path.
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [dark, setDark] = useState<boolean>(() => {
-    const stored = localStorage.getItem('kms-theme');
-    return stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
   useEffect(() => {
-    const root = document.documentElement;
-    if (dark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('kms-theme', dark ? 'dark' : 'light');
-  }, [dark]);
-
-  const toggleTheme = () => setDark((prev) => !prev);
+    // Strips a `dark` class a previous visit may have left on <html> (from before this
+    // was made light-only), and clears the old stored preference so it can't linger.
+    document.documentElement.classList.remove('dark');
+    localStorage.removeItem('kms-theme');
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ dark, toggleTheme }}>
+    <ThemeContext.Provider value={{ dark: false }}>
       {children}
     </ThemeContext.Provider>
   );

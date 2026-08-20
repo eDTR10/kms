@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Eye, Clock, Rows3, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Eye, EyeOff, Clock, Rows3, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   getAccomplishments,
@@ -172,6 +172,11 @@ export default function ManageAccomplishments() {
   const [viewMode, setViewMode] = useState('list');
   const [savingStyle, setSavingStyle] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
+  // "Show" / "Hidden" tab — switches the whole content area between the normal collage
+  // and a simple restore list of everything currently off the homepage.
+  const [activeView, setActiveView] = useState('show');
+  const [hiddenSearch, setHiddenSearch] = useState('');
+  const [hiddenSort, setHiddenSort] = useState('recent');
 
   useEffect(() => {
     fetchItems();
@@ -266,6 +271,22 @@ export default function ManageAccomplishments() {
     } finally { setImporting(false); }
   };
 
+  const toggleActive = async (item) => {
+    // `active` defaults to true on the backend, so treat a missing value as "currently shown".
+    const currentlyActive = item.active !== false;
+    const nextActive = !currentlyActive;
+    setItems((p) => p.map((i) => (i.id === item.id ? { ...i, active: nextActive } : i)));
+    try {
+      const fd = new FormData();
+      fd.append('active', nextActive);
+      await updateAccomplishment(item.id, fd);
+    } catch (err) {
+      console.error(err);
+      setItems((p) => p.map((i) => (i.id === item.id ? { ...i, active: currentlyActive } : i)));
+      alert('Failed to update — reverted');
+    }
+  };
+
   const moveItem = async (index, direction) => {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= items.length) return;
@@ -331,6 +352,31 @@ export default function ManageAccomplishments() {
       </div>
     );
   }
+
+  const hiddenAccomplishments = items.filter((i) => i.active === false);
+  const filteredHiddenAccomplishments = (() => {
+    let list = hiddenAccomplishments;
+    if (hiddenSearch.trim()) {
+      const q = hiddenSearch.trim().toLowerCase();
+      list = list.filter((i) => i.title?.toLowerCase().includes(q) || i.metric_label?.toLowerCase().includes(q));
+    }
+    const sorted = [...list];
+    switch (hiddenSort) {
+      case 'title_asc': sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '')); break;
+      case 'title_desc': sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '')); break;
+      case 'year_desc': sorted.sort((a, b) => (b.year || 0) - (a.year || 0)); break;
+      case 'year_asc': sorted.sort((a, b) => (a.year || 0) - (b.year || 0)); break;
+      default: sorted.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+    }
+    return sorted;
+  })();
+  // Visible items paired with their real position in `items` — the collage patterns assign
+  // grid slots by array position, so hidden items must be filtered out *before* that position
+  // is computed, or they leave gaps; `trueIndex` still points into the full `items` array so
+  // drag/reorder (moveItem/handleDrop) keeps operating on real positions.
+  const visibleAccomplishments = items
+    .map((item, trueIndex) => ({ item, trueIndex }))
+    .filter(({ item }) => item.active !== false);
 
   return (
     <div className="p-8">
@@ -470,8 +516,83 @@ export default function ManageAccomplishments() {
       )}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
+      {!loading && (
+        <div className="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 mb-4">
+          <button type="button" onClick={() => setActiveView('show')}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeView === 'show' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            }`}>
+            Show
+          </button>
+          <button type="button" onClick={() => setActiveView('hidden')}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeView === 'hidden' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            }`}>
+            Hidden ({hiddenAccomplishments.length})
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-gray-400">Loading...</p>
+      ) : activeView === 'hidden' ? (
+        <div>
+          {hiddenAccomplishments.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <input type="text" placeholder="Search hidden accomplishments..." value={hiddenSearch} onChange={(e) => setHiddenSearch(e.target.value)}
+                className="flex-1 min-w-[160px] px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />
+              <select value={hiddenSort} onChange={(e) => setHiddenSort(e.target.value)}
+                className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <option value="recent">Recently hidden</option>
+                <option value="title_asc">Title — A to Z</option>
+                <option value="title_desc">Title — Z to A</option>
+                <option value="year_desc">Year — Newest first</option>
+                <option value="year_asc">Year — Oldest first</option>
+              </select>
+            </div>
+          )}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            {hiddenAccomplishments.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4">Nothing hidden — accomplishments you hide from the homepage will show up here.</p>
+            ) : filteredHiddenAccomplishments.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4">No hidden accomplishments match "{hiddenSearch}".</p>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredHiddenAccomplishments.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3 p-3 px-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {item.image ? (
+                        <img src={item.image} alt={item.title} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                          <Star size={16} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{item.title}</p>
+                        <p className="text-[10px] text-gray-400 truncate">{item.metric} {item.metric_label} · {item.year}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button type="button" onClick={() => toggleActive(item)}
+                        className="p-1.5 text-gray-400 hover:text-green-500 transition-colors" title="Click to feature on homepage">
+                        <EyeOff size={14} />
+                      </button>
+                      <button type="button" onClick={() => startEdit(item)}
+                        className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit">
+                        <Edit2 size={14} />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(item.id)}
+                        className="p-1.5 text-red-400 hover:text-red-600 transition-colors" title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : items.length === 0 ? (
         <div className="text-center py-14 text-gray-400">
           <Image size={42} className="mx-auto mb-3 opacity-40" />
@@ -484,7 +605,7 @@ export default function ManageAccomplishments() {
             <Eye size={12} /> Drag tiles to reorder. Style: <strong>{ACCOMPLISHMENT_STYLES.find(s => s.id === viewMode)?.label}</strong>
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-5 auto-rows-[140px] lg:auto-rows-[110px] gap-3">
-            {items.map((item, i) => {
+            {visibleAccomplishments.map(({ item, trueIndex }, i) => {
               const currentPattern = COLLAGE_PATTERNS[viewMode] || COLLAGE_PATTERNS['collage-1'];
               const pattern = i < currentPattern.length ? currentPattern[i] : null;
               const style = pattern
@@ -493,11 +614,11 @@ export default function ManageAccomplishments() {
               return (
                 <div key={item.id} style={style}
                   draggable
-                  onDragStart={() => handleDragStart(i)}
+                  onDragStart={() => handleDragStart(trueIndex)}
                   onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(i)}
+                  onDrop={() => handleDrop(trueIndex)}
                   className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-200 cursor-grab active:cursor-grabbing ${
-                    dragIndex === i ? 'border-[#0038A8] scale-95 opacity-60' : 'border-transparent hover:border-[#0038A8]/40'
+                    dragIndex === trueIndex ? 'border-[#0038A8] scale-95 opacity-60' : 'border-transparent hover:border-[#0038A8]/40'
                   }`}>
                   {item.image ? (
                     <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
@@ -516,9 +637,12 @@ export default function ManageAccomplishments() {
                   </div>
                   {/* Hover actions */}
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={(e) => { e.stopPropagation(); moveItem(i, -1); }} disabled={i === 0}
+                    <button onClick={(e) => { e.stopPropagation(); toggleActive(item); }}
+                      title="On homepage — click to hide from homepage"
+                      className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Eye size={12} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); moveItem(trueIndex, -1); }} disabled={trueIndex === 0}
                       className="p-1 bg-black/40 hover:bg-black/60 text-white rounded disabled:opacity-30"><ArrowUp size={12} /></button>
-                    <button onClick={(e) => { e.stopPropagation(); moveItem(i, 1); }} disabled={i === items.length - 1}
+                    <button onClick={(e) => { e.stopPropagation(); moveItem(trueIndex, 1); }} disabled={trueIndex === items.length - 1}
                       className="p-1 bg-black/40 hover:bg-black/60 text-white rounded disabled:opacity-30"><ArrowDown size={12} /></button>
                     <button onClick={(e) => { e.stopPropagation(); startEdit(item); }}
                       className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={12} /></button>

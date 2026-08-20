@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, FileSpreadsheet, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Award, Eye, EyeOff, Columns3, Grid3x3, Clock, Rows3, Star, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Save, Image, Upload, Link2, FileJson, FileSpreadsheet, ArrowUp, ArrowDown, LayoutGrid, List, GripVertical, Award, Eye, EyeOff, Columns3, Grid3x3, Clock, Rows3, Star, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   getAwards, createAward, updateAward, deleteAward, importAwardsJson, reorderAwards,
   createAwardImage, deleteAwardImage,
@@ -117,6 +117,12 @@ export default function ManageAwards() {
   const [savingStyle, setSavingStyle] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
   const [sortBy, setSortBy] = useState('manual');
+  // "Show" / "Hidden" tab — switches the whole content area between the normal styled
+  // list and a simple restore list of everything currently off the homepage, instead of
+  // hunting for the dimmed ones across 8 view styles.
+  const [activeView, setActiveView] = useState('show');
+  const [hiddenSearch, setHiddenSearch] = useState('');
+  const [hiddenSort, setHiddenSort] = useState('recent');
 
   const canReorder = sortBy === 'manual';
   const sortedItems = useMemo(() => {
@@ -130,6 +136,30 @@ export default function ManageAwards() {
       default: return arr;
     }
   }, [items, sortBy]);
+  const hiddenAwards = useMemo(() => items.filter((i) => i.active === false), [items]);
+  const filteredHiddenAwards = useMemo(() => {
+    let list = hiddenAwards;
+    if (hiddenSearch.trim()) {
+      const q = hiddenSearch.trim().toLowerCase();
+      list = list.filter((i) => i.title?.toLowerCase().includes(q) || i.issuer?.toLowerCase().includes(q));
+    }
+    const sorted = [...list];
+    switch (hiddenSort) {
+      case 'title_asc': sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '')); break;
+      case 'title_desc': sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '')); break;
+      case 'year_desc': sorted.sort((a, b) => (b.year || 0) - (a.year || 0)); break;
+      case 'year_asc': sorted.sort((a, b) => (a.year || 0) - (b.year || 0)); break;
+      default: sorted.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+    }
+    return sorted;
+  }, [hiddenAwards, hiddenSearch, hiddenSort]);
+  // Visible items paired with their real position in `sortedItems` — collage assigns tile
+  // size by position in sequence, so hidden items must be filtered out before that position
+  // is computed; `trueIndex` still points into `sortedItems` so drag/reorder keeps working.
+  const visibleSortedItems = useMemo(
+    () => sortedItems.map((item, trueIndex) => ({ item, trueIndex })).filter(({ item }) => item.active !== false),
+    [sortedItems]
+  );
 
   useEffect(() => {
     fetchItems();
@@ -326,15 +356,14 @@ export default function ManageAwards() {
 
   // ── Reusable card component ────────────────────────────────────────────────
   function AwardItemCard({ item, index, variant }) {
+    if (item.active === false) return null;
     const isCompact = variant === 'list';
     const isCollage = variant === 'collage';
-
-    const isHidden = item.active === false;
 
     if (isCompact) {
       return (
         <div draggable={canReorder} onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
-          className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 shadow-sm group cursor-grab ${dragIndex === index ? 'opacity-50 scale-95' : isHidden ? 'opacity-50' : ''}`}>
+          className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 shadow-sm group cursor-grab ${dragIndex === index ? 'opacity-50 scale-95' : ''}`}>
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
             {item.coverImage ? <img src={item.coverImage} alt={item.title} className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center text-gray-400"><Award size={20} /></div>}
@@ -345,9 +374,9 @@ export default function ManageAwards() {
             {item.issuer && <p className="text-xs text-gray-400">{item.issuer}</p>}
           </div>
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => toggleActive(item)} title={isHidden ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
-                className={isHidden ? 'p-1.5 text-gray-400 hover:text-gray-700' : 'p-1.5 text-green-500 hover:text-green-600'}>
-                {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+              <button onClick={() => toggleActive(item)} title="On homepage — click to hide from homepage"
+                className="p-1.5 text-green-500 hover:text-green-600">
+                <Eye size={14} />
               </button>
               <button onClick={() => moveItem(index, -1)} disabled={!canReorder || index === 0}
                 className="p-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-20"><ArrowUp size={14} /></button>
@@ -365,7 +394,7 @@ export default function ManageAwards() {
       <div draggable={canReorder} onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)}
         className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-200 cursor-grab active:cursor-grabbing ${
           dragIndex === index ? 'border-[#0038A8] scale-95 opacity-60' : 'border-transparent hover:border-[#0038A8]/40'
-        } ${isCollage ? 'h-full' : ''} ${isHidden ? 'opacity-50' : ''}`}>
+        } ${isCollage ? 'h-full' : ''}`}>
         {item.coverImage ? (
           <img src={item.coverImage} alt={item.title} className={`${isCollage ? 'absolute inset-0 w-full h-full' : 'w-full h-40'} object-cover`} />
         ) : (
@@ -387,8 +416,8 @@ export default function ManageAwards() {
         </div>
         {/* Hover actions */}
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); toggleActive(item); }} title={isHidden ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
-            className="p-1 bg-black/40 hover:bg-black/60 text-white rounded">{isHidden ? <EyeOff size={12} /> : <Eye size={12} />}</button>
+          <button onClick={(e) => { e.stopPropagation(); toggleActive(item); }} title="On homepage — click to hide from homepage"
+            className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Eye size={12} /></button>
           <button onClick={(e) => { e.stopPropagation(); moveItem(index, -1); }} disabled={!canReorder || index === 0}
             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded disabled:opacity-30"><ArrowUp size={12} /></button>
           <button onClick={(e) => { e.stopPropagation(); moveItem(index, 1); }} disabled={!canReorder || index === sortedItems.length - 1}
@@ -398,9 +427,6 @@ export default function ManageAwards() {
           <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
             className="p-1 bg-red-500/60 hover:bg-red-500/80 text-white rounded"><Trash2 size={12} /></button>
         </div>
-        {isHidden && (
-          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-gray-900/70 text-white text-[10px] font-medium">Hidden</span>
-        )}
       </div>
     );
   }
@@ -577,8 +603,83 @@ export default function ManageAwards() {
       )}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
+      {!loading && (
+        <div className="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 mb-4">
+          <button type="button" onClick={() => setActiveView('show')}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeView === 'show' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            }`}>
+            Show
+          </button>
+          <button type="button" onClick={() => setActiveView('hidden')}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeView === 'hidden' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            }`}>
+            Hidden ({hiddenAwards.length})
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-gray-400">Loading...</p>
+      ) : activeView === 'hidden' ? (
+        <div>
+          {hiddenAwards.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <input type="text" placeholder="Search hidden awards..." value={hiddenSearch} onChange={(e) => setHiddenSearch(e.target.value)}
+                className="flex-1 min-w-[160px] px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />
+              <select value={hiddenSort} onChange={(e) => setHiddenSort(e.target.value)}
+                className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <option value="recent">Recently hidden</option>
+                <option value="title_asc">Title — A to Z</option>
+                <option value="title_desc">Title — Z to A</option>
+                <option value="year_desc">Year — Newest first</option>
+                <option value="year_asc">Year — Oldest first</option>
+              </select>
+            </div>
+          )}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            {hiddenAwards.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4">Nothing hidden — awards you hide from the homepage will show up here.</p>
+            ) : filteredHiddenAwards.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4">No hidden awards match "{hiddenSearch}".</p>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredHiddenAwards.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3 p-3 px-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {item.coverImage ? (
+                        <img src={item.coverImage} alt={item.title} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                          <Award size={16} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{item.title}</p>
+                        {item.issuer && <p className="text-[10px] text-gray-400 truncate">{item.issuer} · {item.year}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button type="button" onClick={() => toggleActive(item)}
+                        className="p-1.5 text-gray-400 hover:text-green-500 transition-colors" title="Click to feature on homepage">
+                        <EyeOff size={14} />
+                      </button>
+                      <button type="button" onClick={() => startEdit(item)}
+                        className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit">
+                        <Edit2 size={14} />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(item.id)}
+                        className="p-1.5 text-red-400 hover:text-red-600 transition-colors" title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : items.length === 0 ? (
         <div className="text-center py-14 text-gray-400">
           <Image size={42} className="mx-auto mb-3 opacity-40" />
@@ -620,7 +721,7 @@ export default function ManageAwards() {
 
           {viewStyle === 'collage' && (
             <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] gap-3">
-              {sortedItems.map((item, i) => {
+              {visibleSortedItems.map(({ item, trueIndex }, i) => {
                 const patterns = [
                   { gridColumn: 'span 2', gridRow: 'span 2' },
                   { gridColumn: 'span 1', gridRow: 'span 1' },
@@ -630,7 +731,7 @@ export default function ManageAwards() {
                 const style = patterns[i % patterns.length];
                 return (
                   <div key={item.id} style={style}>
-                    <AwardItemCard item={item} index={i} variant="collage" />
+                    <AwardItemCard item={item} index={trueIndex} variant="collage" />
                   </div>
                 );
               })}
@@ -645,6 +746,7 @@ export default function ManageAwards() {
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700 lg:hidden" />
               <div className="space-y-8">
                 {sortedItems.map((item, i) => {
+                  if (item.active === false) return null;
                   const isLeft = i % 2 === 0;
                   return (
                     <div key={item.id} className={`relative flex items-start gap-4 lg:gap-0 ${isLeft ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}>
@@ -655,7 +757,7 @@ export default function ManageAwards() {
                       {/* Card */}
                       <div className={`flex-1 lg:w-1/2 ${isLeft ? 'lg:pr-10' : 'lg:pl-10'}`}
                         draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
-                        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm group hover:shadow-md transition-shadow ${dragIndex === i ? 'opacity-50 scale-95' : item.active === false ? 'opacity-50' : ''}`}>
+                        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm group hover:shadow-md transition-shadow ${dragIndex === i ? 'opacity-50 scale-95' : ''}`}>
                           <div className="flex items-start gap-4">
                             {item.coverImage && (
                               <img src={item.coverImage} alt={item.title} className="w-20 h-20 rounded-lg object-cover shrink-0" />
@@ -669,9 +771,9 @@ export default function ManageAwards() {
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
                             </div>
                             <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              <button onClick={() => toggleActive(item)} title={item.active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
-                                className={item.active === false ? 'p-1 text-gray-400 hover:text-gray-700' : 'p-1 text-green-500 hover:text-green-600'}>
-                                {item.active === false ? <EyeOff size={12} /> : <Eye size={12} />}
+                              <button onClick={() => toggleActive(item)} title="On homepage — click to hide from homepage"
+                                className="p-1 text-green-500 hover:text-green-600">
+                                <Eye size={12} />
                               </button>
                               <button onClick={() => moveItem(i, -1)} disabled={!canReorder || i === 0}
                                 className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20"><ArrowUp size={12} /></button>
@@ -695,10 +797,10 @@ export default function ManageAwards() {
           {/* ── Masonry (CSS columns) ────────────────────────────────────── */}
           {viewStyle === 'masonry' && (
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-              {sortedItems.map((item, i) => (
+              {sortedItems.map((item, i) => item.active === false ? null : (
                 <div key={item.id} className="break-inside-avoid"
                   draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
-                  <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group hover:shadow-md transition-shadow ${dragIndex === i ? 'opacity-50 scale-95' : item.active === false ? 'opacity-50' : ''}`}>
+                  <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group hover:shadow-md transition-shadow ${dragIndex === i ? 'opacity-50 scale-95' : ''}`}>
                     {item.coverImage && (
                       <img src={item.coverImage} alt={item.title}
                         className="w-full object-cover"
@@ -713,9 +815,9 @@ export default function ManageAwards() {
                       <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>
                       {/* Hover actions */}
                       <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => toggleActive(item)} title={item.active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
-                          className={item.active === false ? 'p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg' : 'p-1.5 bg-gray-100 dark:bg-gray-700 text-green-500 rounded-lg'}>
-                          {item.active === false ? <EyeOff size={12} /> : <Eye size={12} />}
+                        <button onClick={() => toggleActive(item)} title="On homepage — click to hide from homepage"
+                          className="p-1.5 bg-gray-100 dark:bg-gray-700 text-green-500 rounded-lg">
+                          <Eye size={12} />
                         </button>
                         <button onClick={() => moveItem(i, -1)} disabled={!canReorder || i === 0}
                           className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg disabled:opacity-20"><ArrowUp size={12} /></button>
@@ -734,57 +836,63 @@ export default function ManageAwards() {
           )}
 
           {/* ── Showcase (featured first + grid) ─────────────────────────── */}
-          {viewStyle === 'showcase' && sortedItems.length > 0 && (
-            <div className="space-y-6">
-              {/* Featured first item */}
-              <div className={`relative rounded-2xl overflow-hidden h-72 lg:h-80 group ${sortedItems[0].active === false ? 'opacity-50' : ''}`}
-                draggable={canReorder} onDragStart={() => handleDragStart(0)} onDragOver={handleDragOver} onDrop={() => handleDrop(0)}>
-                {sortedItems[0].coverImage ? (
-                  <img src={sortedItems[0].coverImage} alt={sortedItems[0].title} className="absolute inset-0 w-full h-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233]" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 inset-x-0 p-8">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="px-3 py-1 rounded-full bg-[#FCD116] text-[#0038A8] text-xs font-black uppercase tracking-wider">Featured</span>
-                    <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold">{sortedItems[0].year}</span>
-                    {sortedItems[0].issuer && <span className="text-white/70 text-xs">{sortedItems[0].issuer}</span>}
+          {viewStyle === 'showcase' && (() => {
+            const featuredIndex = sortedItems.findIndex((it) => it.active !== false);
+            if (featuredIndex === -1) return null;
+            const featured = sortedItems[featuredIndex];
+            return (
+              <div className="space-y-6">
+                {/* Featured first visible item */}
+                <div className="relative rounded-2xl overflow-hidden h-72 lg:h-80 group"
+                  draggable={canReorder} onDragStart={() => handleDragStart(featuredIndex)} onDragOver={handleDragOver} onDrop={() => handleDrop(featuredIndex)}>
+                  {featured.coverImage ? (
+                    <img src={featured.coverImage} alt={featured.title} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#0038A8] to-[#001233]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                  <div className="absolute bottom-0 inset-x-0 p-8">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="px-3 py-1 rounded-full bg-[#FCD116] text-[#0038A8] text-xs font-black uppercase tracking-wider">Featured</span>
+                      <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-xs font-bold">{featured.year}</span>
+                      {featured.issuer && <span className="text-white/70 text-xs">{featured.issuer}</span>}
+                    </div>
+                    <h2 className="text-2xl lg:text-3xl font-black text-white mb-2">{featured.title}</h2>
+                    <p className="text-sm text-white/80 max-w-2xl line-clamp-2">{featured.description}</p>
                   </div>
-                  <h2 className="text-2xl lg:text-3xl font-black text-white mb-2">{sortedItems[0].title}</h2>
-                  <p className="text-sm text-white/80 max-w-2xl line-clamp-2">{sortedItems[0].description}</p>
+                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => toggleActive(featured)} title="On homepage — click to hide from homepage"
+                      className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded"><Eye size={14} /></button>
+                    <button onClick={() => startEdit(featured)}
+                      className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={14} /></button>
+                    <button onClick={() => handleDelete(featured.id)}
+                      className="p-1.5 bg-red-500/60 hover:bg-red-500/80 text-white rounded"><Trash2 size={14} /></button>
+                  </div>
                 </div>
-                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => toggleActive(sortedItems[0])} title={sortedItems[0].active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
-                    className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded">{sortedItems[0].active === false ? <EyeOff size={14} /> : <Eye size={14} />}</button>
-                  <button onClick={() => startEdit(sortedItems[0])}
-                    className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={14} /></button>
-                  <button onClick={() => handleDelete(sortedItems[0].id)}
-                    className="p-1.5 bg-red-500/60 hover:bg-red-500/80 text-white rounded"><Trash2 size={14} /></button>
+                {/* Rest in grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {sortedItems.map((item, i) => {
+                    if (i === featuredIndex || item.active === false) return null;
+                    return (
+                      <div key={item.id}
+                        draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
+                        <AwardItemCard item={item} index={i} variant="cards" />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              {/* Rest in grid */}
-              {sortedItems.length > 1 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {sortedItems.slice(1).map((item, i) => (
-                    <div key={item.id}
-                      draggable={canReorder} onDragStart={() => handleDragStart(i + 1)} onDragOver={handleDragOver} onDrop={() => handleDrop(i + 1)}>
-                      <AwardItemCard item={item} index={i + 1} variant="cards" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── Horizontal Scroll ────────────────────────────────────────── */}
           {viewStyle === 'horizontal' && (
             <div className="overflow-x-auto pb-4 -mx-8 px-8">
               <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-                {sortedItems.map((item, i) => (
+                {sortedItems.map((item, i) => item.active === false ? null : (
                   <div key={item.id} className="w-72 shrink-0"
                     draggable={canReorder} onDragStart={() => handleDragStart(i)} onDragOver={handleDragOver} onDrop={() => handleDrop(i)}>
-                    <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group hover:shadow-lg transition-all hover:-translate-y-1 h-full ${dragIndex === i ? 'opacity-50 scale-95' : item.active === false ? 'opacity-50' : ''}`}>
+                    <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm group hover:shadow-lg transition-all hover:-translate-y-1 h-full ${dragIndex === i ? 'opacity-50 scale-95' : ''}`}>
                       <div className="relative h-44 overflow-hidden">
                         {item.coverImage ? (
                           <img src={item.coverImage} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -795,8 +903,8 @@ export default function ManageAwards() {
                         )}
                         <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#0038A8] text-white text-xs font-bold">{item.year}</span>
                         <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => toggleActive(item)} title={item.active === false ? 'Off homepage — click to feature on homepage' : 'On homepage — click to hide from homepage'}
-                            className="p-1 bg-black/40 hover:bg-black/60 text-white rounded">{item.active === false ? <EyeOff size={12} /> : <Eye size={12} />}</button>
+                          <button onClick={() => toggleActive(item)} title="On homepage — click to hide from homepage"
+                            className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Eye size={12} /></button>
                           <button onClick={() => startEdit(item)}
                             className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"><Edit2 size={12} /></button>
                           <button onClick={() => handleDelete(item.id)}

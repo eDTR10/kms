@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView, useMotionValue, useTransform, animate } from 'framer-motion';
-import { ChevronRight, FolderKanban, LayoutDashboard, MapPin, Building2, ShieldAlert } from 'lucide-react';
+import { ChevronRight, FolderKanban, LayoutDashboard, MapPin, Building2, ShieldAlert, Database } from 'lucide-react';
 import Carousel from '../components/Carousel';
 import HeroSlider from '../components/HeroSlider';
 import Accomplishments from '../components/Accomplishments';
@@ -18,6 +18,8 @@ import logoeLGU from '../assets/project-logo/eLGU Logo.png';
 import logoIIDB from '../assets/project-logo/IIDB.png';
 import logoNIPPSB from '../assets/project-logo/NIPPSB.png';
 import logoDRRM from '../assets/project-logo/drrm.png';
+import logoLakip from '../assets/project-logo/lakip.png';
+import logoSvsi from '../assets/project-logo/svsi.jpg';
 const PROJECTS = [
   {
     logo: logoFreeWifi,
@@ -66,7 +68,7 @@ const PROJECTS = [
     title: 'IIDB',
     description: 'ICT Industry Development Bureau – Region 10 enterprises and ICT professionals.',
     path: '/kms/projects/iidb',
-    accent: 'bg-[#FF0180]',
+    accent: 'bg-[#254A8D]',
   },
   {
     logo: logoNIPPSB,
@@ -81,6 +83,28 @@ const PROJECTS = [
     description: 'Disaster Risk Reduction and Management program dashboard.',
     path: '/kms/projects/drrm',
     accent: 'bg-[#CE1126]',
+  },
+  {
+    logo: logoLakip,
+    title: 'LAKIP',
+    description: 'Localized Accessible Knowledge and Inclusive Platform.',
+    path: '/kms/projects/lakip',
+    accent: 'bg-[#010101]',
+  },
+  {
+    // No logo file supplied yet for KRIM — the card falls back to project.icon below.
+    icon: Database,
+    title: 'KRIM',
+    description: 'Knowledge And RDI Infrastructure Management.',
+    path: '/kms/projects/krim',
+    accent: 'bg-[#6B3FA0]',
+  },
+  {
+    logo: logoSvsi,
+    title: 'SVSI',
+    description: 'Smart Villages Smart Island Initiative.',
+    path: '/kms/projects/svsi',
+    accent: 'bg-[#1F3585]',
   },
 ];
 
@@ -214,12 +238,12 @@ export default function Home() {
 
                     {console.log(project.accent)}
                     {/* Logo banner */}
-                    <div className="flex items-center justify-center h-28 relative overflow-hidden bg-slate-50 dark:bg-white p-6">
+                    <div className="flex items-center justify-center h-28 relative overflow-hidden bg-white dark:bg-white ">
                       {project.logo ? (
                         <img
                           src={project.logo}
                           alt={project.title}
-                          className="max-h-14 max-w-[65%] object-contain relative z-10 group-hover:scale-105 transition-transform duration-500"
+                          className="max-h-[70%] max-w-[65%] object-contain relative z-10 group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <project.icon

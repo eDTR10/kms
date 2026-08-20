@@ -15,6 +15,12 @@ export const KMS_PROJECTS = [
   { slug: 'iidb', label: 'IIDB', officeId: 26 },
   { slug: 'nippsb', label: 'NIPPSB', officeId: 28 },
   { slug: 'drrm', label: 'DRRM', officeId: 37 },
+  // Regional Initiatives — same project mechanics as everything above, just grouped
+  // under their own heading in AdminLayout.tsx's sidebar instead of the plain
+  // "Projects" list.
+  { slug: 'lakip', label: 'LAKIP', officeId: 38 },
+  { slug: 'krim', label: 'KRIM', officeId: 39 },
+  { slug: 'svsi', label: 'SVSI', officeId: 40 },
 ];
 
 /** Match an office (as returned by getOfficesSlim(), shape { office_id, name, type })

@@ -153,6 +153,44 @@ export async function reorderProjectChartConfigs(items) {
   return data;
 }
 
+// Value Card's 'image-bg' background photo — a separate multipart PATCH (vs.
+// create/updateProjectChartConfig's plain JSON), same reasoning as
+// uploadProjectChartSourceMarkerIcon below: it's an actual file upload, converted/
+// compressed server-side the same way Award/Accomplishment images are. Needs an existing
+// chart id, so for a brand-new chart the caller creates it (JSON) first, then calls this
+// as a follow-up if the admin picked a file instead of pasting a URL.
+export async function uploadProjectChartConfigCardImage(id, file) {
+  const fd = new FormData();
+  fd.append('card_image_file', file);
+  const { data } = await api.patch(`kms/project-chart-configs/${id}/`, fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+// ── Extra Summary/Map/Breakdown widget instances — additional, independently-
+// configured copies of a built-in beyond ProjectChartSource's own singleton one ──
+
+export async function getProjectBuiltinWidgets(slug) {
+  const officeId = await getProjectOfficeId(slug);
+  const { data } = await api.get('kms/project-builtin-widgets/', { params: { office: officeId } });
+  return data.results ?? data;
+}
+
+export async function createProjectBuiltinWidget(payload) {
+  const { data } = await api.post('kms/project-builtin-widgets/', payload);
+  return data;
+}
+
+export async function updateProjectBuiltinWidget(id, payload) {
+  const { data } = await api.patch(`kms/project-builtin-widgets/${id}/`, payload);
+  return data;
+}
+
+export async function deleteProjectBuiltinWidget(id) {
+  await api.delete(`kms/project-builtin-widgets/${id}/`);
+}
+
 // ── Chart data source — which dataset (+ which of its columns) feeds a project's
 // Summary Card / Map / Breakdown built-ins ──────────────────────────────────
 

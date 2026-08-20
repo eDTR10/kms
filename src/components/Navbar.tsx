@@ -1,8 +1,7 @@
 // @ts-nocheck
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, Moon, Menu, X, ChevronDown, LogOut, User, LayoutDashboard } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+import { Menu, X, ChevronDown, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { useAuth, projectAdminPath } from '../context/AuthContext';
 import dictLogo from '../assets/project-logo/DICT Logo.png';
 
@@ -25,13 +24,21 @@ const PROJECT_LINKS = [
   { label: 'DRRM', path: '/kms/projects/drrm' },
 ];
 
+// Rendered as their own group (with a "Regional Initiatives" heading) below
+// PROJECT_LINKS in the Projects dropdown, instead of blending into that flat list —
+// same split AdminLayout.tsx's sidebar uses.
+const REGIONAL_INITIATIVE_LINKS = [
+  { label: 'LAKIP', path: '/kms/projects/lakip' },
+  { label: 'KRIM', path: '/kms/projects/krim' },
+  { label: 'SVSI', path: '/kms/projects/svsi' },
+];
+
 const SIMPLE_LINKS = [
   { label: 'Maps', path: '/kms/maps' },
   { label: 'AFD', path: '/kms/afd' },
 ];
 
 export default function Navbar() {
-  const { dark, toggleTheme } = useTheme();
   const { user, logout, isAdmin, isProjectAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -150,6 +157,20 @@ export default function Navbar() {
                       {child.label}
                     </Link>
                   ))}
+                  <p className="px-4 pt-2 pb-1 text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold border-t border-gray-100 dark:border-border mt-1">
+                    Regional Initiatives
+                  </p>
+                  {REGIONAL_INITIATIVE_LINKS.map((child) => (
+                    <Link
+                      key={child.path}
+                      to={child.path}
+                      onClick={() => setProjectsOpen(false)}
+                      className={`block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-[#e8edf7] dark:hover:bg-primary/20 transition-colors ${isActive(child.path) ? 'text-[#0038A8] font-semibold bg-[#e8edf7] dark:bg-primary/20 dark:text-primary' : ''
+                        }`}
+                    >
+                      {child.label}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
@@ -168,15 +189,6 @@ export default function Navbar() {
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
-              aria-label="Toggle dark mode"
-            >
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
             {/* User menu or login */}
             {user ? (
               <div className="relative" ref={userMenuRef}>
@@ -266,6 +278,16 @@ export default function Navbar() {
               Projects
             </p>
             {PROJECT_LINKS.map((child) => (
+              <Link key={child.path} to={child.path} onClick={() => setMobileOpen(false)}
+                className="block px-6 py-2 text-sm hover:bg-white/10 rounded-md">
+                {child.label}
+              </Link>
+            ))}
+
+            <p className="px-3 pt-2 pb-1 text-xs text-white/50 uppercase tracking-wider font-semibold">
+              Regional Initiatives
+            </p>
+            {REGIONAL_INITIATIVE_LINKS.map((child) => (
               <Link key={child.path} to={child.path} onClick={() => setMobileOpen(false)}
                 className="block px-6 py-2 text-sm hover:bg-white/10 rounded-md">
                 {child.label}

@@ -20,6 +20,9 @@ import ELGU from './screens/Projects/ELGU';
 import IIDB from './screens/Projects/IIDB';
 import NIPPSB from './screens/Projects/NIPPSB';
 import DRRM from './screens/Projects/DRRM';
+import LAKIP from './screens/Projects/LAKIP';
+import KRIM from './screens/Projects/KRIM';
+import SVSI from './screens/Projects/SVSI';
 
 // Admin
 import AdminLayout from './screens/Admin/AdminLayout';
@@ -69,6 +72,18 @@ import DRRMLayout from './screens/Admin/DRRM/DRRMLayout';
 import DRRMHighlights from './screens/Admin/DRRM/DRRMHighlights';
 import DRRMCharts from './screens/Admin/DRRM/DRRMCharts';
 import DRRMDatasets from './screens/Admin/DRRM/DRRMDatasets';
+import LAKIPLayout from './screens/Admin/LAKIP/LAKIPLayout';
+import LAKIPHighlights from './screens/Admin/LAKIP/LAKIPHighlights';
+import LAKIPCharts from './screens/Admin/LAKIP/LAKIPCharts';
+import LAKIPDatasets from './screens/Admin/LAKIP/LAKIPDatasets';
+import KRIMLayout from './screens/Admin/KRIM/KRIMLayout';
+import KRIMHighlights from './screens/Admin/KRIM/KRIMHighlights';
+import KRIMCharts from './screens/Admin/KRIM/KRIMCharts';
+import KRIMDatasets from './screens/Admin/KRIM/KRIMDatasets';
+import SVSILayout from './screens/Admin/SVSI/SVSILayout';
+import SVSIHighlights from './screens/Admin/SVSI/SVSIHighlights';
+import SVSICharts from './screens/Admin/SVSI/SVSICharts';
+import SVSIDatasets from './screens/Admin/SVSI/SVSIDatasets';
 
 function App() {
   return (
@@ -185,6 +200,39 @@ function App() {
           <Route index element={<DRRMDatasets />} />
         </Route>
 
+        {/* Regional Initiatives — LAKIP */}
+        <Route path="/kms/admin/lakip/highlights" element={<ProtectedRoute adminOnly><AdminLayout><LAKIPLayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<LAKIPHighlights />} />
+        </Route>
+        <Route path="/kms/admin/lakip/charts" element={<ProtectedRoute adminOnly><AdminLayout><LAKIPLayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<LAKIPCharts />} />
+        </Route>
+        <Route path="/kms/admin/lakip/datasets" element={<ProtectedRoute adminOnly><AdminLayout><LAKIPLayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<LAKIPDatasets />} />
+        </Route>
+
+        {/* Regional Initiatives — KRIM */}
+        <Route path="/kms/admin/krim/highlights" element={<ProtectedRoute adminOnly><AdminLayout><KRIMLayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<KRIMHighlights />} />
+        </Route>
+        <Route path="/kms/admin/krim/charts" element={<ProtectedRoute adminOnly><AdminLayout><KRIMLayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<KRIMCharts />} />
+        </Route>
+        <Route path="/kms/admin/krim/datasets" element={<ProtectedRoute adminOnly><AdminLayout><KRIMLayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<KRIMDatasets />} />
+        </Route>
+
+        {/* Regional Initiatives — SVSI */}
+        <Route path="/kms/admin/svsi/highlights" element={<ProtectedRoute adminOnly><AdminLayout><SVSILayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<SVSIHighlights />} />
+        </Route>
+        <Route path="/kms/admin/svsi/charts" element={<ProtectedRoute adminOnly><AdminLayout><SVSILayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<SVSICharts />} />
+        </Route>
+        <Route path="/kms/admin/svsi/datasets" element={<ProtectedRoute adminOnly><AdminLayout><SVSILayout /></AdminLayout></ProtectedRoute>}>
+          <Route index element={<SVSIDatasets />} />
+        </Route>
+
         <Route
           path="/kms/admin/users"
           element={
@@ -284,6 +332,9 @@ function App() {
                 <Route path="/kms/projects/iidb" element={<IIDB />} />
                 <Route path="/kms/projects/nippsb" element={<NIPPSB />} />
                 <Route path="/kms/projects/drrm" element={<DRRM />} />
+                <Route path="/kms/projects/lakip" element={<LAKIP />} />
+                <Route path="/kms/projects/krim" element={<KRIM />} />
+                <Route path="/kms/projects/svsi" element={<SVSI />} />
               </Routes>
             </Layout>
           }

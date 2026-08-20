@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
   getProjectOfficeId, getProjectDatasets, createProjectDataset, updateProjectDataset, deleteProjectDataset,
-  createProjectDatasetField, deleteProjectDatasetField,
+  createProjectDatasetField, updateProjectDatasetField, deleteProjectDatasetField,
   createProjectDatasetRow, updateProjectDatasetRow, deleteProjectDatasetRow,
   importProjectDatasetCsv, syncProjectDatasetSheet,
 } from '../../../services/projects';
@@ -112,6 +112,11 @@ export default function ProjectDatasets({ slug }) {
   const [showFieldForm, setShowFieldForm] = useState(false);
   const [fieldForm, setFieldForm] = useState({ label: '', field_type: 'text' });
 
+  // Link a column to another table's column — see openLinkEditor/handleSaveLink below.
+  const [linkingField, setLinkingField] = useState(null);
+  const [linkDatasetId, setLinkDatasetId] = useState('');
+  const [linkColumn, setLinkColumn] = useState('');
+
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [csvText, setCsvText] = useState('');
   const [importing, setImporting] = useState(false);
@@ -213,6 +218,26 @@ export default function ProjectDatasets({ slug }) {
       fetchAll();
     } catch (err) {
       alert('Failed to delete column.');
+    }
+  };
+
+  const openLinkEditor = (field) => {
+    setLinkingField(field);
+    setLinkDatasetId(field.reference_dataset ? String(field.reference_dataset) : '');
+    setLinkColumn(field.reference_column || '');
+  };
+
+  const handleSaveLink = async () => {
+    if (!linkingField) return;
+    try {
+      await updateProjectDatasetField(linkingField.id, {
+        reference_dataset: linkDatasetId ? Number(linkDatasetId) : null,
+        reference_column: linkDatasetId ? linkColumn : '',
+      });
+      setLinkingField(null);
+      fetchAll();
+    } catch (err) {
+      alert('Failed to update column link.');
     }
   };
 
@@ -509,12 +534,25 @@ export default function ProjectDatasets({ slug }) {
             {showFieldForm && (
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 space-y-3">
                 <div className="flex flex-wrap gap-2">
-                  {fields.map((f) => (
-                    <span key={f.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs">
-                      {f.label} <span className="text-gray-400">({FIELD_TYPES.find((t) => t.value === f.field_type)?.label})</span>
-                      <button onClick={() => handleDeleteField(f)} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
-                    </span>
-                  ))}
+                  {fields.map((f) => {
+                    const linkedDataset = f.reference_dataset ? datasets.find((d) => d.id === f.reference_dataset) : null;
+                    return (
+                      <span key={f.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs">
+                        {f.label} <span className="text-gray-400">({FIELD_TYPES.find((t) => t.value === f.field_type)?.label})</span>
+                        {linkedDataset && (
+                          <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400" title={`Linked to ${linkedDataset.name}.${f.reference_column}`}>
+                            <Link2 size={11} /> {linkedDataset.name}
+                          </span>
+                        )}
+                        <button onClick={() => openLinkEditor(f)}
+                          className={linkedDataset ? 'text-blue-500 hover:text-blue-700' : 'text-gray-400 hover:text-[#0038A8]'}
+                          title="Link this column to another table">
+                          <Link2 size={12} />
+                        </button>
+                        <button onClick={() => handleDeleteField(f)} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
+                      </span>
+                    );
+                  })}
                   {fields.length === 0 && (
                     <span className="text-xs text-gray-400">No columns yet — add one below, or import a CSV.</span>
                   )}
@@ -532,6 +570,42 @@ export default function ProjectDatasets({ slug }) {
                     <Plus size={13} /> Add Column
                   </button>
                 </div>
+
+                {linkingField && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2">
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      Link <strong>{linkingField.label}</strong> to a column in another table — once linked, every
+                      other column of the matched row becomes available when building charts/cards on{' '}
+                      <strong>{activeDataset.name}</strong>.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <select value={linkDatasetId}
+                        onChange={(e) => { setLinkDatasetId(e.target.value); setLinkColumn(''); }}
+                        className="flex-1 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800">
+                        <option value="">Not linked</option>
+                        {datasets.filter((d) => d.id !== activeDataset.id).map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                      <select value={linkColumn} onChange={(e) => setLinkColumn(e.target.value)} disabled={!linkDatasetId}
+                        className="flex-1 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800 disabled:opacity-50">
+                        <option value="">Match column...</option>
+                        {(datasets.find((d) => d.id === Number(linkDatasetId))?.fields || []).map((f2) => (
+                          <option key={f2.id} value={f2.name}>{f2.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={handleSaveLink} disabled={!!linkDatasetId && !linkColumn}
+                        className="px-3 py-1.5 bg-[#0038A8] text-white rounded-lg text-xs font-bold disabled:opacity-50">
+                        Save Link
+                      </button>
+                      <button onClick={() => setLinkingField(null)} className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

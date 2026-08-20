@@ -1,26 +1,27 @@
 // @ts-nocheck
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { BarChart3, Database, Image } from 'lucide-react';
-import logoIidb from '../../../assets/project-logo/IIDB.png';
 
 const TABS = [
-  { label: 'Highlights', path: '/kms/admin/iidb/highlights', icon: Image },
-  { label: 'Charts', path: '/kms/admin/iidb/charts', icon: BarChart3 },
-  { label: 'Datasets', path: '/kms/admin/iidb/datasets', icon: Database },
+  { label: 'Highlights', path: '/kms/admin/krim/highlights', icon: Image },
+  { label: 'Charts', path: '/kms/admin/krim/charts', icon: BarChart3 },
+  { label: 'Datasets', path: '/kms/admin/krim/datasets', icon: Database },
 ];
 
-export default function IIDBLayout() {
+export default function KRIMLayout() {
   const location = useLocation();
 
   return (
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-[#f8f8f8] flex items-center justify-center p-1.5">
-          <img src={logoIidb} alt="IIDB" className="max-h-full max-w-full object-contain" />
+        {/* No logo file supplied yet for KRIM — a lucide icon stands in, same box size/
+            style as every other project's <img> so it slots into the same layout. */}
+        <div className="w-12 h-12 rounded-xl bg-[#6B3FA0] flex items-center justify-center">
+          <Database size={22} className="text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white">IIDB</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">KRIM</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">Project admin</p>
         </div>
       </div>

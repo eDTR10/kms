@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronRight, ChevronDown, Wifi, Trophy, Star, Sparkles, Presentation, Image, BarChart3, Database, Layers } from 'lucide-react';
+import { LogOut, ChevronRight, ChevronDown, Wifi, Trophy, Star, Sparkles, Presentation, Image, BarChart3, Database, Layers, MapPinned, Home } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // Same 3-tab shape as Free Wi-Fi (Highlights / Charts / Datasets), each
@@ -34,6 +34,15 @@ const PROJECTS = [
   { id: 'iidb', label: 'IIDB', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('iidb') },
   { id: 'nippsb', label: 'NIPPSB', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('nippsb') },
   { id: 'drrm', label: 'DRRM', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('drrm') },
+];
+
+// Same 3-tab shape/mechanics as PROJECTS above — kept as a separate list purely so the
+// sidebar can give them their own "Regional Initiatives" heading instead of blending
+// into the flat "Projects" list.
+const REGIONAL_INITIATIVES = [
+  { id: 'lakip', label: 'LAKIP', icon: MapPinned, color: '#F9FAFB', subMenus: projectSubMenus('lakip') },
+  { id: 'krim', label: 'KRIM', icon: Database, color: '#6B3FA0', subMenus: projectSubMenus('krim') },
+  { id: 'svsi', label: 'SVSI', icon: Home, color: '#0E7490', subMenus: projectSubMenus('svsi') },
 ];
 
 const OTHER_LINKS = [
@@ -71,7 +80,54 @@ export default function AdminLayout({ children }) {
   const visibleProjects = isProjectAdmin && !isSuperAdmin
     ? PROJECTS.filter((p) => user?.projectSlugs?.includes(p.id))
     : PROJECTS;
+  const visibleRegionalInitiatives = isProjectAdmin && !isSuperAdmin
+    ? REGIONAL_INITIATIVES.filter((p) => user?.projectSlugs?.includes(p.id))
+    : REGIONAL_INITIATIVES;
   const visibleOtherLinks = isProjectAdmin && !isSuperAdmin ? [] : OTHER_LINKS;
+
+  // Shared row renderer for both the "Regional Initiatives" and "Projects" groups below
+  // — same expand/collapse + sub-menu behavior, just fed a different list.
+  const renderProjectGroup = (projects) => projects.map((project) => {
+    const isExpanded = expandedProjects.includes(project.id) || isProjectActive(project);
+    const ProjectIcon = project.icon;
+    return (
+      <div key={project.id}>
+        <button
+          onClick={() => toggleProject(project.id)}
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isProjectActive(project)
+              ? 'bg-white/15 text-white'
+              : 'text-white/70 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <ProjectIcon size={16} />
+          <span className="flex-1 text-left">{project.label}</span>
+          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+        {isExpanded && (
+          <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
+            {project.subMenus.map((sub) => {
+              const SubIcon = sub.icon;
+              return (
+                <Link
+                  key={sub.path}
+                  to={sub.path}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                    isActive(sub.path)
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <SubIcon size={14} />
+                  {sub.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  });
 
   return (
     <div className="min-h-screen flex dark:bg-gray-950 bg-gray-100 transition-colors duration-300">
@@ -104,49 +160,16 @@ export default function AdminLayout({ children }) {
             </Link>
           ))}
 
+          {/* Regional Initiatives Section — kept above the plain Projects list below so
+              it reads as its own category, not just another project. */}
+          {visibleRegionalInitiatives.length > 0 && (
+            <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-4 pb-1">Regional Initiatives</p>
+          )}
+          {renderProjectGroup(visibleRegionalInitiatives)}
+
           {/* Projects Section */}
           <p className="text-xs text-white/40 uppercase tracking-wider px-3 pt-4 pb-1">Projects</p>
-          {visibleProjects.map((project) => {
-            const isExpanded = expandedProjects.includes(project.id) || isProjectActive(project);
-            const ProjectIcon = project.icon;
-            return (
-              <div key={project.id}>
-                <button
-                  onClick={() => toggleProject(project.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isProjectActive(project)
-                      ? 'bg-white/15 text-white'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <ProjectIcon size={16} />
-                  <span className="flex-1 text-left">{project.label}</span>
-                  {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                </button>
-                {isExpanded && (
-                  <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
-                    {project.subMenus.map((sub) => {
-                      const SubIcon = sub.icon;
-                      return (
-                        <Link
-                          key={sub.path}
-                          to={sub.path}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                            isActive(sub.path)
-                              ? 'bg-white/15 text-white'
-                              : 'text-white/60 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          <SubIcon size={14} />
-                          {sub.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {renderProjectGroup(visibleProjects)}
         </nav>
 
         <div className="p-3 border-t border-white/10">
