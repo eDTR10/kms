@@ -7,14 +7,12 @@ const STATS = [
   { label: 'Registered Users', value: '2', icon: Users, color: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' },
   { label: 'Documents', value: '6', icon: FileText, color: 'bg-red-50 dark:bg-red-900/20 text-[#CE1126] dark:text-red-400' },
 ];
-
 const RECENT = [
   { action: 'User logged in', detail: 'admin', time: 'Just now' },
   { action: 'Dashboard viewed', detail: 'Free Wi-Fi', time: '5 min ago' },
   { action: 'Dashboard viewed', detail: 'NIPPSB', time: '12 min ago' },
   { action: 'File downloaded', detail: 'Annual Report 2024.pdf', time: '1 hr ago' },
 ];
-
 export default function AdminDashboard() {
   return (
     <div className="p-8">

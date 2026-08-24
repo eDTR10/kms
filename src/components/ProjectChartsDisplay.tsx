@@ -287,7 +287,10 @@ export default function ProjectChartsDisplay({ slug }) {
         />
       )}
 
-      <div className="grid grid-cols-12 gap-6">
+      {/* grid-flow-dense backfills gaps mixed chart widths (Quarter next to a Third,
+          etc.) would otherwise leave behind — see the matching admin-preview grid in
+          FreeWifiCharts.tsx for the full explanation. */}
+      <div className="grid grid-cols-12 gap-6 grid-flow-dense">
         {sortByChartOrder(chartItems, source.chart_order).map(item => (
           <div key={item.id} className={item.gridClass}>{item.node}</div>
         ))}

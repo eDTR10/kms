@@ -227,7 +227,11 @@ export default function Awards({ limit, hideInactive = true } = {}) {
 
   const visibleItems = hideInactive ? items.filter((item) => item.active !== false) : items;
   const displayItems = limit ? visibleItems.slice(0, limit) : visibleItems;
-  const hasMore = Boolean(limit) && visibleItems.length > limit;
+  // Not just "are there more than the cap" — the link is the only way a homepage visitor
+  // reaches the full /kms/awards archive at all, so it should stay a visible entry point
+  // whenever there's at least one award to browse, even if the current count happens to
+  // fit within the teaser's own limit.
+  const hasMore = Boolean(limit) && visibleItems.length > 0;
 
   const next = useCallback(
     () => setSelectedIndex((i) => (i + 1) % displayItems.length),

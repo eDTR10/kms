@@ -15,7 +15,6 @@ export async function updateUser(id, payload) {
   const { data } = await api.patch(`users/manage/${id}/`, payload);
   return data;
 }
-
 export async function deleteUser(id) {
   await api.delete(`users/manage/${id}/`);
 }

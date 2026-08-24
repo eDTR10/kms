@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { toCanvas as htmlNodeToCanvas } from 'html-to-image';
 import {
   Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical,
-  Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star, Palette, Link2, Upload,
+  Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star, Palette, Link2, Upload, Download, FileText, Image as ImageIcon, Loader2,
 } from 'lucide-react';
 import { MARKER_ICON_OPTIONS } from '../../../lib/markerIcons';
 import { getFreeWifiSummary } from '../../../services/freewifi';
@@ -213,6 +214,14 @@ const DATE_PATTERNS = [
   /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}/i,
   /^\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}/i,
   /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}$/i,
+  // A bare year ("2023") — common for tables that only track a school/program year, not a
+  // full date. new Date("2023") still parses fine (resolves to Jan 1 that year), and
+  // dateBucketKey's 'year' grouping only reads .getFullYear() anyway, so this needs no
+  // downstream changes — it just widens what counts as "looks like a date" for Line/Area's
+  // requiresDateField gate, without forcing the field's own type to be re-tagged as Date
+  // (which would mean re-entering every row through a full day/month/year date picker for
+  // what's conceptually just a year number).
+  /^(19|20)\d{2}$/,
 ];
 
 // True if most of `field`'s non-blank values across `records` look like dates — gates
@@ -395,13 +404,36 @@ const FREEWIFI_AVAILABLE_FIELDS = [
   { value: 'psgc', label: 'PSGC Code' },
 ];
 
+// Each `preview` draws N equal blocks with the first one filled — "this chart takes 1 of
+// N equal columns in a row" reads at a glance, unlike the old text dropdown ("One Third
+// (1/3)") which just named the fraction without showing what it actually looks like.
+const gridSizePreview = (slots) => () => (
+  <div className="w-full h-8 flex gap-1">
+    {Array.from({ length: slots }).map((_, i) => (
+      <div key={i} className={i === 0 ? 'flex-1 rounded' : 'flex-1 rounded bg-gray-200 dark:bg-gray-600'}
+        style={i === 0 ? { backgroundColor: COLORS[0] } : undefined} />
+    ))}
+  </div>
+);
+// Unlike gridSizePreview's N-equal-blocks (this chart is 1 of N identical columns),
+// three-quarter is a majority split, meant to sit next to a Quarter chart in the same
+// row (3+1 quarters = a full row) — drawn as an actual 3:1 ratio bar so it doesn't get
+// mistaken for just another "1 of N equal" option.
+const threeQuarterPreview = () => (
+  <div className="w-full h-8 flex gap-1">
+    <div className="rounded" style={{ flex: '3 1 0%', backgroundColor: COLORS[0] }} />
+    <div className="rounded bg-gray-200 dark:bg-gray-600" style={{ flex: '1 1 0%' }} />
+  </div>
+);
+// 'third' is deliberately not offered here anymore — still handled by gridSizeClass
+// below so any chart that already has it saved keeps its current width instead of
+// silently jumping to full-width just because this list changed.
 const GRID_SIZES = [
-  { id: 'full', label: 'Full Width (1/1)' },
-  { id: 'half', label: 'Half Width (1/2)' },
-  { id: 'third', label: 'One Third (1/3)' },
-  { id: 'quarter', label: 'One Quarter (1/4)' },
+  { id: 'full', label: 'Full Width', preview: gridSizePreview(1) },
+  { id: 'three-quarter', label: 'Three Quarters', preview: threeQuarterPreview },
+  { id: 'half', label: 'Half Width', preview: gridSizePreview(2) },
+  { id: 'quarter', label: 'One Quarter', preview: gridSizePreview(4) },
 ];
-const GRID_SIZE_OPTIONS = GRID_SIZES.map(s => ({ value: s.id, label: s.label }));
 
 // Maps a custom chart's saved gridSize to its column span in the 12-col chart grid —
 // shared by the admin preview and the public page (ProjectChartsDisplay.tsx) so a size
@@ -418,6 +450,9 @@ export function gridSizeClass(gridSize) {
     case 'quarter': return 'col-span-12 md:col-span-6 lg:col-span-3';
     case 'third': return 'col-span-12 md:col-span-6 lg:col-span-4';
     case 'half': return 'col-span-12 md:col-span-6';
+    // Meant to pair with a Quarter chart in the same row (9 + 3 = the full 12) — a wide
+    // main chart next to a narrow side one, not another "1 of N equal" fraction.
+    case 'three-quarter': return 'col-span-12 lg:col-span-9';
     default: return 'col-span-12';
   }
 }
@@ -445,6 +480,11 @@ const TILE_AGG_OPTIONS = [
   { value: 'count_equals', label: 'Count rows where equals...' },
   { value: 'sum', label: 'Sum values' },
   { value: 'count', label: 'Count all rows' },
+  // "Row mode" for one tile — instead of aggregating across every matching row, reads
+  // this ONE column's raw value straight off the first row this tile's own Filter rows
+  // narrow down to (e.g. "Jan" for whichever row's Filter rows says Site = "Site A").
+  // Reuses the tile's existing `conditions` as the row-picker — no separate mechanism.
+  { value: 'row_value', label: 'Value from one row' },
 ];
 const CARD_AGG_OPTIONS = [
   { value: 'sum', label: 'Sum values' },
@@ -893,6 +933,10 @@ export function computeSummaryTiles(records, source, taggedFields) {
         } else if (cfg.agg === 'count_equals') {
           const target = String(cfg.equals ?? '').trim().toLowerCase();
           value = rows.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
+        } else if (cfg.agg === 'row_value') {
+          // Not an aggregate at all — this tile's own `conditions` pick ONE row (the
+          // first match), and its raw value for `field` is shown as-is.
+          value = rows.length ? (Number(rows[0][cfg.field]) || 0) : 0;
         } else {
           value = rows.reduce((s, r) => s + (Number(r[cfg.field]) || 0), 0);
         }
@@ -1179,6 +1223,13 @@ export function chartConfigFromBackend(c) {
     aggregationFieldMap: c.aggregation_field_map || {},
     // Per-table row filters (see combineChartRecords) — {"<dataset id>": [condition...]}.
     tableConditions: c.table_conditions || {},
+    // "Compare columns for one row" mode — see CustomChartRenderer's rowMode branch.
+    rowMode: !!c.row_mode,
+    rowColumns: c.row_columns || [],
+    // Color customization — see colorFor's docstring in CustomChartRenderer.
+    colorMode: c.color_mode || 'palette',
+    chartColor: c.chart_color || '#0038A8',
+    categoryColors: c.category_colors || {},
   };
 }
 
@@ -1220,6 +1271,11 @@ export function chartConfigToBackend(chart) {
     table_conditions: Object.fromEntries(
       Object.entries(chart.tableConditions || {}).map(([id, conds]) => [id, (conds || []).filter(c => c.field)])
     ),
+    row_mode: !isCard && !!chart.rowMode,
+    row_columns: !isCard && chart.rowMode ? (chart.rowColumns || []) : [],
+    color_mode: !isCard ? (chart.colorMode || 'palette') : 'palette',
+    chart_color: !isCard ? (chart.chartColor || '#0038A8') : '',
+    category_colors: !isCard ? (chart.categoryColors || {}) : {},
   };
 }
 
@@ -1656,6 +1712,230 @@ function AggregateValueCard({ chart, sites }) {
   );
 }
 
+// Builds the {label: value} category data every chart type below renders from — pulled
+// out of CustomChartRenderer so the CSV export (exportChartDataCSV) can compute the
+// EXACT same data through one shared function instead of a second, separately-maintained
+// copy of this logic that could quietly drift from what's actually on screen. Returns the
+// FULL sorted list (before withOthers/cap trim it for on-screen display only) — export
+// should never silently drop rows past a display cap.
+function buildChartTallyData(chart, sites) {
+  const filteredSites = filterRecordsByConditions(sites, chart.conditions);
+  const isRowMode = !!chart.rowMode;
+  const rowModeRow = isRowMode ? (filteredSites[0] || null) : null;
+  const isDateTrend = !isRowMode && (chart.chartType === 'line' || chart.chartType === 'area');
+  const dateGroupBy = chart.dateGroupBy || 'month';
+  const isAgg = !isRowMode && !!chart.aggregationEnabled && !!chart.aggregationField;
+  const aggType = chart.aggregationType || 'sum';
+  const bucketLabels = {};
+  const fieldData = isRowMode
+    ? Object.fromEntries((chart.rowColumns || []).map((col) => [col, rowModeRow ? (Number(rowModeRow[col]) || 0) : 0]))
+    : tallyBy(filteredSites, (s) => {
+        if (!isDateTrend) return s[chart.field] || 'N/A';
+        const raw = s[chart.field];
+        const key = raw ? dateBucketKey(raw, dateGroupBy) : null;
+        if (!key) return null;
+        if (!bucketLabels[key]) bucketLabels[key] = dateBucketLabel(key, dateGroupBy);
+        return key;
+      }, isAgg, chart.aggregationField, aggType);
+
+  let sorted = (isDateTrend || isRowMode)
+    ? (isRowMode ? Object.entries(fieldData) : Object.entries(fieldData).sort((a, b) => a[0].localeCompare(b[0])))
+    : Object.entries(fieldData).sort((a, b) => b[1] - a[1]);
+  const total = sorted.reduce((sum, [, count]) => sum + count, 0);
+  if (isDateTrend && chart.cumulative) {
+    let running = 0;
+    sorted = sorted.map(([key, count]) => { running += count; return [key, running]; });
+  }
+  return { sorted, total, bucketLabels, isRowMode, rowModeRow, isDateTrend };
+}
+
+// Strips characters most filesystems reject in a filename, and caps length so an admin's
+// long chart title can't produce an unusably long/invalid file name.
+function safeFilename(title, ext) {
+  return `${(title || 'chart').replace(/[^a-z0-9 _-]/gi, '').trim().slice(0, 80) || 'chart'}.${ext}`;
+}
+
+// Serializes flat row objects into a CSV string and triggers a browser download — plain
+// text, no library needed. Quotes any value containing a comma/quote/newline per RFC 4180.
+function downloadCSV(rows, filename) {
+  const headers = rows.length ? Object.keys(rows[0]) : [];
+  const escape = (val) => {
+    const s = String(val ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))];
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Downloads a custom chart's underlying data as CSV — the FULL data behind the chart, not
+// just whatever's currently visible on screen (e.g. "Show all categories" off still
+// exports every category, not just the capped top N). Value Cards export their one
+// computed number; every other chart type exports via buildChartTallyData, the exact same
+// function the chart itself renders from, so what's downloaded always matches what's shown.
+export function exportChartDataCSV(chart, sites) {
+  const isCard = chart.chartType === 'aggregate-cards';
+  const rows = isCard
+    ? (() => {
+        const filteredSites = filterRecordsByConditions(sites, chart.conditions);
+        const agg = chart.agg || 'sum';
+        const value = agg === 'count_equals'
+          ? filteredSites.filter(r => String(r[chart.field] ?? '').trim().toLowerCase() === String(chart.equals ?? '').trim().toLowerCase()).length
+          : computeAggregateValue(filteredSites, chart.field, agg);
+        return [{ [chart.title || 'Value']: value }];
+      })()
+    : (() => {
+        const { sorted, bucketLabels } = buildChartTallyData(chart, sites);
+        const displayLabel = (rawLabel) => chart.valueLabels?.[rawLabel] || bucketLabels[rawLabel] || rawLabel;
+        return sorted.map(([label, value]) => ({ Category: displayLabel(label), Value: value }));
+      })();
+  downloadCSV(rows, safeFilename(chart.title, 'csv'));
+}
+
+// Group-by-field row counts — the aggregation every Breakdown widget (singleton and any
+// extra instance) renders from. Kept separate from BreakdownAccordion's own inline copy of
+// this same loop since export runs outside that component's render, but computes the
+// identical grouping so the CSV always matches what the accordion shows.
+function computeBreakdownGroups(records, groupField) {
+  const rowsByGroup = {};
+  records.forEach(r => {
+    const key = r[groupField] || 'N/A';
+    (rowsByGroup[key] = rowsByGroup[key] || []).push(r);
+  });
+  return Object.entries(rowsByGroup).map(([group, rows]) => [group, rows.length]).sort((a, b) => b[1] - a[1]);
+}
+
+// Row data for a Summary widget's CSV export (singleton or extra instance). Free Wi-Fi's
+// built-in Summary Card reads from the live `summary` stats object instead of the generic
+// computeSummaryTiles pipeline, so this branches on `isFreeWifi` rather than trying to
+// unify two genuinely different data shapes.
+export function builtinSummaryCSVRows({ isFreeWifi, stats, tiles }) {
+  if (isFreeWifi) {
+    const labels = { total_locations: 'Total Locations', municipalities_count: 'Municipalities', provinces_count: 'Provinces', barangays_count: 'Barangays', total_active_aps: 'Total Active Sites' };
+    return Object.entries(labels).map(([key, label]) => ({ Label: label, Value: stats?.[key] ?? 0 }));
+  }
+  const list = [tiles.lead, ...tiles.rest, ...(tiles.accentTile ? [tiles.accentTile] : [])];
+  return list.map(t => ({ Label: t.label, Value: t.value }));
+}
+
+// Row data for a Map widget's CSV export (singleton or extra instance) — one row per
+// plotted point.
+export function builtinMapCSVRows({ isFreeWifi, records, mapped, tooltipFieldDefs }) {
+  if (isFreeWifi) {
+    return (records || []).filter(r => r.latitude && r.longitude).map(r => ({
+      Site: r.site_name || '', 'Site ID': r.r10_site_id || '', Province: r.province || '',
+      Municipality: r.locality || '', Barangay: r.barangay || '', Latitude: r.latitude, Longitude: r.longitude,
+    }));
+  }
+  return (mapped || []).map(r => {
+    const row = { Latitude: r.latitude, Longitude: r.longitude };
+    (tooltipFieldDefs || []).forEach(f => { row[f.label] = r[f.name]; });
+    return row;
+  });
+}
+
+// Row data for a Breakdown widget's CSV export (singleton or extra instance) — one row per
+// group with its row count, matching each accordion header row.
+export function builtinBreakdownCSVRows({ isFreeWifi, byProvince, records, groupField, groupLabel }) {
+  if (isFreeWifi) {
+    return Object.entries(byProvince || {}).map(([prov, data]) => ({ Province: prov, Sites: data.total_sites || 0 })).sort((a, b) => b.Sites - a.Sites);
+  }
+  return computeBreakdownGroups(records, groupField).map(([group, count]) => ({ [groupLabel || 'Group']: group, Rows: count }));
+}
+
+// Screenshots a chart card's rendered DOM as a PNG — generic across every chart/widget
+// type (custom charts, Value Cards, Summary/Map/Breakdown, extra widget instances) since
+// it just rasterizes whatever's actually on screen instead of needing type-specific logic.
+//
+// Uses `html-to-image` rather than html2canvas: html2canvas reimplements CSS layout and
+// text metrics itself in JS, and kept surfacing a fresh mismatch with the real browser
+// render for every different pattern this page uses (`.chart-h-scroll`'s clipped labels,
+// `.chart-canvas-scroll`'s clipped points, react-select's CSS-Grid-centered placeholder
+// text) — three separate, real bugs across three unrelated mechanisms, all boiling down to
+// html2canvas's own layout engine not matching what the browser actually does.
+// `html-to-image` instead serializes the DOM into an SVG `<foreignObject>` and lets the
+// BROWSER'S OWN engine lay it out and paint it, the same as it already does on screen, so
+// there's no separate layout implementation left to disagree with reality.
+//
+// `width`/`height` (CSS px) are optional — applied directly to the card's own LIVE element
+// (not a detached clone) before capture, the same as physically resizing it would be, so
+// its real flex/wrap/truncate CSS actually reflows for that size (bars widen/narrow,
+// labels get more or less room, etc.) instead of the chart just being scaled or clipped
+// after the fact. html-to-image reads the node's own clientWidth/clientHeight for its
+// output size when no width/height option is passed to it directly, so once the live node
+// has already reflowed to the requested size, no separate resize step is needed on the
+// capture's end at all — it just captures whatever the (now differently-sized) node
+// actually renders as, exactly like a real screenshot at that size would.
+//
+// `includeHeader`: `contentRef` (what `node` is, from DraggableChart) only wraps the
+// chart's own content — the title lives in a sibling header div above it (alongside the
+// drag handle / edit / download buttons, which the export should never include), so it's
+// never part of the capture on its own. When on, a plain title bar is built fresh and
+// temporarily inserted as the node's first child purely for this one capture, spanning
+// edge-to-edge via a negative margin that exactly cancels whatever padding the node
+// actually has right now (0 for `noPadding` cards, the usual p-4 otherwise) rather than
+// assuming a fixed value, then removed again in `finally` — the live page is untouched
+// once this returns.
+//
+// Returns a promise that resolves once the download has actually been triggered, so
+// callers can show a loading state for the capture instead of it looking like nothing
+// happened.
+export async function exportChartAsImage(node, title, { width, height, includeHeader } = {}) {
+  if (!node) return;
+  const prevWidth = node.style.width;
+  const prevHeight = node.style.height;
+  if (width) node.style.width = `${width}px`;
+  let headerEl = null;
+  if (includeHeader && title) {
+    const computed = window.getComputedStyle(node);
+    headerEl = document.createElement('div');
+    headerEl.textContent = title;
+    Object.assign(headerEl.style, {
+      margin: `-${computed.paddingTop} -${computed.paddingRight} 12px -${computed.paddingLeft}`,
+      padding: '12px 16px',
+      borderBottom: '1px solid #e5e7eb',
+      fontWeight: '700',
+      fontSize: '14px',
+      color: '#111827',
+      backgroundColor: '#ffffff',
+      fontFamily: "'Inter', sans-serif",
+    });
+    node.insertBefore(headerEl, node.firstChild);
+  }
+  // Applied after the header is already inserted (not alongside `width` above) — a
+  // requested height is meant as the CHART's height, not the header's, so the header's own
+  // rendered height (only knowable once it's actually in the live DOM) gets added on top
+  // instead of being squeezed out of that same budget. Without this, the forced box was
+  // exactly one header short of fitting header + chart, silently cropping that much off
+  // the bottom of the chart content.
+  if (height) node.style.height = `${height + (headerEl?.offsetHeight || 0)}px`;
+  let blob;
+  try {
+    const canvas = await htmlNodeToCanvas(node, {
+      backgroundColor: '#ffffff',
+      pixelRatio: 2,
+      cacheBust: true,
+    });
+    blob = await new Promise((resolve) => canvas.toBlob(resolve));
+  } finally {
+    if (headerEl) headerEl.remove();
+    node.style.width = prevWidth;
+    node.style.height = prevHeight;
+  }
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = safeFilename(title, 'png');
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // Custom Chart Renderer with hover tooltips
 export function CustomChartRenderer({ chart, sites }) {
   const [selectedFilter, setSelectedFilter] = useState(null);
@@ -1666,7 +1946,7 @@ export function CustomChartRenderer({ chart, sites }) {
   // Resets to page 1 whenever the underlying data/config changes so a stale page number
   // from a previous field/filter doesn't leave the view showing nothing.
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [chart.field, chart.dataset, chart.chartType, chart.showAllCategories, chart.conditions]);
+  useEffect(() => { setPage(1); }, [chart.field, chart.dataset, chart.chartType, chart.showAllCategories, chart.conditions, chart.rowMode, chart.rowColumns]);
 
   // Optional admin-set filter conditions (see ProjectChartConfig.conditions), applied
   // before any type-specific logic below — the aggregation branch (aggregate-cards) and
@@ -1683,44 +1963,19 @@ export function CustomChartRenderer({ chart, sites }) {
     return <AggregateValueCard chart={chart} sites={filteredSites} />;
   }
 
-  // Line/Area plot a date field chronologically (oldest to newest, left to right), bucketed
-  // into chart.dateGroupBy periods (default 'month' — grouping by the exact date string
-  // instead fans real-world data out into one spike per unique timestamp, see
-  // dateBucketKey's comment) — every other chart type ranks by count descending, which
-  // would turn a "trend" into a meaningless walk between whichever dates have the most rows.
-  const isDateTrend = chart.chartType === 'line' || chart.chartType === 'area';
-  const dateGroupBy = chart.dateGroupBy || 'month';
-  // Optional per-category aggregation (chart.aggregationEnabled) — sum/average/distinct-
-  // count of aggregationField per category instead of the plain row-count every chart type
-  // uses by default. See tallyBy's own comment; not offered for aggregate-cards, which
-  // already has its own complete agg/agg_equals system (handled by the early return above).
-  const isAgg = !!chart.aggregationEnabled && !!chart.aggregationField;
-  const aggType = chart.aggregationType || 'sum';
-  const bucketLabels = {};
-  const fieldData = tallyBy(filteredSites, (s) => {
-    if (!isDateTrend) return s[chart.field] || 'N/A';
-    const raw = s[chart.field];
-    const key = raw ? dateBucketKey(raw, dateGroupBy) : null;
-    if (!key) return null;
-    if (!bucketLabels[key]) bucketLabels[key] = dateBucketLabel(key, dateGroupBy);
-    return key;
-  }, isAgg, chart.aggregationField, aggType);
-
-  let sorted = isDateTrend
-    ? Object.entries(fieldData).sort((a, b) => a[0].localeCompare(b[0]))
-    : Object.entries(fieldData).sort((a, b) => b[1] - a[1]);
-  // Grand total is fixed BEFORE the cumulative transform below — cumulative turns each
-  // point's count into a running sum, and summing those would double (or worse) count rows.
-  const total = sorted.reduce((sum, [, count]) => sum + count, 0);
-
-  // "Cumulative" (Line/Area only) turns each point from "rows in this period" into
-  // "rows up to and including this period" — the growth-over-time reading that's usually
-  // the actual point of a trend chart ("sites accepted over time"), vs. the per-period
-  // reading (spikes/dips) that's the default.
-  if (isDateTrend && chart.cumulative) {
-    let running = 0;
-    sorted = sorted.map(([key, count]) => { running += count; return [key, running]; });
+  // See buildChartTallyData's own docstring for what this computes and why it's a
+  // separate function — "Compare columns for one row" mode (isRowMode), Line/Area's
+  // chronological date-bucketing (isDateTrend), and the optional per-category
+  // aggregation are all handled inside it.
+  const { sorted: tallySorted, total, bucketLabels, isRowMode, rowModeRow, isDateTrend } = buildChartTallyData(chart, sites);
+  if (isRowMode && !rowModeRow) {
+    return (
+      <div className="py-16 text-center text-sm text-gray-400">
+        No row matches the Filter rows conditions above — narrow them down until exactly one row matches.
+      </div>
+    );
   }
+  let sorted = tallySorted;
   const max = Math.max(...sorted.map(([, count]) => count), 1);
 
   // Every chart type below caps how many categories it draws for readability.
@@ -1735,7 +1990,21 @@ export function CustomChartRenderer({ chart, sites }) {
     const otherCount = sorted.slice(limit - 1).reduce((s, [, c]) => s + c, 0);
     return [...shown, ['Others', otherCount]];
   };
-  const colorFor = (label, i) => (label === 'Others' ? '#9ca3af' : COLORS[i % COLORS.length]);
+  // Color customization (chart.colorMode) — 'palette' (default, unchanged behavior) just
+  // cycles the shared COLORS array by position. 'accent' uses chart.chartColor for every
+  // bar/slice/line alike (one flat color across the whole chart). 'custom' looks up
+  // chart.categoryColors by this category's RAW label (same raw-label keying convention
+  // as chart.valueLabels) — a category the admin hasn't picked a color for yet still
+  // falls back to the shared palette instead of going blank. "Others" (the roll-up
+  // bucket withOthers creates) always stays neutral gray regardless of mode — it isn't a
+  // real category, so no per-category color would make sense for it, and a custom accent
+  // there would visually claim it as significant when it's actually a catch-all.
+  const colorFor = (label, i) => {
+    if (label === 'Others') return '#9ca3af';
+    if (chart.colorMode === 'accent') return chart.chartColor || COLORS[0];
+    if (chart.colorMode === 'custom') return chart.categoryColors?.[label] || COLORS[i % COLORS.length];
+    return COLORS[i % COLORS.length];
+  };
 
   // Per-chart display-label override (chart.valueLabels: {rawValue: displayText} — see the
   // model field's docstring) — lets an admin relabel a value everywhere it's shown in THIS
@@ -1771,6 +2040,12 @@ export function CustomChartRenderer({ chart, sites }) {
     </div>
   );
 
+  // Same isAgg/aggType derivation buildChartTallyData uses internally — recomputed here
+  // since that function only returns the finished tally, not its intermediate flags, and
+  // this secondary-field breakdown needs the same optional-aggregation setting applied
+  // to sub-groups that the primary grouping above already got.
+  const isAgg = !isRowMode && !!chart.aggregationEnabled && !!chart.aggregationField;
+  const aggType = chart.aggregationType || 'sum';
   const getSubGroups = (primaryLabel) => {
     if (!chart.secondaryField) return null;
     const scoped = filteredSites.filter(s => (s[chart.field] || 'N/A') === primaryLabel);
@@ -1838,7 +2113,7 @@ export function CustomChartRenderer({ chart, sites }) {
                       <span className="w-40 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-h-scroll">{displayLabel(label)}</span>
                       <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                         <div className="h-full rounded-lg flex items-center px-3"
-                          style={{ width: `${(count / max) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}>
+                          style={{ width: `${(count / max) * 100}%`, backgroundColor: colorFor(label, i) }}>
                           <span className="text-xs font-bold text-white">{count}</span>
                         </div>
                       </div>
@@ -1868,7 +2143,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     onClick={() => handleClick(label)}>
                     <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{count}</span>
                     <div className="w-full rounded-t-lg transition-all"
-                      style={{ height: `${(count / max) * 100}%`, backgroundColor: selectedFilter === label ? '#0038A8' : COLORS[i % COLORS.length], minHeight: '20px' }} />
+                      style={{ height: `${(count / max) * 100}%`, backgroundColor: selectedFilter === label ? '#0038A8' : colorFor(label, i), minHeight: '20px' }} />
                     <span className="text-[10px] text-gray-500 mt-1 chart-h-scroll w-full text-center">{displayLabel(label)}</span>
                   </div>
                 </Tooltip>
@@ -1982,7 +2257,7 @@ export function CustomChartRenderer({ chart, sites }) {
                       const y = 100 - (count / max) * 90;
                       return `${x},${y}`;
                     }).join(' ')}
-                    fill="none" stroke={COLORS[0]} strokeWidth="2" vectorEffect="non-scaling-stroke"
+                    fill="none" stroke={colorFor(null, 0)} strokeWidth="2" vectorEffect="non-scaling-stroke"
                   />
                 </svg>
                 {/* Plain HTML dots, not SVG <circle> — the SVG's non-uniform stretch
@@ -2000,7 +2275,7 @@ export function CustomChartRenderer({ chart, sites }) {
                       </span>
                       <div
                         className="w-3 h-3 -translate-y-1/2 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer"
-                        style={{ backgroundColor: COLORS[0] }}
+                        style={{ backgroundColor: colorFor(null, 0) }}
                         onClick={() => handleClick(label)}
                         onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x, y })}
                         onMouseLeave={() => setHoveredItem(null)} />
@@ -2048,8 +2323,8 @@ export function CustomChartRenderer({ chart, sites }) {
                 <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id={`areaGrad-${chart.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={COLORS[0]} stopOpacity="0.3" />
-                      <stop offset="100%" stopColor={COLORS[0]} stopOpacity="0.05" />
+                      <stop offset="0%" stopColor={colorFor(null, 0)} stopOpacity="0.3" />
+                      <stop offset="100%" stopColor={colorFor(null, 0)} stopOpacity="0.05" />
                     </linearGradient>
                   </defs>
                   <path
@@ -2066,7 +2341,7 @@ export function CustomChartRenderer({ chart, sites }) {
                       const y = 100 - (count / max) * 90;
                       return `${x},${y}`;
                     }).join(' ')}
-                    fill="none" stroke={COLORS[0]} strokeWidth="2" vectorEffect="non-scaling-stroke"
+                    fill="none" stroke={colorFor(null, 0)} strokeWidth="2" vectorEffect="non-scaling-stroke"
                   />
                 </svg>
                 {/* Plain HTML dots, not SVG <circle> — see the line-chart case for why. Count
@@ -2081,7 +2356,7 @@ export function CustomChartRenderer({ chart, sites }) {
                       </span>
                       <div
                         className="w-2.5 h-2.5 -translate-y-1/2 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer"
-                        style={{ backgroundColor: COLORS[0] }}
+                        style={{ backgroundColor: colorFor(null, 0) }}
                         onClick={() => handleClick(label)}
                         onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x, y })}
                         onMouseLeave={() => setHoveredItem(null)} />
@@ -2119,25 +2394,58 @@ export function CustomChartRenderer({ chart, sites }) {
       // full ring, or page 2+'s legend swatches would drift out of sync with the ring's
       // actual wedge colors (both would restart from COLORS[0] on every page otherwise).
       const { items: legendItems, totalPages, currentPage } = pageOf(slices.map((s, i) => [s, i]), 8);
+      // Was a single CSS conic-gradient div — one flat background, so there was no
+      // per-slice element for the browser to fire hover events on at all (only the legend
+      // rows below had their own Tooltip). Real SVG wedges give each slice its own
+      // hoverable/clickable element, same as every other chart type here.
       let acc = 0;
-      const grad = slices.map(([label, count], i) => {
+      const arcs = slices.map(([label, count], i) => {
         const pct = (count / total) * 100;
-        const start = acc;
+        const startPct = acc;
         acc += pct;
-        return `${colorFor(label, i)} ${start}% ${acc}%`;
-      }).join(', ');
+        return { label, count, i, startPct, endPct: acc };
+      });
+      // 0% sits at 12 o'clock (matching the old conic-gradient's default), sweeping
+      // clockwise — angle math shifts by -90° so pct=0 lands at the top, not 3 o'clock.
+      const angleToPoint = (pct, r) => {
+        const angle = (pct / 100) * 2 * Math.PI - Math.PI / 2;
+        return [50 + r * Math.cos(angle), 50 + r * Math.sin(angle)];
+      };
       return (
         <div className="flex items-center gap-6">
-          <div className="w-36 h-36 rounded-full flex-shrink-0 flex items-center justify-center"
-            style={{ background: `conic-gradient(${grad})` }}>
+          <div className="relative w-36 h-36 flex-shrink-0">
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              {arcs.map(({ label, count, i, startPct, endPct }) => {
+                const [x1, y1] = angleToPoint(startPct, 48);
+                const [x2, y2] = angleToPoint(endPct, 48);
+                const largeArc = endPct - startPct > 50 ? 1 : 0;
+                // A single category holding 100% of the total degenerates a normal wedge
+                // path (its start/end points coincide, so the arc command draws nothing) —
+                // draw it as two half-circles instead.
+                const path = endPct - startPct >= 99.999
+                  ? 'M 50,2 A 48,48 0 1,1 49.99,2.001 Z'
+                  : `M 50,50 L ${x1},${y1} A 48,48 0 ${largeArc},1 ${x2},${y2} Z`;
+                const [tipX, tipY] = angleToPoint((startPct + endPct) / 2, 30);
+                return (
+                  <path key={label} d={path} fill={colorFor(label, i)}
+                    className="cursor-pointer transition-opacity hover:opacity-80"
+                    onClick={() => handleClick(label)}
+                    onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x: tipX, y: tipY })}
+                    onMouseLeave={() => setHoveredItem(null)} />
+                );
+              })}
+            </svg>
             {chart.chartType === 'donut' && (
-              <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-xl font-black">{total}</p>
-                  <p className="text-[8px] text-gray-500">Total</p>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-xl font-black">{total}</p>
+                    <p className="text-[8px] text-gray-500">Total</p>
+                  </div>
                 </div>
               </div>
             )}
+            <HoverTooltip />
           </div>
           <div className="flex-1 min-w-0">
             <div className="space-y-1.5">
@@ -2181,7 +2489,7 @@ export function CustomChartRenderer({ chart, sites }) {
                   const y = 100 + Math.sin(angle) * r;
                   return `${x},${y}`;
                 }).join(' ')}
-                fill={`${COLORS[0]}30`} stroke={COLORS[0]} strokeWidth="2"
+                fill={`${colorFor(null, 0)}30`} stroke={colorFor(null, 0)} strokeWidth="2"
               />
               {/* Hoverable/clickable points */}
               {points.map(([label, count], i) => {
@@ -2196,7 +2504,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x: x / 2, y: y / 2 })}
                     onMouseLeave={() => setHoveredItem(null)}>
                     <circle cx={x} cy={y} r="8" fill="transparent" />
-                    <circle cx={x} cy={y} r="4" fill={COLORS[0]} stroke="white" strokeWidth="2" />
+                    <circle cx={x} cy={y} r="4" fill={colorFor(null, 0)} stroke="white" strokeWidth="2" />
                     <text x={labelX} y={labelY} textAnchor="middle" dominantBaseline="middle"
                       className="text-[8px] fill-gray-600 dark:fill-gray-400">
                       {displayLabel(label)}
@@ -2247,9 +2555,9 @@ export function CustomChartRenderer({ chart, sites }) {
             {items.map(([label, count], i) => (
               <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
                 <div className="rounded-lg p-3 text-center cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ backgroundColor: `${COLORS[i % COLORS.length]}10` }}
+                  style={{ backgroundColor: `${colorFor(label, i)}10` }}
                   onClick={() => handleClick(label)}>
-                  <p className="text-xl font-black" style={{ color: COLORS[i % COLORS.length] }}>{count}</p>
+                  <p className="text-xl font-black" style={{ color: colorFor(label, i) }}>{count}</p>
                   <p className="text-[10px] text-gray-500 chart-h-scroll">{displayLabel(label)}</p>
                 </div>
               </Tooltip>
@@ -2269,7 +2577,7 @@ export function CustomChartRenderer({ chart, sites }) {
                 <div className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 px-2 rounded"
                   onClick={() => handleClick(label)}>
                   <div className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                    style={{ backgroundColor: COLORS[i % COLORS.length] }}>
+                    style={{ backgroundColor: colorFor(label, i) }}>
                     {(currentPage - 1) * 10 + i + 1}
                   </div>
                   <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 chart-h-scroll">{displayLabel(label)}</span>
@@ -2297,7 +2605,7 @@ export function CustomChartRenderer({ chart, sites }) {
                   </div>
                   <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all"
-                      style={{ width: `${(count / max) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                      style={{ width: `${(count / max) * 100}%`, backgroundColor: colorFor(label, i) }} />
                   </div>
                 </div>
               </Tooltip>
@@ -2372,12 +2680,12 @@ export function CustomChartRenderer({ chart, sites }) {
                     </div>
                     {subGroups.length > 0 ? (
                       <div className="space-y-1">
-                        {subGroups.slice(0, 3).map(([subLabel, subCount]) => (
+                        {subGroups.map(([subLabel, subCount]) => (
                           <div key={subLabel} className="flex items-center gap-2">
                             <span className="w-24 shrink-0 text-[11px] text-gray-500 chart-h-scroll">{subLabel}</span>
                             <div className="flex-1 h-4 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
                               <div className="h-full rounded flex items-center px-2"
-                                style={{ width: `${(subCount / subMax) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}>
+                                style={{ width: `${(subCount / subMax) * 100}%`, backgroundColor: colorFor(label, i) }}>
                                 <span className="text-[9px] font-bold text-white">{subCount}</span>
                               </div>
                             </div>
@@ -2387,7 +2695,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     ) : (
                       <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
                         <div className="h-full rounded flex items-center px-2"
-                          style={{ width: `${(count / max) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}>
+                          style={{ width: `${(count / max) * 100}%`, backgroundColor: colorFor(label, i) }}>
                           <span className="text-[10px] font-bold text-white">{count}</span>
                         </div>
                       </div>
@@ -2419,11 +2727,11 @@ export function CustomChartRenderer({ chart, sites }) {
                 <Tooltip key={label} label={displayLabel(label)} count={count} percent={pct} className="w-full flex justify-center">
                   <div
                     className="h-10 rounded-lg flex items-center justify-between px-4 gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ width: `${width}%`, backgroundColor: `${COLORS[i % COLORS.length]}20`, borderLeft: `4px solid ${COLORS[i % COLORS.length]}` }}
+                    style={{ width: `${width}%`, backgroundColor: `${colorFor(label, i)}20`, borderLeft: `4px solid ${colorFor(label, i)}` }}
                     onClick={() => handleClick(label)}
                   >
                     <span className="text-sm text-gray-700 dark:text-gray-300 chart-h-scroll min-w-0">{displayLabel(label)}</span>
-                    <span className="text-sm font-bold shrink-0" style={{ color: COLORS[i % COLORS.length] }}>{count}</span>
+                    <span className="text-sm font-bold shrink-0" style={{ color: colorFor(label, i) }}>{count}</span>
                   </div>
                 </Tooltip>
               );
@@ -2534,7 +2842,7 @@ export function CustomChartRenderer({ chart, sites }) {
   // there is just the earliest period). Those two get their own footer instead: the latest
   // period's value (or, in cumulative mode, the running total reached by it).
   const [topLabel, topCount] = sorted[0];
-  const periodWord = { day: 'day', week: 'week', month: 'month', quarter: 'quarter', year: 'year' }[dateGroupBy] || 'period';
+  const periodWord = { day: 'day', week: 'week', month: 'month', quarter: 'quarter', year: 'year' }[chart.dateGroupBy || 'month'] || 'period';
   const latest = sorted[sorted.length - 1];
   return (
     <div>
@@ -2561,7 +2869,42 @@ export function CustomChartRenderer({ chart, sites }) {
 }
 
 // Wrapper for draggable chart
-function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, children, title, subtitle, onEdit, onEditStyle, onDelete, onToggleVisibility, showOnUser, isCustom, dataSource, onDataSourceChange, noPadding }) {
+function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, children, title, subtitle, onEdit, onEditStyle, onExportData, onDelete, onToggleVisibility, showOnUser, isCustom, dataSource, onDataSourceChange, noPadding }) {
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [imgWidth, setImgWidth] = useState('');
+  const [imgHeight, setImgHeight] = useState('');
+  const [includeHeader, setIncludeHeader] = useState(false);
+  const [capturingImage, setCapturingImage] = useState(false);
+  const contentRef = useRef(null);
+  // Pre-fills width/height with the card's current on-screen size so there's a sane
+  // starting point to nudge from instead of typing from scratch — safe now that the real
+  // fix for the clipping bug lives in exportChartAsImage's onclone handling (that issue
+  // turned out to be unrelated to whether a size was forced or left natural).
+  const openExportMenu = () => {
+    if (!showExportMenu && contentRef.current) {
+      const rect = contentRef.current.getBoundingClientRect();
+      setImgWidth(String(Math.round(rect.width)));
+      setImgHeight(String(Math.round(rect.height)));
+    }
+    setShowExportMenu((s) => !s);
+  };
+  const handleImageDownload = async () => {
+    setCapturingImage(true);
+    // The capture work (DOM cloning, image embedding, canvas rendering) is heavy enough
+    // on the main thread that the browser never gets a chance to actually paint the
+    // "Generating…" state before it starts —
+    // the state update above gets scheduled, but not rendered, so the button just looks
+    // frozen until the download finishes. Waiting two animation frames guarantees a real
+    // paint has happened first (one frame isn't reliably enough — the browser can still
+    // fold it into the same paint that's about to be blocked).
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    try {
+      await exportChartAsImage(contentRef.current, title, { width: Number(imgWidth) || undefined, height: Number(imgHeight) || undefined, includeHeader });
+    } finally {
+      setCapturingImage(false);
+      setShowExportMenu(false);
+    }
+  };
   return (
     <div
       onDragOver={onDragOver}
@@ -2599,6 +2942,44 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
                 <Palette size={14} />
               </button>
             )}
+            {onExportData && (
+              <div className="relative">
+                <button onClick={openExportMenu} className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Download">
+                  <Download size={14} />
+                </button>
+                {/* z-[2000] below: Leaflet's own map panes sit at z-index 400-1000 (see
+                    its .leaflet-pane/.leaflet-top/.leaflet-bottom rules), which was enough
+                    to render map tiles right over this menu on Map widgets — comfortably
+                    clearing that instead of the usual z-50 dropdowns elsewhere. */}
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[2000]" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={() => { setShowExportMenu(false); onExportData(); }}
+                      className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <FileText size={14} /> Download data (CSV)
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 px-3 pt-2 pb-3">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Download image (PNG)</p>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <input type="number" min="50" value={imgWidth} onChange={(e) => setImgWidth(e.target.value)}
+                          placeholder="Width" className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-white" />
+                        <span className="text-xs text-gray-400 shrink-0">×</span>
+                        <input type="number" min="50" value={imgHeight} onChange={(e) => setImgHeight(e.target.value)}
+                          placeholder="Height" className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-white" />
+                      </div>
+                      <label className="flex items-center gap-1.5 mb-2 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+                        <input type="checkbox" checked={includeHeader} onChange={(e) => setIncludeHeader(e.target.checked)} />
+                        Include title
+                      </label>
+                      <button type="button" onClick={handleImageDownload} disabled={capturingImage}
+                        className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium bg-[#0038A8] text-white rounded hover:bg-[#001a52] disabled:opacity-60 transition-colors">
+                        {capturingImage ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                        {capturingImage ? 'Generating…' : 'Download'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {onEdit && (
               <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors" title="Edit settings">
                 <Edit2 size={14} />
@@ -2620,7 +3001,7 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
             )}
           </div>
         </div>
-        <div className={noPadding ? '' : 'p-4'}>
+        <div ref={contentRef} className={noPadding ? '' : 'p-4'}>
           {children}
         </div>
       </div>
@@ -3354,7 +3735,11 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                         </button>
                       </div>
                       <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <p className="text-[10px] text-gray-400 mb-1">Filter rows for this tile (optional — independent of every other tile's own filter)</p>
+                        <p className="text-[10px] text-gray-400 mb-1">
+                          {t.agg === 'row_value'
+                            ? 'Which row this tile reads from — add conditions until exactly one row matches.'
+                            : 'Filter rows for this tile (optional — independent of every other tile\'s own filter)'}
+                        </p>
                         <ConditionsEditor conditions={t.conditions} onChange={(next) => updateSummaryTile(i, { conditions: next })}
                           fieldOptions={toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label)}
                           valuesFor={(field) => toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), field))} />
@@ -3776,6 +4161,8 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     conditions: [],
     gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '',
     extraDatasets: [], fieldMap: {}, secondaryFieldMap: {}, aggregationFieldMap: {}, tableConditions: {},
+    rowMode: false, rowColumns: [],
+    colorMode: 'palette', chartColor: '#0038A8', categoryColors: {},
   });
   // 'image-bg' card design's background photo — URL mode just writes straight into
   // newChart.cardImage like any other text field; Upload mode holds the picked File here
@@ -4153,6 +4540,51 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     );
   };
 
+  // CSV export rows for a SINGLETON built-in widget (Summary/Map/Breakdown) — mirrors
+  // renderGenericBuiltIn/renderBuiltIn's own per-chartId/isFreeWifi data resolution below,
+  // kept as its own function (not extracted out of those render blocks) so wiring export
+  // can't risk regressing the render path itself.
+  const computeSingletonExportRows = (chartId, dataSource = 'live') => {
+    if (isFreeWifi) {
+      const records = datasets[dataSource] || [];
+      if (chartId === 'summary') {
+        const stats = dataSource === 'live'
+          ? {
+              total_locations: summary?.overall?.total_locations || 0,
+              municipalities_count: summary?.overall?.municipalities_count || 0,
+              provinces_count: summary?.overall?.provinces_count || 0,
+              barangays_count: summary?.overall?.barangays_count || 0,
+              total_active_aps: summary?.overall?.total_sites || 0,
+            }
+          : computeSummaryStats(records);
+        return builtinSummaryCSVRows({ isFreeWifi: true, stats });
+      }
+      if (chartId === 'map') return builtinMapCSVRows({ isFreeWifi: true, records });
+      if (chartId === 'province-breakdown') {
+        const byProvince = dataSource === 'live' ? (summary?.by_province || {}) : computeProvinceBreakdown(records);
+        return builtinBreakdownCSVRows({ isFreeWifi: true, byProvince });
+      }
+      return [];
+    }
+    const source = chartSource || {};
+    if (chartId === 'summary') {
+      const taggedFields = genericTables.find(t => t.id === source.summary_dataset)?.fields || [];
+      return builtinSummaryCSVRows({ isFreeWifi: false, tiles: computeSummaryTiles(summarySites, source, taggedFields) });
+    }
+    if (chartId === 'map') {
+      const taggedFields = genericTables.find(t => t.id === source.map_dataset)?.fields || [];
+      const { mapped, tooltipFieldDefs } = resolveMapSites(mapSites, source, taggedFields);
+      return builtinMapCSVRows({ isFreeWifi: false, mapped, tooltipFieldDefs });
+    }
+    if (chartId === 'province-breakdown') {
+      const records = filterRecordsByConditions(breakdownSites, source.breakdown_conditions);
+      const taggedFields = genericTables.find(t => t.id === source.breakdown_dataset)?.fields || [];
+      const groupLabel = taggedFields.find(f => f.name === source.group_field)?.label || source.group_field;
+      return builtinBreakdownCSVRows({ isFreeWifi: false, records, groupField: source.group_field, groupLabel });
+    }
+    return [];
+  };
+
   // Generic (non-Free-Wi-Fi) built-in rendering — sourced from whichever table + columns
   // this project tagged via the "Data Source" button (ProjectChartSource), instead of
   // Free Wi-Fi's fixed province/AP/coordinate fields.
@@ -4364,6 +4796,30 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       default:
         return null;
     }
+  };
+
+  // CSV export rows for an EXTRA ProjectBuiltinWidget instance — same idea as
+  // computeSingletonExportRows above (always the generic, non-Free-Wi-Fi path, since extra
+  // widget instances only exist for generic projects), reading from the instance's own
+  // `settings`/table instead of chartSource, mirroring renderBuiltinWidgetInstance below.
+  const computeWidgetInstanceExportRows = (chart) => {
+    const settings = chart.settings || {};
+    const datasetId = settings.summary_dataset ?? settings.map_dataset ?? settings.breakdown_dataset;
+    const taggedFields = genericTables.find(t => t.id === datasetId)?.fields || [];
+    const baseRecords = recordsByDataset[datasetId] || [];
+    if (chart.widgetType === 'summary') {
+      return builtinSummaryCSVRows({ isFreeWifi: false, tiles: computeSummaryTiles(baseRecords, settings, taggedFields) });
+    }
+    if (chart.widgetType === 'map') {
+      const { mapped, tooltipFieldDefs } = resolveMapSites(baseRecords, settings, taggedFields);
+      return builtinMapCSVRows({ isFreeWifi: false, mapped, tooltipFieldDefs });
+    }
+    if (chart.widgetType === 'province-breakdown') {
+      const records = filterRecordsByConditions(baseRecords, settings.breakdown_conditions);
+      const groupLabel = taggedFields.find(f => f.name === settings.group_field)?.label || settings.group_field;
+      return builtinBreakdownCSVRows({ isFreeWifi: false, records, groupField: settings.group_field, groupLabel });
+    }
+    return [];
   };
 
   // Renders one EXTRA Summary/Map/Breakdown widget instance (see ProjectBuiltinWidget) —
@@ -4678,12 +5134,13 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 {!isCardMode && (
                 <div className="mb-5">
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                    {CHART_TYPES.filter(t => t.id !== 'aggregate-cards').map((type) => {
-                      const count = fieldCardinality[newChart.field] || 0;
-                      const isDateLike = fieldIsDateLike[newChart.field];
-                      const fit = getChartFit(type, count, isDateLike, !!newChart.field);
+                    {CHART_TYPES.filter(t => t.id !== 'aggregate-cards' && (!newChart.rowMode || !t.requiresDateField)).map((type) => {
+                      const fieldSelected = newChart.rowMode ? (newChart.rowColumns || []).length > 0 : !!newChart.field;
+                      const count = newChart.rowMode ? (newChart.rowColumns || []).length : (fieldCardinality[newChart.field] || 0);
+                      const isDateLike = newChart.rowMode ? false : fieldIsDateLike[newChart.field];
+                      const fit = getChartFit(type, count, isDateLike, fieldSelected);
                       const isDisabled = fit.status === 'disabled';
-                      const isRecommended = !!newChart.field && !isDisabled && recommendChartTypes(count, isDateLike).includes(type.id);
+                      const isRecommended = fieldSelected && !isDisabled && recommendChartTypes(count, isDateLike).includes(type.id);
                       return (
                         <button key={type.id} disabled={isDisabled}
                           onClick={() => setNewChart(c => ({ ...c, chartType: type.id }))}
@@ -4737,14 +5194,16 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
               {!isCardMode && (() => {
                 const selectedType = CHART_TYPES.find(t => t.id === newChart.chartType);
                 if (!selectedType) return null;
-                const fieldSelected = !!newChart.field;
-                const count = fieldCardinality[newChart.field] || 0;
-                const fit = getChartFit(selectedType, count, fieldIsDateLike[newChart.field], fieldSelected);
+                const fieldSelected = newChart.rowMode ? (newChart.rowColumns || []).length > 0 : !!newChart.field;
+                const count = newChart.rowMode ? (newChart.rowColumns || []).length : (fieldCardinality[newChart.field] || 0);
+                const fit = getChartFit(selectedType, count, newChart.rowMode ? false : fieldIsDateLike[newChart.field], fieldSelected);
                 return (
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-xs text-blue-700 dark:text-blue-300">
                     <p className="font-bold mb-1">{selectedType.label}</p>
                     <p>
-                      {selectedType.requiresDateField
+                      {newChart.rowMode
+                        ? 'This chart plots one row\'s values across the columns you pick.'
+                        : selectedType.requiresDateField
                         ? 'This chart plots a date field chronologically, left to right.'
                         : selectedType.needsSecondary
                         ? 'This chart works best with a secondary field for grouping.'
@@ -4753,7 +5212,9 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     </p>
                     {!fieldSelected ? (
                       <p className="mt-1 font-semibold">
-                        {selectedType.requiresDateField
+                        {newChart.rowMode
+                          ? `Pick a table and columns below${selectedType.minItems > 0 ? ` — needs at least ${selectedType.minItems}` : ''}.`
+                          : selectedType.requiresDateField
                           ? 'Pick a table and a date field below to plot it.'
                           : `Pick a table and field below${selectedType.minItems > 0 ? ` — needs at least ${selectedType.minItems} distinct values` : ''}.`}
                       </p>
@@ -4791,10 +5252,37 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
+              {/* "Compare columns for one row" — flips the chart from grouping a field's
+                  values across every row into instead charting ONE row's own values
+                  across several columns (e.g. a row with Jan/Feb/Mar columns becomes a
+                  3-point trend for just that record). Not offered for Value Cards, which
+                  already show a single record's single value with no "categories" at all. */}
+              {!isFreeWifi && newChart.dataset && !isCardMode && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!newChart.rowMode}
+                    onChange={(e) => {
+                      const rowMode = e.target.checked;
+                      setNewChart(c => ({
+                        ...c, rowMode,
+                        // Line/Area need a date field to plot against, which row mode has
+                        // no equivalent of — fall back to a type that works with any
+                        // number of categories instead of leaving an invalid one selected.
+                        chartType: rowMode && (c.chartType === 'line' || c.chartType === 'area') ? 'bar-vertical' : c.chartType,
+                      }));
+                    }}
+                    className="rounded border-gray-300" />
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Compare columns for one row <span className="text-gray-400 font-normal">(instead of grouping by a field's values across every row)</span>
+                  </span>
+                </label>
+              )}
+
               {/* Extra source tables — optional, folds more tables' rows into this
                   chart's combined record set (see combineChartRecords), e.g. summing a
-                  Value Card across two separately-tracked tables. */}
-              {!isFreeWifi && newChart.dataset && (
+                  Value Card across two separately-tracked tables. Not offered together
+                  with row mode — that's about picking one table's own single row, not
+                  combining several tables' worth of rows. */}
+              {!isFreeWifi && newChart.dataset && !newChart.rowMode && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
                     Additional source tables <span className="text-gray-400">(optional — combine rows from more tables into this chart)</span>
@@ -4812,6 +5300,21 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
               </div>
 
+              {newChart.rowMode ? (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Columns to compare</label>
+                  <Select isMulti
+                    value={(newChart.rowColumns || []).map(v => ({
+                      value: v, label: availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label || v,
+                    }))}
+                    onChange={(opts) => setNewChart(c => ({ ...c, rowColumns: (opts || []).map(o => o.value) }))}
+                    options={availableFieldsFor(newChart.dataset).map(f => ({ value: f.value, label: f.label }))}
+                    placeholder="Select columns..." styles={selectStyles} />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Add Filter rows below until exactly one row matches — its values across these columns become the chart.
+                  </p>
+                </div>
+              ) : (
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
                   Data Field {CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary ? '(Primary)' : ''}
@@ -4834,14 +5337,17 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   <p className="text-[11px] text-gray-400 mt-1">Fields marked "Date" above will work — others won't, even if their name sounds date-like.</p>
                 )}
               </div>
+              )}
 
               {/* Aggregation — optional. Off, every chart type counts rows per category
                   (the original, still-default behavior). On, each category shows a
                   sum/average/unique-count of a SEPARATE value field instead — e.g. "Total
                   Budget per Province" instead of "Number of Rows per Province". Not shown
                   in Card mode, which already has its own complete Aggregation section
-                  below (agg/agg_equals, count/count-where-equals included). */}
-              {!isCardMode && (
+                  below (agg/agg_equals, count/count-where-equals included), nor in row
+                  mode — there's only ever one row per category there, nothing to
+                  aggregate across. */}
+              {!isCardMode && !newChart.rowMode && (
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer mb-1.5">
                     <input type="checkbox" checked={!!newChart.aggregationEnabled}
@@ -4891,25 +5397,76 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
+              {/* Colors — 'palette' (default) is the original behavior, every category
+                  cycling through the shared COLORS array unchanged. 'accent' recolors the
+                  whole chart to one flat color. 'custom' opens a per-category swatch
+                  picker in the "Customize labels" section right below (same per-value row
+                  list, so picking a category's color and its display label happen in one
+                  place). Not shown in Card mode, which already has its own accent color
+                  (card_color) — a whole different setting for a whole different purpose. */}
+              {!isCardMode && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Colors</label>
+                  <div className="flex gap-2 mb-2">
+                    {[
+                      { value: 'palette', label: 'Default' },
+                      { value: 'accent', label: 'Single color' },
+                      { value: 'custom', label: 'Per category' },
+                    ].map((opt) => (
+                      <button key={opt.value} type="button" onClick={() => setNewChart(c => ({ ...c, colorMode: opt.value }))}
+                        className={`flex-1 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                          (newChart.colorMode || 'palette') === opt.value ? 'bg-[#0038A8] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        }`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {newChart.colorMode === 'accent' && (
+                    <div className="flex items-center gap-3">
+                      <input type="color" value={newChart.chartColor || '#0038A8'}
+                        onChange={(e) => setNewChart(c => ({ ...c, chartColor: e.target.value }))}
+                        className="w-10 h-10 shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                      <input type="text" value={newChart.chartColor || '#0038A8'}
+                        onChange={(e) => setNewChart(c => ({ ...c, chartColor: e.target.value }))}
+                        className="flex-1 px-3 py-2 text-sm font-mono border rounded-lg bg-white dark:bg-gray-800" />
+                    </div>
+                  )}
+                  {newChart.colorMode === 'custom' && (
+                    <p className="text-[11px] text-gray-400">Pick each category's color in "Customize labels" below.</p>
+                  )}
+                </div>
+              )}
+
               {/* Customize labels — per-CHART display overrides for a field's raw values
                   (ProjectChartConfig.value_labels), e.g. showing "N/A" as "No" or "Yes" as
                   "Renewed" in this chart's bars/legend/tooltips without touching the
                   underlying data or any other chart built on the same field. Only for Chart
                   mode (a Value Card shows one aggregated number, not per-value labels) and
                   only once a field with a manageable number of distinct values is picked —
-                  past ~20 this would turn into an unusable wall of text inputs. */}
-              {!isCardMode && newChart.field && (() => {
-                const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
-                const values = distinctFieldValues(records, newChart.field);
+                  past ~20 this would turn into an unusable wall of text inputs. In row mode
+                  there's no field at all — the "values" being relabeled are the chosen
+                  columns' own raw names instead (e.g. "jan_visitors" → "January"), same
+                  chart.valueLabels map and same displayLabel() lookup either way. */}
+              {!isCardMode && (newChart.field || newChart.rowMode) && (() => {
+                const values = newChart.rowMode
+                  ? (newChart.rowColumns || [])
+                  : distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field);
                 if (values.length === 0 || values.length > 20) return null;
+                const showColorSwatch = !isCardMode && newChart.colorMode === 'custom';
                 return (
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
                       Customize labels <span className="text-gray-400">(optional — change how a value is shown in this chart)</span>
                     </label>
                     <div className="space-y-1.5">
-                      {values.map((v) => (
+                      {values.map((v, i) => (
                         <div key={v} className="flex items-center gap-2">
+                          {showColorSwatch && (
+                            <input type="color" value={newChart.categoryColors?.[v] || COLORS[i % COLORS.length]}
+                              onChange={(e) => setNewChart(c => ({ ...c, categoryColors: { ...c.categoryColors, [v]: e.target.value } }))}
+                              title={`Color for "${v}"`}
+                              className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                          )}
                           <span className="w-28 shrink-0 text-xs text-gray-500 chart-h-scroll" title={v}>{v}</span>
                           <span className="text-gray-300 shrink-0">→</span>
                           <input type="text" value={newChart.valueLabels?.[v] || ''}
@@ -4932,7 +5489,9 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   applies to any chart and stacks past one condition. */}
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
-                  Filter rows <span className="text-gray-400">(optional — only rows matching every condition are counted)</span>
+                  Filter rows <span className="text-gray-400">
+                    {newChart.rowMode ? '(pick which single row this chart uses — add conditions until exactly one row matches)' : '(optional — only rows matching every condition are counted)'}
+                  </span>
                 </label>
                 <ConditionsEditor conditions={newChart.conditions}
                   onChange={(next) => setNewChart(c => ({ ...c, conditions: next }))}
@@ -5076,8 +5635,9 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
-              {/* Show secondary field only for charts that need it */}
-              {CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && (
+              {/* Show secondary field only for charts that need it — not in row mode,
+                  which has no "field" concept to cross-tab a second one against. */}
+              {!newChart.rowMode && CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
                     Secondary Field <span className="text-gray-400">(for grouping/breakdown)</span>
@@ -5090,24 +5650,34 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Grid Size</label>
-                  <Select value={selectValue(GRID_SIZE_OPTIONS, newChart.gridSize)}
-                    onChange={(opt) => setNewChart(c => ({ ...c, gridSize: opt.value }))}
-                    options={GRID_SIZE_OPTIONS} isSearchable={false} styles={selectStyles} />
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                  Grid Size <span className="text-gray-400 font-normal">(how much of the row width this chart takes up)</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {GRID_SIZES.map((size) => (
+                    <button key={size.id} type="button" onClick={() => setNewChart(c => ({ ...c, gridSize: size.id }))}
+                      title={size.label}
+                      className={`p-2 rounded-xl border-2 transition-all ${
+                        (newChart.gridSize || 'full') === size.id
+                          ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                      }`}>
+                      <div className="mb-1.5">{size.preview()}</div>
+                      <p className="text-[10px] font-bold text-gray-900 dark:text-white text-center">{size.label}</p>
+                    </button>
+                  ))}
                 </div>
-                {isFreeWifi && (
-                  <div className="flex items-end">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={newChart.showOnUser}
-                        onChange={(e) => setNewChart(c => ({ ...c, showOnUser: e.target.checked }))}
-                        className="rounded border-gray-300" />
-                      <span className="text-xs text-gray-700 dark:text-gray-300">Show on Dashboard</span>
-                    </label>
-                  </div>
-                )}
               </div>
+
+              {isFreeWifi && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={newChart.showOnUser}
+                    onChange={(e) => setNewChart(c => ({ ...c, showOnUser: e.target.checked }))}
+                    className="rounded border-gray-300" />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">Show on Dashboard</span>
+                </label>
+              )}
 
               {/* Hides the title/subtitle header the PUBLIC page renders above this chart —
                   the admin's own preview keeps showing it regardless, so managing charts
@@ -5218,7 +5788,14 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         // the array before mapping would corrupt drag-reorder. Hidden charts just render
         // as `null` instead of a card; the grid's `col-span-N` classes are relative
         // (auto-flow), so skipping one doesn't leave a gap.
-        <div className="grid grid-cols-12 gap-6">
+        /* grid-flow-dense backfills gaps CSS Grid otherwise leaves behind when mixed
+           widths (e.g. a Quarter next to a Third) don't add up to a clean 12 — without
+           it, a chart that doesn't fit the current row just wraps, permanently
+           stranding whatever space was left, even if a later, smaller chart would have
+           fit right there. Trade-off: dense packing can render a later chart visually
+           ahead of an earlier one when it fits a gap better — drag-reorder still sets
+           the underlying order, this only affects which gap each chart lands in. */
+        <div className="grid grid-cols-12 gap-6 grid-flow-dense">
           {allCharts.map((chart, index) => {
             if (!chart.visible) return null;
             const isCustom = chart.type === 'custom';
@@ -5236,13 +5813,15 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   isDragging={dragIndex === index}
                   title={isCustom ? chart.title : isWidgetInstance ? builtinWidgetTitle(chart) : (isFreeWifi ? chart.label : builtInTitles[chart.id])}
                   subtitle={
-                    isCustom ? `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label}`
+                    isCustom ? `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${
+                        chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
+                      }`
                       : isWidgetInstance ? `${WIDGET_TYPE_LABELS[chart.widgetType]} · extra instance` : undefined
                   }
                   isCustom={isCustom || isWidgetInstance}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {} });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {} });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);
@@ -5254,6 +5833,13 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   // exact same settings/save logic as the full modal, not a separate copy.
                   : !isFreeWifi ? () => setDataSourceModalSection(chart.id === 'province-breakdown' ? 'breakdown' : chart.id) : undefined}
                   onEditStyle={!isCustom && !isWidgetInstance && chart.id === 'summary' ? () => setShowSummaryStyle(true) : undefined}
+                  onExportData={
+                    isCustom
+                      ? () => exportChartDataCSV(chart, isFreeWifi ? sites : combineChartRecords(chart, recordsByDataset, genericTables))
+                      : isWidgetInstance
+                        ? () => downloadCSV(computeWidgetInstanceExportRows(chart), safeFilename(builtinWidgetTitle(chart), 'csv'))
+                        : () => downloadCSV(computeSingletonExportRows(chart.id, chart.dataSource || 'live'), safeFilename(isFreeWifi ? chart.label : builtInTitles[chart.id], 'csv'))
+                  }
                   onDelete={isCustom || isWidgetInstance ? () => handleDeleteChart(chart.id) : undefined}
                   onToggleVisibility={() => toggleVisibility(chart.id)}
                   dataSource={isFreeWifi && !isCustom && !isWidgetInstance ? (chart.dataSource || 'live') : undefined}
@@ -5304,7 +5890,9 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                         </p>
                         {isCustom && (
                           <p className="text-[10px] text-gray-400 truncate">
-                            {CHART_TYPES.find(t => t.id === chart.chartType)?.label} · {availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label}
+                            {CHART_TYPES.find(t => t.id === chart.chartType)?.label} · {
+                              chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
+                            }
                           </p>
                         )}
                         {isWidgetInstance && (

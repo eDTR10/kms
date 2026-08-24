@@ -124,6 +124,15 @@
    looking like a full-size page scrollbar crammed into a small label box. */
 .chart-h-scroll {
   overflow-x: auto;
+  /* Explicit, not left to default: per spec, overflow-x: auto with overflow-y left at its
+     visible default silently computes overflow-y as auto too (see .chart-canvas-scroll's
+     note above for the same rule) — for a single nowrap line that never needs vertical
+     scroll anyway, this just closes off an ambient auto-scroll box real browsers never
+     actually showed a scrollbar from. (Originally added chasing an html2canvas export bug
+     that's since moot — chart image export now uses html-to-image instead, see
+     exportChartAsImage in FreeWifiCharts.tsx — but harmless to leave either way.) */
+  overflow-y: hidden;
+  line-height: normal;
   white-space: nowrap;
   scrollbar-width: thin;
 }
