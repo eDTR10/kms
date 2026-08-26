@@ -13,7 +13,7 @@ import {
 } from '../../../services/freewifiData';
 import { getKmsSettings, updateKmsSettings } from '../../../services/settings';
 import Select from 'react-select';
-import FreeWifiMap, { selectStyles } from '../../../components/FreeWifiMap';
+import FreeWifiMap, { selectStyles, MAP_TILE_STYLES } from '../../../components/FreeWifiMap';
 import {
   getProjectOfficeId, getProjectDatasets, updateProjectDataset,
   getProjectChartConfigs, createProjectChartConfig, updateProjectChartConfig, deleteProjectChartConfig,
@@ -929,7 +929,10 @@ export function computeSummaryTiles(records, source, taggedFields) {
         if (cfg.agg === 'count') {
           value = rows.length;
         } else if (cfg.agg === 'distinct') {
-          value = new Set(rows.map(r => String(r[cfg.field] ?? '').trim()).filter(Boolean)).size;
+          // A blank row counts as one "N/A" value here, not zero — same convention charts
+          // use when grouping rows (tallyBy's `field || 'N/A'`), so a distinct-count tile
+          // agrees with what a chart on the same field would show as its category count.
+          value = new Set(rows.map(r => String(r[cfg.field] ?? '').trim() || 'N/A')).size;
         } else if (cfg.agg === 'count_equals') {
           const target = String(cfg.equals ?? '').trim().toLowerCase();
           value = rows.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
@@ -1149,15 +1152,6 @@ export function builtinWidgetTitle(chart) {
   return s.summary_title || s.map_title || s.breakdown_title || WIDGET_TYPE_LABELS[chart.widgetType] || 'Widget';
 }
 
-// Two custom charts showing the same type + fields are duplicates
-// Value Cards on the same field but a different aggregation (e.g. Sum vs. Average of
-// "budget") are legitimately different charts, not duplicates — include agg/equals so
-// they don't collide under one signature. Same reasoning for conditions: "Sum of Budget
-// where Province=Bukidnon" and "Sum of Budget where Province=Misamis" are different
-// charts even though type/field/agg all match.
-const chartSignature = (c) => `${c.chartType}|${c.field}|${c.secondaryField || ''}` +
-  (c.chartType === 'aggregate-cards' ? `|${c.agg || 'sum'}|${c.equals || ''}` : '') +
-  `|${JSON.stringify(c.conditions || [])}`;
 
 // Backend chart-config rows are snake_case; the renderer/local state use this camelCase
 // shape. `id` stays numeric (a real backend id) so it's distinguishable from the legacy
@@ -1230,6 +1224,11 @@ export function chartConfigFromBackend(c) {
     colorMode: c.color_mode || 'palette',
     chartColor: c.chart_color || '#0038A8',
     categoryColors: c.category_colors || {},
+    // Admin-set display order for a non-row-mode chart's categories (see
+    // buildChartTallyData) — dragged into place in "Customize labels".
+    categoryOrder: c.category_order || [],
+    // Donut's own center content — see the "Donut center" toggle in the chart builder.
+    donutCenterMode: c.donut_center_mode || 'total',
   };
 }
 
@@ -1276,6 +1275,8 @@ export function chartConfigToBackend(chart) {
     color_mode: !isCard ? (chart.colorMode || 'palette') : 'palette',
     chart_color: !isCard ? (chart.chartColor || '#0038A8') : '',
     category_colors: !isCard ? (chart.categoryColors || {}) : {},
+    category_order: !isCard && !chart.rowMode ? (chart.categoryOrder || []) : [],
+    donut_center_mode: chart.chartType === 'donut' ? (chart.donutCenterMode || 'total') : 'total',
   };
 }
 
@@ -1301,9 +1302,15 @@ export function sortByChartOrder(items, chartOrder) {
 // id is in hiddenBuiltins — see ProjectChartSource.hidden_builtins, the built-in equivalent
 // of a custom chart's own `visible` field); then apply chartOrder (see sortByChartOrder) so
 // built-ins and custom charts display in one combined sequence.
+//
+// Dedup is by id only — two DIFFERENT charts (different backend rows, different ids) that
+// happen to share the same type/field/etc. are legitimate, not duplicates (e.g. several
+// donut charts grouping the same field with different titles, colors, or filters). This
+// used to also dedup by a computed "signature" (chart type + field + conditions, ...),
+// which silently dropped every chart after the first one with a matching signature —
+// exactly the multi-chart-same-field setups admins actually want to build.
 function sanitizeCharts(charts, chartOrder, hiddenBuiltins = []) {
   const seenIds = new Set();
-  const seenConfigs = new Set();
   const result = [];
   (Array.isArray(charts) ? charts : []).forEach(c => {
     if (!c || !c.id || seenIds.has(c.id)) return;
@@ -1314,19 +1321,6 @@ function sanitizeCharts(charts, chartOrder, hiddenBuiltins = []) {
       result.push({ ...c, label: def.label, dataSource: c.dataSource || 'live' });
       return;
     }
-    // Extra Summary/Map/Breakdown instances (see ProjectBuiltinWidget) — id-only dedup,
-    // same as custom charts below, but skipping chartSignature entirely: it's built from
-    // chartType/field, which these don't have, so every instance would collapse onto the
-    // same degenerate signature and all but the first would be dropped as "duplicates" of
-    // each other.
-    if (c.type === 'builtin-extra') {
-      seenIds.add(c.id);
-      result.push(c);
-      return;
-    }
-    const sig = chartSignature(c);
-    if (seenConfigs.has(sig)) return;
-    seenConfigs.add(sig);
     seenIds.add(c.id);
     result.push(c);
   });
@@ -1558,7 +1552,9 @@ export function ProvinceBreakdown({ province, data, sites, color, maxSites, hasA
 // just producing one plain value instead of a tile list.
 function computeAggregateValue(records, field, agg) {
   if (agg === 'count') return records.length;
-  if (agg === 'distinct') return new Set(records.map(r => String(r[field] ?? '').trim()).filter(Boolean)).size;
+  // A blank row counts as one "N/A" value here, not zero — see computeSummaryTiles's
+  // 'distinct' branch above for why.
+  if (agg === 'distinct') return new Set(records.map(r => String(r[field] ?? '').trim() || 'N/A')).size;
   if (agg === 'average') {
     // Number('') is 0, not NaN — blank cells must be filtered out as strings first, or
     // they'd silently count as zero-valued rows and drag the average down instead of
@@ -1738,9 +1734,27 @@ function buildChartTallyData(chart, sites) {
         return key;
       }, isAgg, chart.aggregationField, aggType);
 
-  let sorted = (isDateTrend || isRowMode)
-    ? (isRowMode ? Object.entries(fieldData) : Object.entries(fieldData).sort((a, b) => a[0].localeCompare(b[0])))
-    : Object.entries(fieldData).sort((a, b) => b[1] - a[1]);
+  // Default order is count-descending; chart.categoryOrder (set by dragging rows in
+  // "Customize labels") overrides that for non-date-trend, non-row-mode charts — date
+  // trends stay chronological and row mode already has its own inherent order (rowColumns'
+  // own sequence). Any category NOT in a saved order (new data since it was set) ranks
+  // last, sorted among themselves by count — same "new values append at the end" rule
+  // "Customize labels" itself uses, so neither view can drift from the other.
+  let sorted;
+  if (isDateTrend) {
+    sorted = Object.entries(fieldData).sort((a, b) => a[0].localeCompare(b[0]));
+  } else if (isRowMode) {
+    sorted = Object.entries(fieldData);
+  } else if (chart.categoryOrder && chart.categoryOrder.length) {
+    const orderIndex = new Map(chart.categoryOrder.map((v, i) => [v, i]));
+    sorted = Object.entries(fieldData).sort((a, b) => {
+      const ai = orderIndex.has(a[0]) ? orderIndex.get(a[0]) : Infinity;
+      const bi = orderIndex.has(b[0]) ? orderIndex.get(b[0]) : Infinity;
+      return ai !== bi ? ai - bi : b[1] - a[1];
+    });
+  } else {
+    sorted = Object.entries(fieldData).sort((a, b) => b[1] - a[1]);
+  }
   const total = sorted.reduce((sum, [, count]) => sum + count, 0);
   if (isDateTrend && chart.cumulative) {
     let running = 0;
@@ -2435,16 +2449,28 @@ export function CustomChartRenderer({ chart, sites }) {
                 );
               })}
             </svg>
-            {chart.chartType === 'donut' && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-xl font-black">{total}</p>
-                    <p className="text-[8px] text-gray-500">Total</p>
+            {chart.chartType === 'donut' && (() => {
+                // Deliberately arcs[0] here, NOT the true count leader (contrast the "leads
+                // with X%" footer below, which does want the real max) — this is meant to be
+                // admin-chosen, not auto-computed: dragging a category to the top of
+                // "Customize labels" reorders chart.categoryOrder, which is exactly what
+                // determines arcs[0] (see buildChartTallyData), so that drag becomes the way
+                // to pick which category's percentage gets featured in the center.
+                const isPercentMode = chart.donutCenterMode === 'percentage';
+                const leader = isPercentMode ? arcs[0] : null;
+                const leaderLabel = leader?.label;
+                const leaderCount = leader?.count;
+                return (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-xl font-black">{isPercentMode ? `${((leaderCount / total) * 100).toFixed(1)}%` : total}</p>
+                        <p className="text-[8px] text-gray-500 truncate max-w-[70px]">{isPercentMode ? displayLabel(leaderLabel) : 'Total'}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                );
+              })()}
             <HoverTooltip />
           </div>
           <div className="flex-1 min-w-0">
@@ -2837,11 +2863,13 @@ export function CustomChartRenderer({ chart, sites }) {
   }
   };
 
-  // "{top} leads with {pct}%" assumes sorted[0] is the highest-count entry, which is true
-  // for every chart type EXCEPT Line/Area (sorted chronologically, not by count — sorted[0]
-  // there is just the earliest period). Those two get their own footer instead: the latest
-  // period's value (or, in cumulative mode, the running total reached by it).
-  const [topLabel, topCount] = sorted[0];
+  // "{top} leads with {pct}%" needs the TRUE highest-count entry, not just sorted[0] —
+  // that used to be the same thing back when display order was always count-descending,
+  // but chart.categoryOrder (see buildChartTallyData) can now put any category first for
+  // DISPLAY purposes while it's still far from actually leading, so this has to search
+  // for the real max explicitly instead of assuming position 0 is it. Line/Area (sorted
+  // chronologically either way) get their own footer below instead of this one.
+  const [topLabel, topCount] = sorted.reduce((max, cur) => (cur[1] > max[1] ? cur : max), sorted[0]);
   const periodWord = { day: 'day', week: 'week', month: 'month', quarter: 'quarter', year: 'year' }[chart.dateGroupBy || 'month'] || 'period';
   const latest = sorted[sorted.length - 1];
   return (
@@ -3522,6 +3550,48 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
     if (markerIconName) applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon_color: color }));
   };
 
+  // "Visible" stats badge's own icon — same persist-immediately pattern as the marker icon
+  // above (a ProjectChartSource field, not part of the modal's batched Save), but simpler:
+  // no image-upload option, just a Lucide icon name + color, since the badge is one small
+  // fixed glyph rather than a per-dot pin.
+  const [statsIconName, setStatsIconName] = useState(initial?.stats_icon_name || '');
+  const [statsIconColor, setStatsIconColor] = useState(initial?.stats_icon_color || '#0038A8');
+  const [savingStatsIcon, setSavingStatsIcon] = useState(false);
+  const applyStatsIconUpdate = async (fn) => {
+    setSavingStatsIcon(true);
+    try {
+      const updated = await fn();
+      setStatsIconName(updated.stats_icon_name || '');
+      setStatsIconColor(updated.stats_icon_color || '#0038A8');
+      if (onChartSourceUpdated) onChartSourceUpdated(updated);
+    } catch (err) {
+      alert('Failed to update the stats badge icon.');
+    } finally {
+      setSavingStatsIcon(false);
+    }
+  };
+  const selectStatsIconName = (name) => applyStatsIconUpdate(() => updateProjectChartSource(slug, { stats_icon_name: name === statsIconName ? '' : name, stats_icon_color: statsIconColor }));
+  const changeStatsIconColor = (color) => {
+    setStatsIconColor(color);
+    if (statsIconName) applyStatsIconUpdate(() => updateProjectChartSource(slug, { stats_icon_color: color }));
+  };
+
+  // Which free tile set the map renders — see MAP_TILE_STYLES in FreeWifiMap.tsx.
+  const [mapTileStyle, setMapTileStyle] = useState(initial?.map_tile_style || 'standard');
+  const [savingTileStyle, setSavingTileStyle] = useState(false);
+  const selectMapTileStyle = async (value) => {
+    setSavingTileStyle(true);
+    try {
+      const updated = await updateProjectChartSource(slug, { map_tile_style: value });
+      setMapTileStyle(updated.map_tile_style || 'standard');
+      if (onChartSourceUpdated) onChartSourceUpdated(updated);
+    } catch (err) {
+      alert('Failed to update the map style.');
+    } finally {
+      setSavingTileStyle(false);
+    }
+  };
+
   // Summary Card
   const [summaryDatasetId, setSummaryDatasetId] = useState(initial?.summary_dataset || '');
   const [summaryTitle, setSummaryTitle] = useState(initial?.summary_title || '');
@@ -3838,6 +3908,47 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+            )}
+
+            {!instanceMode && (
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                Stats badge icon <span className="text-gray-400">(the "Visible" count in the corner — set independently of the marker icon above)</span>
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input type="color" value={statsIconColor} onChange={(e) => changeStatsIconColor(e.target.value)}
+                  disabled={savingStatsIcon}
+                  className="w-8 h-8 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer disabled:opacity-50"
+                  title="Icon color" />
+                {MARKER_ICON_OPTIONS.map(({ name, Icon }) => (
+                  <button key={name} type="button" onClick={() => selectStatsIconName(name)} disabled={savingStatsIcon}
+                    title={name}
+                    className={`w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${
+                      statsIconName === name ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    }`}>
+                    <Icon size={16} color={statsIconName === name ? statsIconColor : undefined}
+                      className={statsIconName === name ? '' : 'text-gray-500 dark:text-gray-400'} />
+                  </button>
+                ))}
+              </div>
+              {statsIconName && <p className="text-[11px] text-gray-400 mt-1">Click the selected icon again to go back to the default Wifi glyph.</p>}
+            </div>
+            )}
+
+            {!instanceMode && (
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Map style</label>
+              <div className="grid grid-cols-3 gap-2">
+                {MAP_TILE_STYLES.map(({ value, label }) => (
+                  <button key={value} type="button" onClick={() => selectMapTileStyle(value)} disabled={savingTileStyle}
+                    className={`px-2 py-1.5 text-xs rounded-lg border transition-colors disabled:opacity-50 ${
+                      mapTileStyle === value ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 font-medium' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    }`}>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
             )}
@@ -4163,6 +4274,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     extraDatasets: [], fieldMap: {}, secondaryFieldMap: {}, aggregationFieldMap: {}, tableConditions: {},
     rowMode: false, rowColumns: [],
     colorMode: 'palette', chartColor: '#0038A8', categoryColors: {},
+    categoryOrder: [], donutCenterMode: 'total',
   });
   // 'image-bg' card design's background photo — URL mode just writes straight into
   // newChart.cardImage like any other text field; Upload mode holds the picked File here
@@ -4172,6 +4284,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // stale pending file from a previous chart never gets attached to the wrong one.
   const [cardImageMode, setCardImageMode] = useState('url');
   const [pendingCardImageFile, setPendingCardImageFile] = useState(null);
+  // Drag-reorder state for "Customize labels" below — same splice-on-drop pattern as
+  // Summary Card tiles (see DataSourceModal's dragTileIndex), just scoped to this modal's
+  // own newChart.categoryOrder instead of a tile list.
+  const [dragLabelIndex, setDragLabelIndex] = useState(null);
   // Recomputed only when the picked file actually changes (not every render) — calling
   // createObjectURL on every render would mint a new, never-revoked blob URL each time.
   const cardImagePreviewUrl = useMemo(
@@ -4276,15 +4392,23 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     const map = {};
     const fields = isFreeWifi ? FREEWIFI_AVAILABLE_FIELDS : availableFieldsFor(newChart.dataset);
     const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
-    // Counts real, non-blank distinct values only — same rule distinctFieldValues uses for
-    // the "equals" value picker, so the "(N values)" label next to a field never claims
-    // more than that picker can actually offer. That distinction matters most for an
-    // auto-merged field (see mergeReferencedFields): when a linked column's key doesn't
-    // match anything in the other table, every record's merged value is blank, and this
-    // must show "(0 values)" — not silently count that shared blankness as if it were one
-    // real "N/A" category, which used to make an entirely unmatched link look like it had
-    // data.
-    fields.forEach(f => { map[f.value] = distinctFieldValues(records, f.value).length; });
+    // Real distinct values, PLUS one more for N/A if any row is actually blank AND there's
+    // at least one real value too — matching what the chart itself renders (tallyBy's
+    // `field || 'N/A'` groups every blank row into its own category) and what "Customize
+    // labels" now lists. The `> 0` guard preserves the one case this needs to stay
+    // blank-EXCLUSIVE for: an auto-merged field (see mergeReferencedFields) where a linked
+    // column's key doesn't match anything in the other table, so every record's merged
+    // value is blank — that must still show "(0 values)", not "(1 value)" implying the
+    // broken link has real data, since there's no genuine value mixed in to distinguish it
+    // from the "entirely unmatched" case.
+    fields.forEach(f => {
+      const distinct = distinctFieldValues(records, f.value);
+      const hasBlank = distinct.length > 0 && records.some(r => {
+        const v = r[f.value];
+        return v === null || v === undefined || String(v).trim() === '';
+      });
+      map[f.value] = hasBlank ? distinct.length + 1 : distinct.length;
+    });
     return map;
   }, [sites, isFreeWifi, newChart.dataset, recordsByDataset, genericTables]);
 
@@ -4316,8 +4440,6 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   const handleAddChart = async () => {
     if (!newChart.title.trim()) return alert('Title is required');
     if (!isFreeWifi && !newChart.dataset) return alert('Choose a table first');
-    const dup = allCharts.find(c => c.type === 'custom' && c.id !== editingChart?.id && chartSignature(c) === chartSignature(newChart));
-    if (dup) return alert(`A chart with the same type and field already exists: "${dup.title}"`);
     setSavingChart(true);
     try {
       const isBackedChart = editingChart && typeof editingChart.id === 'number';
@@ -4641,7 +4763,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </button>
               </div>
             )}
-            <div className="-m-4"><FreeWifiMap sites={filteredMapped} totalAPs={filteredMapped.length} height="500px" tooltipFields={tooltipFieldDefs} filterFields={filterFieldDefs} colorField={colorFieldDef} markerIcon={source.marker_icon} markerIconName={source.marker_icon_name} markerIconColor={source.marker_icon_color} /></div>
+            <div className="-m-4"><FreeWifiMap sites={filteredMapped} totalAPs={filteredMapped.length} height="500px" tooltipFields={tooltipFieldDefs} filterFields={filterFieldDefs} colorField={colorFieldDef} markerIcon={source.marker_icon} markerIconName={source.marker_icon_name} markerIconColor={source.marker_icon_color} statsIconName={source.stats_icon_name} statsIconColor={source.stats_icon_color} tileStyle={source.map_tile_style} /></div>
           </div>
         );
       }
@@ -5397,6 +5519,28 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
+              {/* Donut center — 'total' (default) shows the raw row/aggregate total, same as
+                  before this option existed. 'percentage' instead shows the TRUE leading
+                  category's share of the total (the same number the "leads with X%" footer
+                  already reports), which reads more like an at-a-glance summary than a bare
+                  count when what matters is how dominant one category is. Only donut has a
+                  center to put anything in — plain pie has no hole. */}
+              {newChart.chartType === 'donut' && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Donut center</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[{ value: 'total', label: 'Total' }, { value: 'percentage', label: 'Top %' }].map(({ value, label }) => (
+                      <button key={value} type="button" onClick={() => setNewChart(c => ({ ...c, donutCenterMode: value }))}
+                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                          (newChart.donutCenterMode || 'total') === value ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 font-medium' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                        }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Colors — 'palette' (default) is the original behavior, every category
                   cycling through the shared COLORS array unchanged. 'accent' recolors the
                   whole chart to one flat color. 'custom' opens a per-category swatch
@@ -5448,19 +5592,59 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   columns' own raw names instead (e.g. "jan_visitors" → "January"), same
                   chart.valueLabels map and same displayLabel() lookup either way. */}
               {!isCardMode && (newChart.field || newChart.rowMode) && (() => {
-                const values = newChart.rowMode
+                const rawValues = newChart.rowMode
                   ? (newChart.rowColumns || [])
-                  : distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field);
-                if (values.length === 0 || values.length > 20) return null;
+                  : (() => {
+                      // distinctFieldValues deliberately excludes blank/missing values (it's
+                      // built for the count_equals dropdown, where "blank" isn't a real value
+                      // to match against) — but the chart itself groups every blank row into
+                      // an actual "N/A" category (see tallyBy's `field || 'N/A'` fallback), so
+                      // without adding it back here, N/A would show up on the chart with no
+                      // way to relabel or color it. Only added when a blank row genuinely
+                      // exists, so a field with no blanks doesn't grow a phantom N/A entry.
+                      const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
+                      const distinct = distinctFieldValues(records, newChart.field);
+                      const hasBlank = records.some((r) => {
+                        const v = r[newChart.field];
+                        return v === null || v === undefined || String(v).trim() === '';
+                      });
+                      return hasBlank ? [...distinct, 'N/A'] : distinct;
+                    })();
+                if (rawValues.length === 0 || rawValues.length > 20) return null;
                 const showColorSwatch = !isCardMode && newChart.colorMode === 'custom';
+                // Non-row-mode charts sort categories by count by default (see
+                // buildChartTallyData) — categoryOrder overrides that when set, letting the
+                // admin drag them into whatever order they want here instead. Row mode has
+                // no separate order field: its category order already IS whatever sequence
+                // rowColumns is in, so dragging here reorders that array directly. Either
+                // way, anything not yet in a saved order (new data) is appended at the end
+                // rather than disappearing.
+                const savedOrder = newChart.rowMode ? null : (newChart.categoryOrder || []);
+                const values = savedOrder
+                  ? [...savedOrder.filter((v) => rawValues.includes(v)), ...rawValues.filter((v) => !savedOrder.includes(v))]
+                  : rawValues;
+                const reorderTo = (dropIndex) => {
+                  if (dragLabelIndex === null || dragLabelIndex === dropIndex) { setDragLabelIndex(null); return; }
+                  const arr = [...values];
+                  const [moved] = arr.splice(dragLabelIndex, 1);
+                  arr.splice(dropIndex, 0, moved);
+                  setNewChart(c => (newChart.rowMode ? { ...c, rowColumns: arr } : { ...c, categoryOrder: arr }));
+                  setDragLabelIndex(null);
+                };
                 return (
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
-                      Customize labels <span className="text-gray-400">(optional — change how a value is shown in this chart)</span>
+                      Customize labels <span className="text-gray-400">(optional — change how a value is shown, its color, or drag <GripVertical size={11} className="inline -mt-0.5" /> to reorder)</span>
                     </label>
                     <div className="space-y-1.5">
                       {values.map((v, i) => (
-                        <div key={v} className="flex items-center gap-2">
+                        <div key={v} draggable
+                          onDragStart={() => setDragLabelIndex(i)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => reorderTo(i)}
+                          onDragEnd={() => setDragLabelIndex(null)}
+                          className={`flex items-center gap-2 rounded-lg transition-opacity ${dragLabelIndex === i ? 'opacity-40' : ''}`}>
+                          <GripVertical size={14} className="text-gray-300 dark:text-gray-600 shrink-0 cursor-grab active:cursor-grabbing" />
                           {showColorSwatch && (
                             <input type="color" value={newChart.categoryColors?.[v] || COLORS[i % COLORS.length]}
                               onChange={(e) => setNewChart(c => ({ ...c, categoryColors: { ...c.categoryColors, [v]: e.target.value } }))}
@@ -5821,7 +6005,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   isCustom={isCustom || isWidgetInstance}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {} });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, categoryOrder: chart.categoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total' });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);

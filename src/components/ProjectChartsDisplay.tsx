@@ -196,7 +196,7 @@ export default function ProjectChartsDisplay({ slug }) {
       node: (
         <ChartCard key="map" title={source.map_title || 'Map'} hideTitle={source.map_hide_title}>
           <div className="-m-4">
-            <FreeWifiMap sites={mapped} totalAPs={mapped.length} height="500px" tooltipFields={tooltipFieldDefs} filterFields={filterFieldDefs} colorField={colorFieldDef} markerIcon={source.marker_icon} markerIconName={source.marker_icon_name} markerIconColor={source.marker_icon_color} />
+            <FreeWifiMap sites={mapped} totalAPs={mapped.length} height="500px" tooltipFields={tooltipFieldDefs} filterFields={filterFieldDefs} colorField={colorFieldDef} markerIcon={source.marker_icon} markerIconName={source.marker_icon_name} markerIconColor={source.marker_icon_color} statsIconName={source.stats_icon_name} statsIconColor={source.stats_icon_color} tileStyle={source.map_tile_style} />
           </div>
         </ChartCard>
       ),

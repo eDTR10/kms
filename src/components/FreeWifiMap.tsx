@@ -33,6 +33,21 @@ export const PROVINCE_COLORS = {
 const FILTER_COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#dc2626', '#0891b2', '#db2777', '#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#8b5cf6'];
 const DEFAULT_DOT_COLOR = '#0038A8';
 
+// Alternate tile sets (ProjectChartSource.map_tile_style) — all free, no API key required,
+// unlike most satellite/terrain providers (Mapbox, Google, Stadia's hosted Stamen tiles).
+// Esri's World Imagery and OpenTopoMap are both long-standing free tile services commonly
+// used in open-source Leaflet projects for exactly this reason.
+export const MAP_TILE_STYLES = [
+  { value: 'standard', label: 'Standard', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap' },
+  // CARTO's "Voyager" style — soft green parkland, pale water, muted roads — is the
+  // closest free/no-key equivalent to Google Maps' own clean default look.
+  { value: 'simple', label: 'Simple', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
+  { value: 'light', label: 'Light', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
+  { value: 'dark', label: 'Dark', url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
+  { value: 'satellite', label: 'Satellite', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: '&copy; Esri' },
+  { value: 'terrain', label: 'Terrain', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap' },
+];
+
 const REGION_10_CENTER = [8.35, 124.65];
 // Bigger than Leaflet's old default (4px) so a dot is easy to hit with the mouse; grows
 // further on hover so it's obvious it's being targeted.
@@ -104,7 +119,7 @@ function FitBounds({ sites }) {
 // if somehow both are set. An uploaded image is a single flat icon (can't be recolored, so
 // the colorField coding/legend are suppressed for it); a Lucide icon instead keeps the
 // per-category tint + legend, same as the old dot markers, since it can be recolored.
-export default function FreeWifiMap({ sites, totalAPs, showFilters = true, height = '500px', tooltipFields = [], filterFields = [], colorField = null, markerIcon = '', markerIconName = '', markerIconColor = '' }) {
+export default function FreeWifiMap({ sites, totalAPs, showFilters = true, height = '500px', tooltipFields = [], filterFields = [], colorField = null, markerIcon = '', markerIconName = '', markerIconColor = '', statsIconName = '', statsIconColor = '', tileStyle = 'standard' }) {
   const [search, setSearch] = useState('');
   // { [fieldName]: [{value,label}, ...] } — one entry per configured filter field.
   const [selectedByField, setSelectedByField] = useState({});
@@ -169,11 +184,14 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
     return null;
   };
 
-  // Drives the "Visible" stats-card glyph so it matches whichever Lucide icon is picked
-  // (falls back to the default Wifi glyph for image-marker mode or no custom icon at all).
-  const statsIconOption = markerIconName ? MARKER_ICON_OPTIONS.find(o => o.name === markerIconName) : null;
+  // The "Visible" stats badge's own icon — independent of the marker icon (statsIconName/
+  // statsIconColor, ProjectChartSource.stats_icon_name/color), not derived from it. Falls
+  // back to the original default Wifi glyph in DICT blue when unset.
+  const statsIconOption = statsIconName ? MARKER_ICON_OPTIONS.find(o => o.name === statsIconName) : null;
   const StatsIcon = statsIconOption?.Icon || Wifi;
-  const statsIconColor = statsIconOption ? (markerIconColor || DEFAULT_DOT_COLOR) : '#0038A8';
+  const resolvedStatsIconColor = statsIconOption ? (statsIconColor || DEFAULT_DOT_COLOR) : '#0038A8';
+
+  const activeTileStyle = MAP_TILE_STYLES.find(t => t.value === tileStyle) || MAP_TILE_STYLES[0];
 
   const setFieldSelection = (name, val) => setSelectedByField(prev => ({ ...prev, [name]: val || [] }));
 
@@ -245,7 +263,7 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
       {/* Map */}
       <div style={{ height, position: 'relative' }}>
         <MapContainer center={REGION_10_CENTER} zoom={9} style={{ height: '100%', width: '100%' }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
+          <TileLayer url={activeTileStyle.url} attribution={activeTileStyle.attribution} />
           <FitBounds sites={filteredSites} />
 
           {filteredSites.map((site, i) => {
@@ -299,7 +317,7 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
         {/* Stats overlay */}
         <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 z-[1000]">
           <div className="flex items-center gap-2">
-            <StatsIcon size={25} style={{ color: statsIconColor }} />
+            <StatsIcon size={25} style={{ color: resolvedStatsIconColor }} />
             <div>
               <p className="text-sm font-bold">{filteredSites.length}</p>
               <p className="text-[10px] text-gray-500">Visible</p>

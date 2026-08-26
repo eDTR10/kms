@@ -42,8 +42,13 @@ function formatCellValue(field, value) {
 
 // Same naive CSV parser used throughout this app's other import panels (FreeWifiDatasets,
 // ManageAwards, ...) — doesn't handle embedded newlines inside quoted cells.
-function parseCsvText(text) {
-  const lines = text.split('\n').filter((line) => line.trim());
+// `headerRow` (1-indexed) skips everything before it entirely, for sheets where row 1 is a
+// title/blank spacer rather than the real header — counts literal lines including blank
+// ones (the way you'd count rows looking at the file in a spreadsheet), which is why that
+// slice happens BEFORE the blank-line filter below, not after (see the matching backend
+// note in kms/views.py's _parse_dataset_csv_text for why the order matters).
+function parseCsvText(text, headerRow = 1) {
+  const lines = text.split('\n').slice(Math.max(headerRow - 1, 0)).filter((line) => line.trim());
   if (lines.length < 2) return [];
   const headers = parseCsvLine(lines[0]).map((h) => h.trim());
   const data = [];
@@ -119,12 +124,14 @@ export default function ProjectDatasets({ slug }) {
 
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [csvText, setCsvText] = useState('');
+  const [csvHeaderRow, setCsvHeaderRow] = useState(1);
   const [importing, setImporting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
 
   const [showSheetLink, setShowSheetLink] = useState(false);
   const [sheetUrlInput, setSheetUrlInput] = useState('');
+  const [sheetHeaderRow, setSheetHeaderRow] = useState(1);
   const [syncingSheet, setSyncingSheet] = useState(false);
 
   // Table toolbar — search / sort / pagination, same shape as FreeWifiDatasets
@@ -160,6 +167,7 @@ export default function ProjectDatasets({ slug }) {
   // Keep the sheet-link input in sync with whichever table is active.
   useEffect(() => {
     setSheetUrlInput(activeDataset?.sheet_url || '');
+    setSheetHeaderRow(activeDataset?.header_row || 1);
   }, [activeDataset?.id]);
 
   const switchDataset = (id) => {
@@ -251,8 +259,8 @@ export default function ProjectDatasets({ slug }) {
 
   const handleImportCsv = async () => {
     if (!activeDataset || !csvText.trim()) return alert('Paste or upload a CSV first.');
-    const parsedRows = parseCsvText(csvText);
-    if (parsedRows.length === 0) return alert('No data rows found — make sure the first line is a header row.');
+    const parsedRows = parseCsvText(csvText, csvHeaderRow);
+    if (parsedRows.length === 0) return alert(`No data rows found starting from line ${csvHeaderRow} — check the header row setting above.`);
 
     const headers = Object.keys(parsedRows[0]);
     const nameByHeader = {};
@@ -311,7 +319,7 @@ export default function ProjectDatasets({ slug }) {
     if (!activeDataset || !sheetUrlInput.trim()) return alert('Paste a Google Sheets tab URL first.');
     setSyncingSheet(true);
     try {
-      const result = await syncProjectDatasetSheet(activeDataset.id, sheetUrlInput.trim());
+      const result = await syncProjectDatasetSheet(activeDataset.id, sheetUrlInput.trim(), sheetHeaderRow);
       fetchAll();
       alert(`Synced ${result.rows_created} row(s) and ${result.fields_created} new column(s) from the sheet.`);
     } catch (err) {
@@ -483,11 +491,21 @@ export default function ProjectDatasets({ slug }) {
                   <input type="url" value={sheetUrlInput} onChange={(e) => setSheetUrlInput(e.target.value)}
                     placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0"
                     className="flex-1 px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                  <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                    Header row
+                    <input type="number" min="1" value={sheetHeaderRow}
+                      onChange={(e) => setSheetHeaderRow(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-14 px-2 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                  </label>
                   <button onClick={handleSyncSheet} disabled={syncingSheet}
                     className="flex items-center gap-1.5 px-3 py-2 bg-[#0038A8] text-white rounded-lg text-xs font-bold disabled:opacity-50 whitespace-nowrap">
                     <RefreshCw size={13} className={syncingSheet ? 'animate-spin' : ''} /> {syncingSheet ? 'Syncing...' : 'Sync Now'}
                   </button>
                 </div>
+                <p className="text-[11px] text-gray-400">
+                  If the actual column headers aren't on row 1 of the sheet (e.g. row 1 is a title), set which row
+                  they're really on — everything above it is skipped, not read as data. Remembered for next sync.
+                </p>
                 {activeDataset.sheet_synced_at && (
                   <p className="text-[11px] text-gray-400">
                     Last synced {new Date(activeDataset.sheet_synced_at).toLocaleString()}
@@ -499,7 +517,8 @@ export default function ProjectDatasets({ slug }) {
             {showCsvImport && (
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 space-y-3">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  First row must be column headers. New columns are created automatically (number
+                  Column headers are read from the header row below (line 1 by default — change it if the real
+                  headers start further down, e.g. row 1 is a title). New columns are created automatically (number
                   type detected when every value in a column is numeric); columns that already
                   exist by name are reused, and their rows are just added to.
                 </p>
@@ -510,6 +529,12 @@ export default function ProjectDatasets({ slug }) {
                   <label className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:border-[#0038A8]">
                     <Upload size={13} /> Upload CSV file
                     <input type="file" accept=".csv,text/csv" onChange={handleCsvFileUpload} className="hidden" />
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    Header row
+                    <input type="number" min="1" value={csvHeaderRow}
+                      onChange={(e) => setCsvHeaderRow(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-14 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
                   </label>
                   <button onClick={handleImportCsv} disabled={importing}
                     className="flex items-center gap-1 px-3 py-1.5 bg-[#0038A8] text-white rounded-lg text-xs font-bold disabled:opacity-50">

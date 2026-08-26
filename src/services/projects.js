@@ -90,8 +90,8 @@ export async function importProjectDatasetCsv(datasetId, payload) {
 /** Re-fetches a linked Google Sheet tab (or links + syncs a new one if sheetUrl is
  * passed) and imports it the same way a pasted CSV would be. The sheet must be shared
  * as "Anyone with the link can view". */
-export async function syncProjectDatasetSheet(datasetId, sheetUrl) {
-  const { data } = await api.post(`kms/project-datasets/${datasetId}/sync-sheet/`, { sheet_url: sheetUrl });
+export async function syncProjectDatasetSheet(datasetId, sheetUrl, headerRow) {
+  const { data } = await api.post(`kms/project-datasets/${datasetId}/sync-sheet/`, { sheet_url: sheetUrl, header_row: headerRow });
   return data;
 }
 
