@@ -1,6 +1,6 @@
 {
   "name": "vite-project",
-  "homepage": "https://iannico322.github.io/react-vite-supreme/",
+  "homepage": "https://iannico322.github.io/tm/",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -18,6 +18,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@react-oauth/google": "^0.13.5",
     "@tanstack/react-table": "^8.20.5",
+    "@xyflow/react": "^12.11.5",
     "axios": "^1.7.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",

@@ -75,7 +75,7 @@ const recentActivity = [
 
 // --- Sidebar Nav Items ---
 const navItems: NavItem[] = [
-  { label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" />, to: "/react-vite-supreme/dashboard", active: true },
+  { label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" />, to: "/tm/dashboard", active: true },
   { label: "Users", icon: <Users className="w-4 h-4" />, to: "#" },
   { label: "Documents", icon: <FileText className="w-4 h-4" />, to: "#" },
   { label: "Settings", icon: <Settings className="w-4 h-4" />, to: "#" },

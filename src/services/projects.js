@@ -126,11 +126,42 @@ export async function deleteProjectDatasetRow(slug, id) {
   await api.delete(`kms/project-dataset-rows/${slug}/${id}/`);
 }
 
-// ── Project charts — admin-built charts plotted from one of the project's datasets ──
+// ── Chart layouts — named, independently-scoped "pages" within a project's Charts
+// tab, each with its own charts/widgets/filter bar. Opt-in: a project with none of
+// these behaves exactly as it always has (see ProjectChartLayout's backend docstring) ──
 
-export async function getProjectChartConfigs(slug) {
+export async function getProjectChartLayouts(slug) {
   const officeId = await getProjectOfficeId(slug);
-  const { data } = await api.get('kms/project-chart-configs/', { params: { office: officeId } });
+  const { data } = await api.get('kms/project-chart-layouts/', { params: { office: officeId } });
+  return data.results ?? data;
+}
+
+export async function createProjectChartLayout(payload) {
+  const { data } = await api.post('kms/project-chart-layouts/', payload);
+  return data;
+}
+
+export async function updateProjectChartLayout(id, payload) {
+  const { data } = await api.patch(`kms/project-chart-layouts/${id}/`, payload);
+  return data;
+}
+
+export async function deleteProjectChartLayout(id) {
+  await api.delete(`kms/project-chart-layouts/${id}/`);
+}
+
+export async function reorderProjectChartLayouts(items) {
+  const { data } = await api.post('kms/project-chart-layouts/reorder/', items);
+  return data;
+}
+
+// ── Project charts — admin-built charts plotted from one of the project's datasets.
+// `layoutId` (optional, most callers omit it): scopes to one ProjectChartLayout's own
+// charts instead of the project's original layout-less set — see getProjectChartLayouts
+// above. ──
+export async function getProjectChartConfigs(slug, layoutId) {
+  const officeId = await getProjectOfficeId(slug);
+  const { data } = await api.get('kms/project-chart-configs/', { params: { office: officeId, ...(layoutId ? { layout: layoutId } : {}) } });
   return data.results ?? data;
 }
 
@@ -171,9 +202,9 @@ export async function uploadProjectChartConfigCardImage(id, file) {
 // ── Extra Summary/Map/Breakdown widget instances — additional, independently-
 // configured copies of a built-in beyond ProjectChartSource's own singleton one ──
 
-export async function getProjectBuiltinWidgets(slug) {
+export async function getProjectBuiltinWidgets(slug, layoutId) {
   const officeId = await getProjectOfficeId(slug);
-  const { data } = await api.get('kms/project-builtin-widgets/', { params: { office: officeId } });
+  const { data } = await api.get('kms/project-builtin-widgets/', { params: { office: officeId, ...(layoutId ? { layout: layoutId } : {}) } });
   return data.results ?? data;
 }
 
@@ -194,27 +225,27 @@ export async function deleteProjectBuiltinWidget(id) {
 // ── Chart data source — which dataset (+ which of its columns) feeds a project's
 // Summary Card / Map / Breakdown built-ins ──────────────────────────────────
 
-export async function getProjectChartSource(slug) {
+export async function getProjectChartSource(slug, layoutId) {
   const officeId = await getProjectOfficeId(slug);
-  const { data } = await api.get('kms/project-chart-source/', { params: { office: officeId } });
+  const { data } = await api.get('kms/project-chart-source/', { params: { office: officeId, ...(layoutId ? { layout: layoutId } : {}) } });
   return data;
 }
 
-export async function updateProjectChartSource(slug, settings) {
+export async function updateProjectChartSource(slug, settings, layoutId) {
   const officeId = await getProjectOfficeId(slug);
-  const { data } = await api.patch('kms/project-chart-source/', settings, { params: { office: officeId } });
+  const { data } = await api.patch('kms/project-chart-source/', settings, { params: { office: officeId, ...(layoutId ? { layout: layoutId } : {}) } });
   return data;
 }
 
 // Custom Map marker icon — a separate multipart PATCH (vs. updateProjectChartSource's
 // plain JSON) since it's an actual file upload, converted/compressed server-side the same
 // way Award/Accomplishment images are.
-export async function uploadProjectChartSourceMarkerIcon(slug, file) {
+export async function uploadProjectChartSourceMarkerIcon(slug, file, layoutId) {
   const officeId = await getProjectOfficeId(slug);
   const fd = new FormData();
   fd.append('marker_icon_file', file);
   const { data } = await api.patch('kms/project-chart-source/', fd, {
-    params: { office: officeId },
+    params: { office: officeId, ...(layoutId ? { layout: layoutId } : {}) },
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;

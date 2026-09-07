@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { toCanvas as htmlNodeToCanvas } from 'html-to-image';
 import {
   Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical,
-  Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star, Palette, Link2, Upload, Download, FileText, Image as ImageIcon, Loader2,
+  Plus, Trash2, X, Eye, EyeOff, Edit2, Database, Star, Palette, Link2, Upload, Download, FileText, Image as ImageIcon, Loader2, Quote, Megaphone,
 } from 'lucide-react';
 import { MARKER_ICON_OPTIONS } from '../../../lib/markerIcons';
 import { getFreeWifiSummary } from '../../../services/freewifi';
@@ -20,7 +20,9 @@ import {
   reorderProjectChartConfigs, getProjectChartSource, updateProjectChartSource, uploadProjectChartSourceMarkerIcon,
   uploadProjectChartConfigCardImage,
   getProjectBuiltinWidgets, createProjectBuiltinWidget, updateProjectBuiltinWidget, deleteProjectBuiltinWidget,
+  getProjectChartLayouts, createProjectChartLayout, updateProjectChartLayout, deleteProjectChartLayout,
 } from '../../../services/projects';
+import LayoutTabs from '../../../components/LayoutTabs';
 
 export const PROVINCE_COLORS = {
   'Bukidnon': '#2563eb',
@@ -75,7 +77,7 @@ const CHART_TYPES = [
   { id: 'radar', label: 'Radar Chart', needsSecondary: false, minItems: 3, maxItems: 8, category: 'comparison', preview: () => (
     <svg viewBox="0 0 100 100" className="w-16 h-16"><polygon points="50,10 90,35 80,75 20,75 10,35" fill="none" stroke="#ddd" strokeWidth="1" /><polygon points="50,20 75,38 68,65 32,65 25,38" fill={`${COLORS[0]}40`} stroke={COLORS[0]} strokeWidth="1.5" /></svg>
   ) },
-  { id: 'table', label: 'Data Table', needsSecondary: false, minItems: 1, maxItems: 8, category: 'data', preview: () => (
+  { id: 'table', label: 'Data Table', needsSecondary: true, minItems: 1, maxItems: 8, category: 'data', preview: () => (
     <div className="space-y-1 w-full">{[1, 2, 3].map(i => <div key={i} className="flex gap-1"><div className="w-4 h-2 bg-gray-200 dark:bg-gray-600 rounded" /><div className="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded" /><div className="w-6 h-2 bg-gray-200 dark:bg-gray-600 rounded" /></div>)}</div>
   ) },
   { id: 'cards', label: 'Stat Cards', needsSecondary: false, minItems: 1, maxItems: 4, category: 'summary', preview: () => (
@@ -112,6 +114,19 @@ const CHART_TYPES = [
   ) },
   { id: 'horizontal-stack', label: 'Horizontal Stack', needsSecondary: false, minItems: 2, maxItems: 6, category: 'distribution', preview: () => (
     <div className="flex h-6 rounded overflow-hidden w-full">{[40, 30, 20, 10].map((w, i) => <div key={i} style={{ width: `${w}%`, backgroundColor: COLORS[i] }} />)}</div>
+  ) },
+  // One full-width, 100%-normalized bar per PRIMARY category (unlike 'bar-stacked' above,
+  // whose segments only add up to that row's own raw count, not a shared 0-100% axis) —
+  // every row's segments always sum to exactly 100%, colored by a legend that stays
+  // consistent row to row (see CustomChartRenderer's own case for why that needs its own
+  // pass over every row up front, not just each row's own subGroups).
+  { id: 'bar-100-stacked', label: '100% Stacked Bar', needsSecondary: true, minItems: 2, maxItems: 8, category: 'distribution', preview: () => (
+    <div className="space-y-1.5 w-full">{[0, 1, 2].map((r) => (
+      <div key={r} className="flex h-3 rounded overflow-hidden w-full">
+        <div style={{ width: `${[70, 45, 30][r]}%`, backgroundColor: COLORS[0] }} />
+        <div className="flex-1" style={{ backgroundColor: COLORS[1] }} />
+      </div>
+    ))}</div>
   ) },
 ];
 
@@ -175,6 +190,81 @@ const CARD_DESIGNS = [
   ) },
 ];
 
+// Templates for "Text" mode (chart.cardDesign, same field CARD_DESIGNS uses — a text
+// card is still stored/rendered as chart_type='aggregate-cards' under the hood, just
+// gated to this design set instead of CARD_DESIGNS' own — see TEXT_DESIGN_IDS and
+// AggregateValueCard's branch for these ids). None of these touch a field/aggregation
+// at all — every one of them just shows chart.cardDescription (every other design's
+// small "context under the number" text, repurposed as the whole content here since
+// there's no number for it to sit under) — see AggregateValueCard's own comment.
+const TEXT_DESIGNS = [
+  { id: 'text-note', label: 'Plain', preview: () => (
+    <div className="w-full h-16 flex flex-col justify-center gap-1.5 px-2">
+      <div className="h-1.5 w-full rounded bg-gray-300 dark:bg-gray-600" />
+      <div className="h-1.5 w-4/5 rounded bg-gray-300 dark:bg-gray-600" />
+      <div className="h-1.5 w-3/5 rounded bg-gray-200 dark:bg-gray-700" />
+    </div>
+  ) },
+  { id: 'text-quote', label: 'Quote', preview: () => (
+    <div className="w-full h-16 flex flex-col justify-center gap-1 px-2">
+      <Quote size={14} style={{ color: COLORS[0] }} className="opacity-70" />
+      <div className="h-1.5 w-4/5 rounded bg-gray-300 dark:bg-gray-600" />
+      <div className="h-1.5 w-3/5 rounded bg-gray-200 dark:bg-gray-700" />
+    </div>
+  ) },
+  { id: 'text-banner', label: 'Banner', preview: () => (
+    <div className="w-full h-16 rounded-lg flex flex-col items-center justify-center gap-1.5 px-2" style={{ backgroundColor: COLORS[0] }}>
+      <div className="h-1.5 w-4/5 rounded bg-white/90" />
+      <div className="h-1.5 w-3/5 rounded bg-white/60" />
+    </div>
+  ) },
+  { id: 'text-callout', label: 'Callout', preview: () => (
+    <div className="w-full h-16 flex flex-col justify-center gap-1.5 pl-3 pr-2 border-l-4" style={{ borderColor: COLORS[0] }}>
+      <div className="h-1.5 w-full rounded bg-gray-300 dark:bg-gray-600" />
+      <div className="h-1.5 w-3/5 rounded bg-gray-200 dark:bg-gray-700" />
+    </div>
+  ) },
+  // Large centered accent-colored statement, no box/border at all — for a short punchy
+  // line (a tagline, a milestone) rather than a paragraph.
+  { id: 'text-spotlight', label: 'Spotlight', preview: () => (
+    <div className="w-full h-16 flex flex-col items-center justify-center gap-1.5 px-2">
+      <div className="h-2.5 w-16 rounded" style={{ backgroundColor: COLORS[0] }} />
+      <div className="h-2.5 w-11 rounded" style={{ backgroundColor: COLORS[0] }} />
+    </div>
+  ) },
+  // Soft tinted background (accent color at low opacity) — an "info box" feel, distinct
+  // from Banner's solid fill and Callout's border-only accent.
+  { id: 'text-highlight', label: 'Highlight', preview: () => (
+    <div className="w-full h-16 rounded-lg flex flex-col justify-center gap-1.5 px-3" style={{ backgroundColor: `${COLORS[0]}22` }}>
+      <div className="h-1.5 w-4/5 rounded" style={{ backgroundColor: COLORS[0] }} />
+      <div className="h-1.5 w-3/5 rounded bg-gray-400 dark:bg-gray-500" />
+    </div>
+  ) },
+  { id: 'text-announcement', label: 'Announcement', preview: () => (
+    <div className="w-full h-16 flex flex-col items-center justify-center gap-1.5 px-2">
+      <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: COLORS[0] }}>
+        <Megaphone size={12} className="text-white" />
+      </div>
+      <div className="h-1.5 w-4/5 rounded bg-gray-300 dark:bg-gray-600" />
+    </div>
+  ) },
+  // Same photo/gradient treatment as CARD_DESIGNS' own 'image-bg' (chart.cardImage +
+  // chart.cardGradientColor, same overlay math) — but text only, no big number, since a
+  // Text card has no aggregation to show. Reuses that design's own "Background image"/
+  // "Gradient color" builder controls (see their gating below) rather than duplicating them.
+  { id: 'text-image-bg', label: 'Image Background', preview: () => (
+    <div className="w-full h-16 rounded-lg overflow-hidden relative flex items-end p-2"
+      style={{ background: `linear-gradient(135deg, ${COLORS[0]}, ${COLORS[2]})` }}>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+      <div className="relative space-y-1 w-full">
+        <div className="h-1.5 w-4/5 rounded bg-white/90" />
+        <div className="h-1.5 w-3/5 rounded bg-white/70" />
+      </div>
+    </div>
+  ) },
+];
+const TEXT_DESIGN_IDS = new Set(TEXT_DESIGNS.map((d) => d.id));
+
 // react-select expects {value, label} options and a single selected option object (or
 // null), rather than the bare string this file's state has always stored — these two
 // convert between the two shapes so every plain <select> below can become a <Select>
@@ -191,6 +281,32 @@ const distinctFieldValues = (records, field) =>
     .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
     .map(String)
     .sort();
+
+// Same values as distinctFieldValues, plus a synthetic "N/A" entry when at least one row's
+// value for `field` is blank — for a picker that needs to be able to target blank rows too
+// (Value Card's count_equals/percentage), matching the same "blank rows are their own real
+// category, not just excluded" convention "Customize labels" already uses elsewhere.
+const distinctFieldValuesWithNA = (records, field) => {
+  const distinct = distinctFieldValues(records, field);
+  const hasBlank = (records || []).some((r) => {
+    const v = r[field];
+    return v === null || v === undefined || String(v).trim() === '';
+  });
+  return hasBlank ? [...distinct, 'N/A'] : distinct;
+};
+
+// Whether a row's raw value for a field "equals" an admin-picked target — a plain
+// case-insensitive string compare, EXCEPT picking "N/A" (see distinctFieldValuesWithNA)
+// means "this row's value is blank", not literally the text "N/A" — a naive compare would
+// never match a blank row there at all, since a blank value stringifies to "" not "N/A". A
+// row whose value genuinely IS typed as "N/A" still matches too, so a table that already
+// uses "N/A" as a real value keeps meaning what it always did.
+const matchesEqualsValue = (raw, target) => {
+  const v = String(raw ?? '').trim();
+  const t = String(target ?? '').trim();
+  if (t.toLowerCase() === 'n/a') return v === '' || v.toLowerCase() === 'n/a';
+  return v.toLowerCase() === t.toLowerCase();
+};
 
 // The Data Field dropdown's option text — surfaces whether a field looks like a date
 // (see fieldIsDateLike) right in the list, since nothing else in that dropdown says so and
@@ -457,6 +573,85 @@ export function gridSizeClass(gridSize) {
   }
 }
 
+// What "kind" a custom chart is, for useEqualHeightGrid below — a Value Card and a Text
+// note both use chartType 'aggregate-cards' (they're distinguished by cardDesign, see
+// TEXT_DESIGN_IDS), so those need splitting out; every other chartType is a real chart,
+// kept distinct per chart type (a donut shouldn't be told to match a bar's height).
+export function customChartKind(chart) {
+  if (chart.chartType === 'aggregate-cards') {
+    return TEXT_DESIGN_IDS.has(chart.cardDesign) ? 'text' : 'card';
+  }
+  return `chart:${chart.chartType}`;
+}
+
+// Matches same-row card heights, but ONLY among cards sharing the same "kind" (see
+// customChartKind — a Value Card, a Text note, and each individual chart type all count as
+// different kinds; extra Map/Breakdown/Summary widget instances use `widget:<widgetType>`).
+// CSS Grid's own align-items:stretch can't express that distinction — it stretches every
+// item assigned to a row track uniformly, regardless of kind — so grid items instead opt
+// OUT of stretch (see the `self-start` class at each call site) and this measures natural
+// heights, then applies an explicit per-item pixel height only within matching (row, kind)
+// groups, leaving a card with no same-kind row-mate at its own natural height.
+//
+// Call once per grid, with a ref on the grid container (every direct grid-item child must
+// carry `data-eh-id`/`data-eh-kind`) and a cheap string key that changes whenever the set,
+// order, or width of visible items changes (id/gridSize list is enough — content-driven
+// height changes, like async data finishing a chart's render, are caught live by the
+// ResizeObserver below without needing to be in this key).
+export function useEqualHeightGrid(containerRef, dependencyKey) {
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return undefined;
+
+    const recompute = () => {
+      const items = Array.from(container.querySelectorAll('[data-eh-id]'));
+      if (!items.length) return;
+      // Pass 1: clear any height forced by a previous pass so what gets measured below is
+      // always the item's true natural content height, never a stale forced value (e.g.
+      // left over from before a same-kind sibling was removed or shrank).
+      items.forEach((el) => { el.style.height = ''; });
+      const rows = new Map();
+      items.forEach((el) => {
+        const top = Math.round(el.offsetTop);
+        if (!rows.has(top)) rows.set(top, []);
+        rows.get(top).push(el);
+      });
+      rows.forEach((rowItems) => {
+        const byKind = new Map();
+        rowItems.forEach((el) => {
+          const kind = el.dataset.ehKind || '';
+          if (!byKind.has(kind)) byKind.set(kind, []);
+          byKind.get(kind).push(el);
+        });
+        byKind.forEach((group) => {
+          if (group.length < 2) return;
+          const maxHeight = Math.max(...group.map((el) => el.getBoundingClientRect().height));
+          group.forEach((el) => { el.style.height = `${maxHeight}px`; });
+        });
+      });
+    };
+
+    recompute();
+
+    // Reacts to content-driven size changes too (a chart's async data finishing, a legend
+    // growing, fonts loading) — not just the id/gridSize changes dependencyKey covers.
+    let frame = null;
+    const scheduleRecompute = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(recompute);
+    };
+    const ro = new ResizeObserver(scheduleRecompute);
+    Array.from(container.querySelectorAll('[data-eh-id]')).forEach((el) => ro.observe(el));
+    window.addEventListener('resize', scheduleRecompute);
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      ro.disconnect();
+      window.removeEventListener('resize', scheduleRecompute);
+    };
+  }, [dependencyKey]);
+}
+
 // Built-in chart definitions
 const BUILT_IN_CHARTS = [
   { id: 'summary', label: 'Summary Card', type: 'builtin' },
@@ -492,6 +687,24 @@ const CARD_AGG_OPTIONS = [
   { value: 'count', label: 'Count all rows' },
   { value: 'distinct', label: 'Count unique values' },
   { value: 'count_equals', label: 'Count rows where equals...' },
+  // Same numerator as count_equals (rows where `field` equals a picked value), but shown
+  // as that count's share of every row this card counts (after Filter rows), not the raw
+  // count — e.g. "23.8%" instead of "503", for "what fraction of rows are Live" style
+  // cards. Reuses count_equals' own "Value..." picker in the builder below.
+  { value: 'percentage', label: 'Percentage of rows (%)' },
+];
+// Optional override for a Card/Text design's own main text size (the big number, or the
+// text-mode paragraph) — blank (no chart.fontSize) keeps whatever size that specific
+// design's own layout normally uses, unchanged from before this existed. One shared scale
+// for both Card and Text, spanning small paragraph text through a big headline number,
+// since the same picker in the builder applies to either mode.
+const FONT_SIZE_OPTIONS = [
+  { value: 'xs', label: 'XS', px: 14 },
+  { value: 'sm', label: 'S', px: 20 },
+  { value: 'md', label: 'M', px: 28 },
+  { value: 'lg', label: 'L', px: 40 },
+  { value: 'xl', label: 'XL', px: 56 },
+  { value: 'xxl', label: 'XXL', px: 80 },
 ];
 // Every other chart type's OPTIONAL per-category aggregation (chart.aggregationEnabled) —
 // "count" and "count rows where equals" are deliberately left out: "count" is just what
@@ -637,6 +850,28 @@ export function mergeReferencedFields(records, tableFields, allTables) {
   });
 }
 
+// Resolves ONE general-filter's per-table "column" into a per-row value getter — usually
+// just a direct lookup on the table's own field (plain column name), but the column can
+// also be a merged pseudo-field ("<link field>__<their column>", the same convention
+// mergeReferencedFields/referencedFieldOptionsFor use) when the admin picked a column from
+// a LINKED table instead of one of this table's own — see FilterSettingsModal's
+// auto-detection, which suggests these for a table with no directly-matching column of its
+// own but a relationship to one that has. Builds the cross-table lookup once (not per row).
+function buildFieldResolver(table, fieldKey, allTables) {
+  const sepIdx = fieldKey.indexOf('__');
+  if (sepIdx === -1) return (row) => row.values?.[fieldKey];
+  const linkFieldName = fieldKey.slice(0, sepIdx);
+  const targetColumn = fieldKey.slice(sepIdx + 2);
+  const linkField = (table?.fields || []).find((f) => f.name === linkFieldName);
+  if (!linkField?.reference_dataset) return () => undefined;
+  const lookup = buildReferenceLookup(allTables, linkField.reference_dataset, linkField.reference_column);
+  return (row) => {
+    const key = row.values?.[linkFieldName];
+    if (key === null || key === undefined || key === '') return undefined;
+    return lookup?.index[String(key)]?.[targetColumn];
+  };
+}
+
 // The chart-builder-facing half of the same link: extra field OPTIONS a table's linked
 // column(s) make available (its own columns, from availableFieldsFor, plus these) — same
 // "<linking field name>__<their column name>" value scheme mergeReferencedFields keys
@@ -729,16 +964,53 @@ export function combineChartRecords(chart, recordsByDataset, genericTables) {
 // summary_dataset/map_dataset/breakdown_dataset) against this project's actual Datasets
 // tables into row arrays — used on initial load and again after saving Data Source, since
 // each built-in can point at a different table (or the same one).
+// Every table's own rows (reference-merged), computed once and reused both directly
+// (summary's primary table, and as combineChartRecords' own lookup map for map/
+// breakdown below) AND by computeSummaryTiles below (each tile can map a different
+// field across the SAME extra tables, so per-tile combining happens there instead of
+// once here — see summary_extra/map_extra/breakdown_extra on ProjectChartSource).
+function buildRecordsByDataset(tables) {
+  const recordsByDataset = {};
+  (tables || []).forEach((t) => {
+    const records = (t.rows || []).map(r => ({ id: r.id, ...(r.values || {}) }));
+    recordsByDataset[t.id] = mergeReferencedFields(records, t.fields, tables);
+  });
+  return recordsByDataset;
+}
+
 export function buildTaggedRecords(tables, source) {
-  const rowsFor = (datasetId) => {
-    const table = tables.find(t => t.id === datasetId);
-    const records = (table?.rows || []).map(r => ({ id: r.id, ...(r.values || {}) }));
-    return mergeReferencedFields(records, table?.fields, tables);
-  };
+  const recordsByDataset = buildRecordsByDataset(tables);
+  const mapExtra = source?.map_extra || {};
+  const breakdownExtra = source?.breakdown_extra || {};
+  // Map/Breakdown each have exactly one field slot to combine across tables (their own
+  // single mapped column) — reused via combineChartRecords with a throwaway "shim"
+  // shaped like a chart, same trick computeSummaryTiles uses per-tile below. When no
+  // extra tables are set this is a no-op passthrough (combineChartRecords' own
+  // single-table fast path), so the no-extras case behaves exactly as before.
   return {
-    summary: rowsFor(source?.summary_dataset),
-    map: rowsFor(source?.map_dataset),
-    breakdown: rowsFor(source?.breakdown_dataset),
+    summary: recordsByDataset[source?.summary_dataset] || [],
+    map: combineChartRecords({
+      dataset: source?.map_dataset,
+      extraDatasets: mapExtra.datasets,
+      field: source?.latitude_field,
+      fieldMap: mapExtra.field_maps?.lat,
+      secondaryField: source?.longitude_field,
+      secondaryFieldMap: mapExtra.field_maps?.lng,
+      // Reusing the aggregationField slot to carry the marker-color field's mapping —
+      // it's otherwise unused for a Map, and this avoids adding a 4th slot to
+      // combineChartRecords just for this one caller.
+      aggregationField: source?.map_color_field,
+      aggregationFieldMap: mapExtra.field_maps?.color,
+      tableConditions: mapExtra.table_conditions,
+    }, recordsByDataset, tables),
+    breakdown: combineChartRecords({
+      dataset: source?.breakdown_dataset,
+      extraDatasets: breakdownExtra.datasets,
+      field: source?.group_field,
+      fieldMap: breakdownExtra.field_map,
+      tableConditions: breakdownExtra.table_conditions,
+    }, recordsByDataset, tables),
+    recordsByDataset,
   };
 }
 
@@ -799,10 +1071,12 @@ export function filterTablesByGeneralFilter(tables, filters, values) {
   if (!active.length) return tables;
   return tables.map((t) => {
     const fieldMap = t.general_filter_fields || {};
-    const applicable = active.filter(([label]) => fieldMap[label]);
+    const applicable = active
+      .filter(([label]) => fieldMap[label])
+      .map(([label, val]) => [label, val, buildFieldResolver(t, fieldMap[label], tables)]);
     if (!applicable.length) return t;
-    const rows = (t.rows || []).filter((r) => applicable.every(([label, val]) => {
-      const raw = r.values?.[fieldMap[label]];
+    const rows = (t.rows || []).filter((r) => applicable.every(([label, val, resolve]) => {
+      const raw = resolve(r);
       if (typeByLabel[label] === 'range') {
         if (!raw) return false;
         const time = new Date(raw).getTime();
@@ -851,8 +1125,9 @@ export function generalFilterOptionsFor(tables, filters) {
     (tables || []).forEach((t) => {
       const field = (t.general_filter_fields || {})[label];
       if (!field) return;
+      const resolve = buildFieldResolver(t, field, tables);
       (t.rows || []).forEach((r) => {
-        const v = r.values?.[field];
+        const v = resolve(r);
         if (v === null || v === undefined) return;
         const trimmed = String(v).trim();
         if (!trimmed) return;
@@ -910,11 +1185,19 @@ export function GlobalDateFilterBar({ filters = [], values = {}, onChange, onCle
 
 // Generic (non-Free-Wi-Fi) Summary Card tile computation — shared by the live widget and
 // its style-editor preview so the preview always shows real numbers instead of placeholders.
-export function computeSummaryTiles(records, source, taggedFields) {
+// `combineCtx` (optional: `{ recordsByDataset, genericTables }`) unlocks per-tile extra
+// source tables (ProjectChartSource.summary_extra) — each tile can map its own field
+// across a different set of columns than any other tile, so unlike Map/Breakdown (one
+// shared field, combined once in buildTaggedRecords), the combining has to happen HERE,
+// per tile, via the same combineChartRecords "shim" trick. Omitting combineCtx (every
+// call site that hasn't been updated yet, or genuinely doesn't have it in scope) just
+// falls through to today's single-table behavior — fully backward compatible.
+export function computeSummaryTiles(records, source, taggedFields, combineCtx) {
   // Older saves stored plain field-name strings (sum-only) — normalize those too.
   const tileConfigs = (source?.summary_fields || [])
     .map(t => (typeof t === 'string' ? { field: t, agg: 'sum' } : t))
     .filter(t => t.agg === 'count' || t.field);
+  const summaryExtra = source?.summary_extra;
   // No tiles configured yet → fall back to a single row-count tile so the widget isn't
   // blank before anyone visits "Data Source". Once tiles are configured, the first one IS
   // the lead tile (e.g. a distinct-count "Total Active Locations" rather than the raw row
@@ -924,7 +1207,16 @@ export function computeSummaryTiles(records, source, taggedFields) {
         const fieldDef = (taggedFields || []).find(f => f.name === cfg.field);
         // Each tile can carry its own filter conditions, independent of every other
         // tile's — e.g. one tile counts all rows, another only Province = Bukidnon rows.
-        const rows = filterRecordsByConditions(records, cfg.conditions);
+        const rows = (summaryExtra?.datasets?.length && combineCtx)
+          ? combineChartRecords({
+              dataset: source.summary_dataset,
+              extraDatasets: summaryExtra.datasets,
+              field: cfg.field,
+              fieldMap: cfg.fieldMap,
+              tableConditions: summaryExtra.table_conditions,
+              conditions: cfg.conditions,
+            }, combineCtx.recordsByDataset, combineCtx.genericTables)
+          : filterRecordsByConditions(records, cfg.conditions);
         let value = 0;
         if (cfg.agg === 'count') {
           value = rows.length;
@@ -1164,12 +1456,16 @@ export function chartConfigFromBackend(c) {
     chartType: c.chart_type,
     field: c.field,
     secondaryField: c.secondary_field || '',
+    tertiaryField: c.tertiary_field || '',
     // Only meaningful for chart_type='aggregate-cards' — see ProjectChartConfig's model
     // docstring. Defaulted here (not left undefined) so the "Add Custom Chart" modal's
     // Aggregation select always has a valid value even for charts saved before this
     // existed.
     agg: c.agg || 'sum',
     equals: c.agg_equals || '',
+    // Optional word shown right after a 'percentage' card's own number — see the model
+    // field's docstring.
+    percentageLabel: c.percentage_label || '',
     // Optional, for every chart_type EXCEPT 'aggregate-cards' — see the model field's
     // docstring. Off by default (count rows, the original behavior).
     aggregationEnabled: !!c.aggregation_enabled,
@@ -1185,6 +1481,8 @@ export function chartConfigFromBackend(c) {
     cardTarget: c.card_target || '',
     cardImage: c.card_image || '',
     cardTextAlign: c.card_text_align || 'left',
+    // Optional override for the main number/text's size — see FONT_SIZE_OPTIONS.
+    fontSize: c.font_size || '',
     cardGradientColor: c.card_gradient_color || '#000000',
     cardDescription: c.card_description || '',
     // Any chart_type — hides the public page's title/subtitle header above this chart.
@@ -1197,12 +1495,17 @@ export function chartConfigFromBackend(c) {
     // Per-chart display overrides for `field`'s raw values — see the model field's
     // docstring. Applied in CustomChartRenderer's displayLabel helper.
     valueLabels: c.value_labels || {},
+    // Same idea, for secondary_field's own sub-group values — see displaySecondaryLabel.
+    secondaryValueLabels: c.secondary_value_labels || {},
     // {field, value} pairs, ANDed together, narrowing which rows this chart counts —
     // independent of chart_type, unlike agg/agg_equals. See CustomChartRenderer.
     conditions: c.conditions || [],
     gridSize: c.grid_size || 'full',
     showOnUser: c.show_on_user,
     showAllCategories: c.show_all_categories,
+    // Only meaningful once showAllCategories is on — see pageOf/Pager in
+    // CustomChartRenderer for what this actually skips.
+    disablePagination: !!c.disable_pagination,
     visible: c.visible,
     // Only present on ProjectChartConfig rows (the non-Free-Wi-Fi path) — which of a
     // project's own Datasets tables this chart counts rows from.
@@ -1224,9 +1527,18 @@ export function chartConfigFromBackend(c) {
     colorMode: c.color_mode || 'palette',
     chartColor: c.chart_color || '#0038A8',
     categoryColors: c.category_colors || {},
+    secondaryCategoryColors: c.secondary_category_colors || {},
+    categorySecondaryColors: c.category_secondary_colors || {},
     // Admin-set display order for a non-row-mode chart's categories (see
     // buildChartTallyData) — dragged into place in "Customize labels".
     categoryOrder: c.category_order || [],
+    // Same idea, for secondary_field's own sub-groups within each primary category's
+    // breakdown — dragged into place in "Customize sub-labels".
+    secondaryCategoryOrder: c.secondary_category_order || [],
+    // Same idea, one level deeper still — tertiary_field's own values, no color
+    // counterpart (see the model field's own comment for why).
+    tertiaryValueLabels: c.tertiary_value_labels || {},
+    tertiaryCategoryOrder: c.tertiary_category_order || [],
     // Donut's own center content — see the "Donut center" toggle in the chart builder.
     donutCenterMode: c.donut_center_mode || 'total',
   };
@@ -1240,8 +1552,10 @@ export function chartConfigToBackend(chart) {
     chart_type: chart.chartType,
     field: chart.field,
     secondary_field: chart.secondaryField || '',
+    tertiary_field: chart.tertiaryField || '',
     agg: isCard ? (chart.agg || 'sum') : '',
     agg_equals: isCard ? (chart.equals || '') : '',
+    percentage_label: isCard ? (chart.percentageLabel || '') : '',
     aggregation_enabled: !isCard && !!chart.aggregationEnabled,
     aggregation_field: !isCard ? (chart.aggregationField || '') : '',
     aggregation_type: !isCard ? (chart.aggregationType || 'sum') : '',
@@ -1251,16 +1565,19 @@ export function chartConfigToBackend(chart) {
     card_target: isCard ? (chart.cardTarget || '') : '',
     card_image: isCard ? (chart.cardImage || '') : '',
     card_text_align: isCard ? (chart.cardTextAlign || 'left') : '',
+    font_size: isCard ? (chart.fontSize || '') : '',
     card_gradient_color: isCard ? (chart.cardGradientColor || '#000000') : '',
     card_description: isCard ? (chart.cardDescription || '') : '',
     hide_title: !!chart.hideTitle,
     date_group_by: isDateTrend ? (chart.dateGroupBy || 'month') : '',
     cumulative: isDateTrend ? !!chart.cumulative : false,
     value_labels: Object.fromEntries(Object.entries(chart.valueLabels || {}).filter(([, v]) => v && v.trim())),
+    secondary_value_labels: Object.fromEntries(Object.entries(chart.secondaryValueLabels || {}).filter(([, v]) => v && v.trim())),
     conditions: (chart.conditions || []).filter(cond => cond.field),
     grid_size: chart.gridSize || 'full',
     show_on_user: chart.showOnUser !== false,
     show_all_categories: !!chart.showAllCategories,
+    disable_pagination: !!chart.showAllCategories && !!chart.disablePagination,
     visible: chart.visible !== false,
     ...(chart.dataset != null ? { dataset: chart.dataset } : {}),
     extra_datasets: (chart.extraDatasets || []).filter((id) => id != null && id !== ''),
@@ -1275,7 +1592,12 @@ export function chartConfigToBackend(chart) {
     color_mode: !isCard ? (chart.colorMode || 'palette') : 'palette',
     chart_color: !isCard ? (chart.chartColor || '#0038A8') : '',
     category_colors: !isCard ? (chart.categoryColors || {}) : {},
+    secondary_category_colors: !isCard ? (chart.secondaryCategoryColors || {}) : {},
+    category_secondary_colors: !isCard ? (chart.categorySecondaryColors || {}) : {},
     category_order: !isCard && !chart.rowMode ? (chart.categoryOrder || []) : [],
+    secondary_category_order: !isCard && !chart.rowMode ? (chart.secondaryCategoryOrder || []) : [],
+    tertiary_value_labels: !isCard ? (chart.tertiaryValueLabels || {}) : {},
+    tertiary_category_order: !isCard && !chart.rowMode ? (chart.tertiaryCategoryOrder || []) : [],
     donut_center_mode: chart.chartType === 'donut' ? (chart.donutCenterMode || 'total') : 'total',
   };
 }
@@ -1569,27 +1891,166 @@ function computeAggregateValue(records, field, agg) {
   return records.reduce((s, r) => s + (Number(r[field]) || 0), 0); // sum (default)
 }
 
+
 // KPI tile for chart_type='aggregate-cards' — one big number (e.g. "Total Budget:
 // ₱2.4M"), the chart's own Title (rendered by the enclosing ChartCard/DraggableChart)
 // is the label, so this only needs to render the value itself.
 function AggregateValueCard({ chart, sites }) {
-  const agg = chart.agg || 'sum';
-  const value = agg === 'count_equals'
-    ? sites.filter(r => String(r[chart.field] ?? '').trim().toLowerCase() === String(chart.equals ?? '').trim().toLowerCase()).length
-    : computeAggregateValue(sites, chart.field, agg);
-  const display = agg === 'average'
-    ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
-    : Math.round(value).toLocaleString();
-  const color = chart.cardColor || '#0038A8';
   const design = chart.cardDesign || 'big-number';
-  const Icon = chart.cardIcon ? MARKER_ICON_OPTIONS.find(o => o.name === chart.cardIcon)?.Icon : null;
+  const color = chart.cardColor || '#0038A8';
   // Shared across every design below (not just 'image-bg') — `justify`/`items` reposition
   // the content BLOCK within the card's width, `text` aligns text within that block (only
   // differs from `justify` for multi-line content, e.g. a wrapped title under the number).
+  // Computed before the aggregation below since Text Note needs it too but skips
+  // aggregation entirely — see that branch just below.
   const align = chart.cardTextAlign || 'left';
   const alignJustify = { left: 'justify-start', center: 'justify-center', right: 'justify-end' }[align];
   const alignItems = { left: 'items-start', center: 'items-center', right: 'items-end' }[align];
   const alignText = { left: 'text-left', center: 'text-center', right: 'text-right' }[align];
+  // Optional font-size override (see FONT_SIZE_OPTIONS) for the main number (Card) or main
+  // text (Text mode) — an inline style always overrides a design's own Tailwind text-size
+  // CLASS regardless of specificity, so every design below just spreads this into its
+  // existing `style` (or adds one) rather than needing to swap classes conditionally. `{}`
+  // (not undefined) when unset, so every spread below is unconditional.
+  const fontSizeStyle = chart.fontSize && FONT_SIZE_OPTIONS.some((o) => o.value === chart.fontSize)
+    ? { fontSize: `${FONT_SIZE_OPTIONS.find((o) => o.value === chart.fontSize).px}px`, lineHeight: 1.25 }
+    : {};
+
+  // Text designs (TEXT_DESIGNS) — "no DATA needed, just text": none of them touch
+  // `sites`/`chart.field`/aggregation at all, just show whatever the admin typed directly.
+  // All reuse cardDescription (every other design's small "context under the number" text)
+  // as their own MAIN content instead of adding a dedicated field — there's no number here
+  // for it to sit under, so it can just BE the card, and this needed no backend change at
+  // all. Branches out before the aggregation below, which every other design depends on
+  // and these don't.
+  if (TEXT_DESIGN_IDS.has(design)) {
+    const content = chart.cardDescription;
+    // break-words: a long unbroken run of characters (no spaces to wrap at) would
+    // otherwise overflow past the card's edge and get clipped by its ancestor's
+    // overflow-hidden instead of wrapping onto the next line.
+    const empty = <p className={`text-sm text-gray-400 italic ${alignText}`}>No text set yet — edit this card to add some.</p>;
+
+    if (design === 'text-image-bg') {
+      // Same photo/gradient math as CARD_DESIGNS' own 'image-bg' branch below (see its
+      // comments for why the gradient shape/color work the way they do) — just showing
+      // `content` instead of `display`, since there's no number here at all.
+      const isCentered = chart.cardTextAlign === 'center';
+      const { r, g, b } = hexToRgb(chart.cardGradientColor || '#000000');
+      return (
+        <div className={`relative rounded-xl overflow-hidden min-h-[160px] flex flex-col ${isCentered ? 'justify-center' : 'justify-end'} p-5 ${alignItems} ${alignText}`}
+          style={{
+            backgroundColor: chart.cardImage ? '#111' : color,
+            backgroundImage: chart.cardImage ? `url(${chart.cardImage})` : undefined,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+          }}>
+          {chart.cardImage && (
+            <div className="absolute inset-0" style={{
+              background: isCentered
+                ? `rgba(${r},${g},${b},0.45)`
+                : `linear-gradient(to top, rgba(${r},${g},${b},0.92) 0%, rgba(${r},${g},${b},0.55) 45%, rgba(${r},${g},${b},0) 100%)`,
+            }} />
+          )}
+          <div className="relative">
+            {content ? (
+              <p className={`text-base font-semibold text-white drop-shadow whitespace-pre-line break-words max-w-md ${alignText}`} style={fontSizeStyle}>{content}</p>
+            ) : (
+              <p className={`text-sm text-white/70 italic ${alignText}`}>No text set yet — edit this card to add some.</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (design === 'text-quote') {
+      return (
+        <div className={`flex flex-col py-6 px-6 gap-2 ${alignItems}`}>
+          <Quote size={24} style={{ color }} className="opacity-60 shrink-0" />
+          {content ? (
+            <p className={`text-base italic font-medium text-gray-800 dark:text-gray-200 whitespace-pre-line break-words max-w-md ${alignText}`} style={fontSizeStyle}>{content}</p>
+          ) : empty}
+        </div>
+      );
+    }
+
+    if (design === 'text-banner') {
+      const textColor = contrastTextColor(color);
+      return (
+        <div className={`flex flex-col py-8 px-6 rounded-xl ${alignItems}`} style={{ backgroundColor: color }}>
+          {content ? (
+            <p className={`text-base font-bold whitespace-pre-line break-words max-w-md ${alignText}`} style={{ color: textColor, ...fontSizeStyle }}>{content}</p>
+          ) : (
+            <p className={`text-sm italic opacity-80 ${alignText}`} style={{ color: textColor }}>No text set yet — edit this card to add some.</p>
+          )}
+        </div>
+      );
+    }
+
+    if (design === 'text-callout') {
+      return (
+        <div className={`py-6 pl-4 pr-5 border-l-4 rounded-r-lg ${alignItems}`} style={{ borderColor: color }}>
+          {content ? (
+            <p className={`text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words max-w-md ${alignText}`} style={fontSizeStyle}>{content}</p>
+          ) : empty}
+        </div>
+      );
+    }
+
+    if (design === 'text-spotlight') {
+      return (
+        <div className={`flex flex-col py-10 px-6 ${alignItems}`}>
+          {content ? (
+            <p className={`text-2xl font-black whitespace-pre-line break-words max-w-md ${alignText}`} style={{ color, ...fontSizeStyle }}>{content}</p>
+          ) : empty}
+        </div>
+      );
+    }
+
+    if (design === 'text-highlight') {
+      return (
+        <div className={`flex flex-col py-6 px-6 rounded-xl ${alignItems}`} style={{ backgroundColor: `${color}22` }}>
+          {content ? (
+            <p className={`text-sm font-medium whitespace-pre-line break-words max-w-md ${alignText}`} style={{ color, ...fontSizeStyle }}>{content}</p>
+          ) : empty}
+        </div>
+      );
+    }
+
+    if (design === 'text-announcement') {
+      return (
+        <div className={`flex flex-col gap-2 py-6 px-6 ${alignItems}`}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: color }}>
+            <Megaphone size={16} className="text-white" />
+          </div>
+          {content ? (
+            <p className={`text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words max-w-md ${alignText}`} style={fontSizeStyle}>{content}</p>
+          ) : empty}
+        </div>
+      );
+    }
+
+    // 'text-note' — Plain, the default text design.
+    return (
+      <div className={`flex flex-col py-6 px-6 gap-1.5 ${alignItems}`}>
+        {content ? (
+          <p className={`text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words max-w-md ${alignText}`} style={fontSizeStyle}>{content}</p>
+        ) : empty}
+      </div>
+    );
+  }
+
+  const agg = chart.agg || 'sum';
+  const matchCount = () => sites.filter(r => matchesEqualsValue(r[chart.field], chart.equals)).length;
+  const value = agg === 'count_equals'
+    ? matchCount()
+    : agg === 'percentage'
+    ? (sites.length ? (matchCount() / sites.length) * 100 : 0)
+    : computeAggregateValue(sites, chart.field, agg);
+  const display = agg === 'percentage'
+    ? `${value.toFixed(1)}%${chart.percentageLabel ? ' ' + chart.percentageLabel : ''}`
+    : agg === 'average'
+    ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+    : Math.round(value).toLocaleString();
+  const Icon = chart.cardIcon ? MARKER_ICON_OPTIONS.find(o => o.name === chart.cardIcon)?.Icon : null;
 
   // Optional longer text (chart.cardDescription) — a sentence or two of context, distinct
   // from `title` (short, shown alongside the number on some designs already). Wraps fully,
@@ -1602,7 +2063,7 @@ function AggregateValueCard({ chart, sites }) {
     const textColor = contrastTextColor(color);
     return (
       <div className={`flex flex-col py-8 px-6 rounded-xl ${alignItems}`} style={{ backgroundColor: color }}>
-        <p className="text-5xl font-black" style={{ color: textColor }}>{display}</p>
+        <p className="text-5xl font-black" style={{ color: textColor, ...fontSizeStyle }}>{display}</p>
         {chart.cardDescription && (
           <p className={`text-xs mt-1.5 max-w-xs whitespace-pre-line opacity-80 ${alignText}`} style={{ color: textColor }}>{chart.cardDescription}</p>
         )}
@@ -1614,7 +2075,7 @@ function AggregateValueCard({ chart, sites }) {
     return (
       <div className={`flex flex-col justify-center gap-2 py-8 px-6 ${alignItems}`}>
         {Icon && <Icon size={28} color={color} />}
-        <p className="text-5xl font-black" style={{ color }}>{display}</p>
+        <p className="text-5xl font-black" style={{ color, ...fontSizeStyle }}>{display}</p>
         {chart.cardDescription && <p className={`text-xs text-gray-500 dark:text-gray-400 max-w-xs whitespace-pre-line ${alignText}`}>{chart.cardDescription}</p>}
       </div>
     );
@@ -1625,7 +2086,7 @@ function AggregateValueCard({ chart, sites }) {
     const pct = target > 0 ? Math.min(100, Math.max(0, (value / target) * 100)) : 0;
     return (
       <div className="py-8 px-6">
-        <p className={`text-3xl font-black mb-3 ${alignText}`} style={{ color }}>
+        <p className={`text-3xl font-black mb-3 ${alignText}`} style={{ color, ...fontSizeStyle }}>
           {display}{target > 0 && <span className="text-lg font-medium text-gray-400"> / {Math.round(target).toLocaleString()}</span>}
         </p>
         <div className="h-3 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
@@ -1642,7 +2103,7 @@ function AggregateValueCard({ chart, sites }) {
       <div className={`flex flex-col gap-1.5 py-6 px-4 ${alignItems}`}>
         <div className="flex items-center gap-3">
           {Icon && <Icon size={24} color={color} className="shrink-0" />}
-          <p className="text-4xl font-black shrink-0" style={{ color }}>{display}</p>
+          <p className="text-4xl font-black shrink-0" style={{ color, ...fontSizeStyle }}>{display}</p>
           {chart.title && <p className="text-sm text-gray-500 dark:text-gray-400 min-w-0">{chart.title}</p>}
         </div>
         {chart.cardDescription && <p className={`text-xs text-gray-500 dark:text-gray-400 max-w-xs whitespace-pre-line ${alignText}`}>{chart.cardDescription}</p>}
@@ -1681,7 +2142,7 @@ function AggregateValueCard({ chart, sites }) {
           }} />
         )}
         <div className="relative">
-          <p className="text-4xl font-black text-white drop-shadow">{display}</p>
+          <p className="text-4xl font-black text-white drop-shadow" style={fontSizeStyle}>{display}</p>
           {chart.title && <p className="text-xs font-medium text-white/80 mt-1">{chart.title}</p>}
           {chart.cardDescription && <p className={`text-xs text-white/80 mt-1.5 max-w-xs whitespace-pre-line ${alignText}`}>{chart.cardDescription}</p>}
         </div>
@@ -1692,7 +2153,7 @@ function AggregateValueCard({ chart, sites }) {
   if (design === 'minimal-text') {
     return (
       <div className="py-6 pl-4 pr-5 border-l-4 rounded-r-lg" style={{ borderColor: color }}>
-        <p className={`text-2xl font-semibold text-gray-800 dark:text-gray-100 ${alignText}`}>{display}</p>
+        <p className={`text-2xl font-semibold text-gray-800 dark:text-gray-100 ${alignText}`} style={fontSizeStyle}>{display}</p>
         {chart.title && <p className={`text-xs text-gray-400 mt-1 ${alignText}`}>{chart.title}</p>}
         {chart.cardDescription && <p className={`text-xs text-gray-500 dark:text-gray-400 mt-1.5 max-w-xs whitespace-pre-line ${alignText}`}>{chart.cardDescription}</p>}
       </div>
@@ -1702,7 +2163,7 @@ function AggregateValueCard({ chart, sites }) {
   // 'big-number' — the original plain design.
   return (
     <div className={`flex flex-col py-8 px-6 ${alignItems}`}>
-      <p className="text-5xl font-black" style={{ color }}>{display}</p>
+      <p className="text-5xl font-black" style={{ color, ...fontSizeStyle }}>{display}</p>
       {chart.cardDescription && <p className={`text-xs text-gray-500 dark:text-gray-400 mt-1.5 max-w-xs whitespace-pre-line ${alignText}`}>{chart.cardDescription}</p>}
     </div>
   );
@@ -1798,15 +2259,68 @@ export function exportChartDataCSV(chart, sites) {
     ? (() => {
         const filteredSites = filterRecordsByConditions(sites, chart.conditions);
         const agg = chart.agg || 'sum';
+        const matchCount = () => filteredSites.filter(r => matchesEqualsValue(r[chart.field], chart.equals)).length;
         const value = agg === 'count_equals'
-          ? filteredSites.filter(r => String(r[chart.field] ?? '').trim().toLowerCase() === String(chart.equals ?? '').trim().toLowerCase()).length
+          ? matchCount()
+          : agg === 'percentage'
+          ? (filteredSites.length ? (matchCount() / filteredSites.length) * 100 : 0)
           : computeAggregateValue(filteredSites, chart.field, agg);
-        return [{ [chart.title || 'Value']: value }];
+        return [{ [chart.title || 'Value']: agg === 'percentage' ? `${value.toFixed(1)}%${chart.percentageLabel ? ' ' + chart.percentageLabel : ''}` : value }];
       })()
     : (() => {
         const { sorted, bucketLabels } = buildChartTallyData(chart, sites);
         const displayLabel = (rawLabel) => chart.valueLabels?.[rawLabel] || bucketLabels[rawLabel] || rawLabel;
-        return sorted.map(([label, value]) => ({ Category: displayLabel(label), Value: value }));
+        if (!chart.secondaryField) {
+          return sorted.map(([label, value]) => ({ Category: displayLabel(label), Value: value }));
+        }
+        // Mirrors CustomChartRenderer's getSubGroups/getSubSubGroups exactly (same scoping,
+        // same tallyBy, same saved order), so the export always has the same breakdown the
+        // on-screen sub-rows do — a flat Category/Value pair alone was silently dropping
+        // whatever secondary/tertiary field the chart was actually configured to group by.
+        // One row per (primary, secondary[, tertiary]) combination — repeating the primary
+        // category's own label/total on every one of its sub-rows, the standard "tidy data"
+        // shape spreadsheet pivot tables/filters expect, rather than blanking it out after
+        // the first sub-row the way the on-screen table does purely for visual scanning.
+        const filteredSites = filterRecordsByConditions(sites, chart.conditions);
+        const isAgg = !chart.rowMode && !!chart.aggregationEnabled && !!chart.aggregationField;
+        const aggType = chart.aggregationType || 'sum';
+        const displaySecondaryLabel = (v) => chart.secondaryValueLabels?.[v] || v;
+        const displayTertiaryLabel = (v) => chart.tertiaryValueLabels?.[v] || v;
+        const orderEntries = (entries, orderList) => {
+          if (!orderList || !orderList.length) return entries.sort((a, b) => b[1] - a[1]);
+          const orderIndex = new Map(orderList.map((v, i) => [v, i]));
+          return entries.sort((a, b) => {
+            const ai = orderIndex.has(a[0]) ? orderIndex.get(a[0]) : Infinity;
+            const bi = orderIndex.has(b[0]) ? orderIndex.get(b[0]) : Infinity;
+            return ai !== bi ? ai - bi : b[1] - a[1];
+          });
+        };
+        const hasTertiary = !!chart.tertiaryField;
+        const rows = [];
+        sorted.forEach(([label, value]) => {
+          const scoped = filteredSites.filter((s) => String(s[chart.field] || 'N/A') === String(label));
+          const subData = tallyBy(scoped, (s) => s[chart.secondaryField] || 'N/A', isAgg, chart.aggregationField, aggType);
+          const subEntries = orderEntries(Object.entries(subData), chart.secondaryCategoryOrder);
+          subEntries.forEach(([subLabel, subValue]) => {
+            const base = {
+              Category: displayLabel(label), Value: value,
+              [chart.secondaryField]: displaySecondaryLabel(subLabel),
+              [`${chart.secondaryField} Value`]: subValue,
+            };
+            if (!hasTertiary) { rows.push(base); return; }
+            const subScoped = scoped.filter((s) => String(s[chart.secondaryField] || 'N/A') === String(subLabel));
+            const subSubData = tallyBy(subScoped, (s) => s[chart.tertiaryField] || 'N/A', isAgg, chart.aggregationField, aggType);
+            const subSubEntries = orderEntries(Object.entries(subSubData), chart.tertiaryCategoryOrder);
+            subSubEntries.forEach(([subSubLabel, subSubValue]) => {
+              rows.push({
+                ...base,
+                [chart.tertiaryField]: displayTertiaryLabel(subSubLabel),
+                [`${chart.tertiaryField} Value`]: subSubValue,
+              });
+            });
+          });
+        });
+        return rows;
       })();
   downloadCSV(rows, safeFilename(chart.title, 'csv'));
 }
@@ -1854,12 +2368,26 @@ export function builtinMapCSVRows({ isFreeWifi, records, mapped, tooltipFieldDef
 }
 
 // Row data for a Breakdown widget's CSV export (singleton or extra instance) — one row per
-// group with its row count, matching each accordion header row.
-export function builtinBreakdownCSVRows({ isFreeWifi, byProvince, records, groupField, groupLabel }) {
+// underlying RECORD, with the same columns (and column order) as the accordion's own
+// expanded raw-data table (source.breakdown_fields, or every tagged field when that's
+// empty — see BreakdownAccordion's identical rawDataFieldDefs). A flat group+count summary
+// was hiding the actual site-level data admins open each group to see; that summary is
+// kept only as a fallback for a caller that doesn't have taggedFields to pass in.
+export function builtinBreakdownCSVRows({ isFreeWifi, byProvince, records, groupField, groupLabel, taggedFields, breakdownFields }) {
   if (isFreeWifi) {
     return Object.entries(byProvince || {}).map(([prov, data]) => ({ Province: prov, Sites: data.total_sites || 0 })).sort((a, b) => b.Sites - a.Sites);
   }
-  return computeBreakdownGroups(records, groupField).map(([group, count]) => ({ [groupLabel || 'Group']: group, Rows: count }));
+  const rawDataFieldDefs = (breakdownFields || []).length
+    ? breakdownFields.map(name => (taggedFields || []).find(f => f.name === name)).filter(Boolean)
+    : (taggedFields || []);
+  if (!rawDataFieldDefs.length) {
+    return computeBreakdownGroups(records, groupField).map(([group, count]) => ({ [groupLabel || 'Group']: group, Rows: count }));
+  }
+  return (records || []).map((r) => {
+    const row = {};
+    rawDataFieldDefs.forEach((f) => { row[f.label] = r[f.name] ?? ''; });
+    return row;
+  });
 }
 
 // Screenshots a chart card's rendered DOM as a PNG — generic across every chart/widget
@@ -1960,7 +2488,7 @@ export function CustomChartRenderer({ chart, sites }) {
   // Resets to page 1 whenever the underlying data/config changes so a stale page number
   // from a previous field/filter doesn't leave the view showing nothing.
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [chart.field, chart.dataset, chart.chartType, chart.showAllCategories, chart.conditions, chart.rowMode, chart.rowColumns]);
+  useEffect(() => { setPage(1); }, [chart.field, chart.dataset, chart.chartType, chart.showAllCategories, chart.disablePagination, chart.conditions, chart.rowMode, chart.rowColumns]);
 
   // Optional admin-set filter conditions (see ProjectChartConfig.conditions), applied
   // before any type-specific logic below — the aggregation branch (aggregate-cards) and
@@ -2027,14 +2555,22 @@ export function CustomChartRenderer({ chart, sites }) {
   // Only ever changes what's DISPLAYED — key/onClick/fieldData keying all still use the raw
   // label, so grouping and click-to-filter are unaffected.
   const displayLabel = (rawLabel) => chart.valueLabels?.[rawLabel] || bucketLabels[rawLabel] || rawLabel;
+  // Same idea as displayLabel, for secondary_field's own sub-group values (see
+  // chart.secondaryValueLabels) — no date-bucket fallback, since a secondary field is
+  // never itself a date-trend axis.
+  const displaySecondaryLabel = (rawLabel) => chart.secondaryValueLabels?.[rawLabel] || rawLabel;
+  const displayTertiaryLabel = (rawLabel) => chart.tertiaryValueLabels?.[rawLabel] || rawLabel;
 
   // Paginates a "vertical list" of rows (bar-horizontal, table, list, progress, ...) in
   // batches of `pageSize` once "Show all categories" is checked — with it off, behaves
   // exactly like the old `.slice(0, pageSize)` (unchanged default: top N, no pager shown).
+  // chart.disablePagination skips the paging too, once show-all is on: every category
+  // renders on one continuous list, no Next/Previous clicks needed at all.
   // For pie/donut/half-donut/horizontal-stack, the graphic itself still draws every slice
   // (already readable at a glance); this only paginates the scrolling label list under it.
   const pageOf = (list, pageSize) => {
     if (!chart.showAllCategories) return { items: list.slice(0, pageSize), totalPages: 1, currentPage: 1 };
+    if (chart.disablePagination) return { items: list, totalPages: 1, currentPage: 1 };
     const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
     const currentPage = Math.min(page, totalPages);
     return { items: list.slice((currentPage - 1) * pageSize, currentPage * pageSize), totalPages, currentPage };
@@ -2064,8 +2600,62 @@ export function CustomChartRenderer({ chart, sites }) {
     if (!chart.secondaryField) return null;
     const scoped = filteredSites.filter(s => (s[chart.field] || 'N/A') === primaryLabel);
     const subData = tallyBy(scoped, (s) => s[chart.secondaryField] || 'N/A', isAgg, chart.aggregationField, aggType);
+    // Default is count-descending; chart.secondaryCategoryOrder (set by dragging rows in
+    // "Customize sub-labels") overrides that — same rule buildChartTallyData's own
+    // categoryOrder uses for the primary field: applies uniformly across every primary
+    // category's own sub-breakdown, and a sub-value not yet in a saved order (new data)
+    // ranks last, sorted among themselves by count.
+    if (chart.secondaryCategoryOrder && chart.secondaryCategoryOrder.length) {
+      const orderIndex = new Map(chart.secondaryCategoryOrder.map((v, i) => [v, i]));
+      return Object.entries(subData).sort((a, b) => {
+        const ai = orderIndex.has(a[0]) ? orderIndex.get(a[0]) : Infinity;
+        const bi = orderIndex.has(b[0]) ? orderIndex.get(b[0]) : Infinity;
+        return ai !== bi ? ai - bi : b[1] - a[1];
+      });
+    }
     return Object.entries(subData).sort((a, b) => b[1] - a[1]);
   };
+
+  // Generic third-level tally — scoped to rows matching every {field: value} constraint
+  // given, then tallied by `groupField`. Backs both of the tertiary-field helpers below.
+  // `orderList` (chart.tertiaryCategoryOrder, when the result is grouped BY the tertiary
+  // field) applies the same "saved order first, then count-descending for anything not in
+  // it" rule getSubGroups already uses for secondary — omitted (undefined) wherever the
+  // result is grouped by a DIFFERENT field instead (getSubGroupsFor, grouped by secondary),
+  // which is reordered separately at its own call site to match the shared legend instead.
+  const tallyFilteredBy = (constraints, groupField, orderList) => {
+    if (!groupField) return null;
+    // String(...) on both sides — `v` is always a string (an Object.entries key, from
+    // tallyBy's own grouping below), but `s[f]` can be a number for some rows and a string
+    // for others in real-world data (a column that's usually numeric but has a stray
+    // non-numeric entry, say). tallyBy's grouping doesn't notice that mismatch since object
+    // property access auto-stringifies keys either way, but a raw === here does not — that
+    // silently dropped every row whose value didn't happen to already be a string, which is
+    // why a district's own breakdown could come out all one color while its row's own total
+    // (tallied via getTertiaryRows, unaffected by this) still included the missing rows.
+    const scoped = filteredSites.filter(s => Object.entries(constraints).every(([f, v]) => String(s[f] || 'N/A') === v));
+    const data = tallyBy(scoped, (s) => s[groupField] || 'N/A', isAgg, chart.aggregationField, aggType);
+    if (orderList && orderList.length) {
+      const orderIndex = new Map(orderList.map((v, i) => [v, i]));
+      return Object.entries(data).sort((a, b) => {
+        const ai = orderIndex.has(a[0]) ? orderIndex.get(a[0]) : Infinity;
+        const bi = orderIndex.has(b[0]) ? orderIndex.get(b[0]) : Infinity;
+        return ai !== bi ? ai - bi : b[1] - a[1];
+      });
+    }
+    return Object.entries(data).sort((a, b) => b[1] - a[1]);
+  };
+  // For 'table': one more indented level under each secondary sub-row (Province >
+  // Wi-Fi status > District, say).
+  const getSubSubGroups = (primaryLabel, secondaryLabel) =>
+    tallyFilteredBy({ [chart.field]: primaryLabel, [chart.secondaryField]: secondaryLabel }, chart.tertiaryField, chart.tertiaryCategoryOrder);
+  // For 'bar-100-stacked': the tertiary field becomes an extra ROW level nested under each
+  // primary row instead (Province > District), each with its OWN secondary-field stacked
+  // bar — getTertiaryRows lists the district rows themselves, getSubGroupsFor gets one
+  // district's own Wi-Fi-status segment counts.
+  const getTertiaryRows = (primaryLabel) => tallyFilteredBy({ [chart.field]: primaryLabel }, chart.tertiaryField, chart.tertiaryCategoryOrder);
+  const getSubGroupsFor = (primaryLabel, tertiaryLabel) =>
+    tallyFilteredBy({ [chart.field]: primaryLabel, [chart.tertiaryField]: tertiaryLabel }, chart.secondaryField) || [];
 
   const handleClick = (label) => {
     setSelectedFilter(selectedFilter === label ? null : label);
@@ -2124,7 +2714,7 @@ export function CustomChartRenderer({ chart, sites }) {
                   <Tooltip label={displayLabel(label)} count={count} percent={pct}>
                     <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => handleClick(label)}>
-                      <span className="w-40 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-h-scroll">{displayLabel(label)}</span>
+                      <span className="w-40 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
                       <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                         <div className="h-full rounded-lg flex items-center px-3"
                           style={{ width: `${(count / max) * 100}%`, backgroundColor: colorFor(label, i) }}>
@@ -2148,6 +2738,12 @@ export function CustomChartRenderer({ chart, sites }) {
       // won't shrink past 56px, which is what forces the scroll instead of a squeeze.
       return (
         <div className="overflow-x-auto chart-canvas-scroll">
+          {/* Reserved headroom above the bars — the hover Tooltip renders above its bar
+              (bottom-full), and .chart-canvas-scroll is overflow-y: hidden (needed to kill
+              an unwanted vertical scrollbar, see that class's own comment), so without this
+              the tooltip for any bar gets clipped instead of showing. Same fix Line/Area
+              already needed for its own hover tooltip. */}
+          <div className="h-14" />
           <div className="flex items-end gap-2 h-48">
             {sorted.slice(0, cap(8)).map(([label, count], i) => {
               const pct = ((count / total) * 100).toFixed(1);
@@ -2158,7 +2754,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{count}</span>
                     <div className="w-full rounded-t-lg transition-all"
                       style={{ height: `${(count / max) * 100}%`, backgroundColor: selectedFilter === label ? '#0038A8' : colorFor(label, i), minHeight: '20px' }} />
-                    <span className="text-[10px] text-gray-500 mt-1 chart-h-scroll w-full text-center">{displayLabel(label)}</span>
+                    <span className="text-[10px] text-gray-500 mt-1 chart-label-wrap w-full text-center">{displayLabel(label)}</span>
                   </div>
                 </Tooltip>
               );
@@ -2177,14 +2773,14 @@ export function CustomChartRenderer({ chart, sites }) {
                 <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
                   <div className="cursor-pointer hover:opacity-80" onClick={() => handleClick(label)}>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className="w-32 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-h-scroll">{displayLabel(label)}</span>
+                      <span className="w-32 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
                       <span className="text-xs font-bold">{count}</span>
                     </div>
                     <div className="flex h-6 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                       {subGroups.slice(0, 5).map(([subLabel, subCount], si) => (
                         <div key={subLabel} className="h-full flex items-center justify-center"
-                          style={{ width: `${(subCount / (count || 1)) * 100}%`, backgroundColor: COLORS[si % COLORS.length] }}
-                          title={`${subLabel}: ${subCount}`}>
+                          style={{ width: `${(subCount / (count || 1)) * 100}%`, backgroundColor: chart.secondaryCategoryColors?.[subLabel] || COLORS[si % COLORS.length] }}
+                          title={`${displaySecondaryLabel(subLabel)}: ${subCount}`}>
                           {subCount > 5 && <span className="text-[9px] font-bold text-white">{subCount}</span>}
                         </div>
                       ))}
@@ -2198,11 +2794,170 @@ export function CustomChartRenderer({ chart, sites }) {
         </div>
       );
     }
+    case 'bar-100-stacked': {
+      // Every row's segments are colored/ordered off ONE shared legend built from every
+      // row this chart counts (filteredSites), not just each row's own subGroups — a
+      // segment's color (and POSITION) has to mean the same thing no matter which row it's
+      // in, or the same value visually swaps sides row to row (e.g. "Live" leading in one
+      // row, trailing in the next) purely because each row's own value happened to be
+      // bigger or smaller there — confusing for a chart whose whole point is a shared axis.
+      // Falls back to combined count across every row (not raw first-seen order, which is
+      // arbitrary) when no explicit secondaryCategoryOrder is set, so the default is still
+      // a deliberate, stable ranking rather than incidental row-iteration order.
+      const legendValues = (() => {
+        const totals = {};
+        filteredSites.forEach(s => {
+          const v = s[chart.secondaryField] || 'N/A';
+          totals[v] = (totals[v] || 0) + 1;
+        });
+        const all = Object.keys(totals);
+        if (chart.secondaryCategoryOrder && chart.secondaryCategoryOrder.length) {
+          const orderIndex = new Map(chart.secondaryCategoryOrder.map((v, idx) => [v, idx]));
+          all.sort((a, b) => {
+            const ai = orderIndex.has(a) ? orderIndex.get(a) : Infinity;
+            const bi = orderIndex.has(b) ? orderIndex.get(b) : Infinity;
+            return ai !== bi ? ai - bi : totals[b] - totals[a];
+          });
+        } else {
+          all.sort((a, b) => totals[b] - totals[a]);
+        }
+        return all;
+      })();
+      const segmentColor = (v) => chart.secondaryCategoryColors?.[v] || COLORS[legendValues.indexOf(v) % COLORS.length];
+      // A further override, one primary row deep — chart.categorySecondaryColors lets a
+      // SPECIFIC row (e.g. just Lanao del Norte) recolor its own bar's segments without
+      // touching the shared legend/every other row's bars, which stay on segmentColor as
+      // always. Falls through to segmentColor wherever this row has no override set —
+      // every chart saved before this existed renders identically to before.
+      const segmentColorForRow = (primaryLabel, v) => chart.categorySecondaryColors?.[primaryLabel]?.[v] || segmentColor(v);
+      const { items, totalPages, currentPage } = pageOf(sorted, 8);
+      return (
+        <div>
+          <div className="flex flex-wrap gap-3 mb-3">
+            {legendValues.map((v) => (
+              <div key={v} className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: segmentColor(v) }} />
+                <span className="text-xs text-gray-600 dark:text-gray-400">{displaySecondaryLabel(v)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {items.map(([label, count], i) => {
+              // Reordered (not just re-sorted) to match legendValues exactly, dropping any
+              // value this particular row doesn't have — getSubGroups' own order is only a
+              // per-row count-descending default, which is what caused the inconsistency.
+              const rawSubGroups = getSubGroups(label) || [];
+              const subGroups = legendValues
+                .map((v) => [v, rawSubGroups.find(([sl]) => sl === v)?.[1] || 0])
+                .filter(([, c]) => c > 0);
+              // Optional third level — each district (say) gets its own indented sub-row
+              // underneath the province, with its own mini Wi-Fi-status stacked bar, reusing
+              // the SAME shared legendValues/segmentColor as every other row so a segment
+              // means the same color/position everywhere, not just within one province.
+              const tertiaryRows = chart.tertiaryField ? (getTertiaryRows(label) || []) : [];
+              return (
+                <div key={label}>
+                <div className="flex items-center gap-2">
+                  <span className="w-28 shrink-0 text-xs text-gray-700 dark:text-gray-300 chart-label-wrap cursor-pointer hover:opacity-80"
+                    onClick={() => handleClick(label)} title={displayLabel(label)}>
+                    {displayLabel(label)}
+                  </span>
+                  <div className="relative group/tip flex-1 min-w-0">
+                    <div className="flex h-6 rounded overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                      onClick={() => handleClick(label)}>
+                      {subGroups.map(([subLabel, subCount]) => {
+                        const pct = (subCount / (count || 1)) * 100;
+                        return (
+                          <div key={subLabel} className="h-full flex items-center justify-center"
+                            style={{ width: `${pct}%`, backgroundColor: segmentColorForRow(label, subLabel) }}>
+                            {pct > 8 && <span className="text-[9px] font-bold text-white">{subCount}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Rich hover tooltip — every segment's own count AND share of this row,
+                        plus the row's total. The shared Tooltip component only ever takes a
+                        single label/count/percent, not a per-segment breakdown, so this is
+                        its own popup rather than a reuse — same positioning/styling
+                        conventions (bottom-full, opacity fade, arrow) as Tooltip itself. */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                      <p className="font-bold mb-1">{displayLabel(label)}</p>
+                      {subGroups.map(([subLabel, subCount]) => (
+                        <p key={subLabel} className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: segmentColorForRow(label, subLabel) }} />
+                          {displaySecondaryLabel(subLabel)}: {subCount} ({((subCount / (count || 1)) * 100).toFixed(2)}%)
+                        </p>
+                      ))}
+                      <p className="mt-1 pt-1 border-t border-white/20">Total: {count}</p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+                    </div>
+                  </div>
+                </div>
+                {tertiaryRows.length > 0 && (
+                  <div className="mt-1.5 ml-4 space-y-1.5 border-l-2 border-gray-100 dark:border-gray-800 pl-3">
+                    {tertiaryRows.map(([tLabel, tCount]) => {
+                      const rawTertiarySub = getSubGroupsFor(label, tLabel);
+                      const tertiarySubGroups = legendValues
+                        .map((v) => [v, rawTertiarySub.find(([sl]) => sl === v)?.[1] || 0])
+                        .filter(([, c]) => c > 0);
+                      return (
+                        <div key={tLabel} className="flex items-center gap-2">
+                          <span className="w-24 shrink-0 text-[11px] text-gray-500 dark:text-gray-400 chart-label-wrap" title={displayTertiaryLabel(tLabel)}>
+                            {displayTertiaryLabel(tLabel)}
+                          </span>
+                          <div className="relative group/tip flex-1 min-w-0">
+                            <div className="flex h-4 rounded overflow-hidden bg-gray-50 dark:bg-gray-800/60">
+                              {tertiarySubGroups.map(([subLabel, subCount]) => {
+                                const pct = (subCount / (tCount || 1)) * 100;
+                                return (
+                                  <div key={subLabel} className="h-full flex items-center justify-center"
+                                    style={{ width: `${pct}%`, backgroundColor: segmentColor(subLabel) }}>
+                                    {pct > 12 && <span className="text-[8px] font-bold text-white leading-none">{subCount}</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {/* Same rich hover popup pattern as the main row's own tooltip
+                                above — every segment's count/share plus the row's total. */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                              <p className="font-bold mb-1">{displayTertiaryLabel(tLabel)}</p>
+                              {tertiarySubGroups.map(([subLabel, subCount]) => (
+                                <p key={subLabel} className="flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: segmentColor(subLabel) }} />
+                                  {displaySecondaryLabel(subLabel)}: {subCount} ({((subCount / (tCount || 1)) * 100).toFixed(2)}%)
+                                </p>
+                              ))}
+                              <p className="mt-1 pt-1 border-t border-white/20">Total: {tCount}</p>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="w-28 shrink-0" />
+            <div className="flex-1 min-w-0 flex justify-between text-[10px] text-gray-400">
+              {[0, 20, 40, 60, 80, 100].map((p) => <span key={p}>{p}%</span>)}
+            </div>
+          </div>
+          <Pager totalPages={totalPages} currentPage={currentPage} />
+        </div>
+      );
+    }
     case 'bar-grouped':
       // Horizontal layout — see 'bar-vertical' above for why this scrolls instead of
       // paginating, and why flex-1/min-w sit on Tooltip's own className, not a descendant.
       return (
         <div className="overflow-x-auto chart-canvas-scroll">
+          {/* Reserved headroom above the bars — see 'bar-vertical' above for why this is
+              needed (same overflow-y: hidden + hover Tooltip combination). */}
+          <div className="h-14" />
           <div className="flex items-end gap-4 h-48">
             {sorted.slice(0, cap(6)).map(([label, count], i) => {
               const subGroups = getSubGroups(label) || [];
@@ -2216,7 +2971,7 @@ export function CustomChartRenderer({ chart, sites }) {
                         <div key={_} className="flex-1 rounded-t" style={{ height: `${(subCount / max) * 100}%`, backgroundColor: COLORS[1], minHeight: '10px' }} />
                       ))}
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-1 chart-h-scroll w-full text-center">{displayLabel(label)}</span>
+                    <span className="text-[10px] text-gray-500 mt-1 chart-label-wrap w-full text-center">{displayLabel(label)}</span>
                   </div>
                 </Tooltip>
               );
@@ -2477,10 +3232,16 @@ export function CustomChartRenderer({ chart, sites }) {
             <div className="space-y-1.5">
               {legendItems.map(([[label, count], i]) => (
                 <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
-                  <div className="flex items-center gap-2 cursor-pointer hover:opacity-80" onClick={() => handleClick(label)}>
-                    <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorFor(label, i) }} />
-                    <span className="text-xs text-gray-700 dark:text-gray-300 chart-h-scroll min-w-0">{displayLabel(label)}</span>
-                    <span className="text-xs font-bold ml-auto shrink-0">{count}</span>
+                  {/* Value sits BELOW the label instead of pinned to the right of it — a
+                      long label sharing one row with a pinned count had almost no room
+                      left in a narrow card, forcing mid-word wraps ("Rema-ining"). Stacked,
+                      the label gets the whole row to itself. */}
+                  <div className="flex items-start gap-2 cursor-pointer hover:opacity-80" onClick={() => handleClick(label)}>
+                    <div className="w-2.5 h-2.5 shrink-0 rounded-full mt-1" style={{ backgroundColor: colorFor(label, i) }} />
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-700 dark:text-gray-300">{displayLabel(label)}</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">{count}</p>
+                    </div>
                   </div>
                 </Tooltip>
               ))}
@@ -2546,6 +3307,11 @@ export function CustomChartRenderer({ chart, sites }) {
     }
     case 'table': {
       const { items, totalPages, currentPage } = pageOf(sorted, 8);
+      // Optional secondary-field breakdown — same getSubGroups every other chart type's
+      // sub-breakdown already uses, just rendered as extra indented rows under each main
+      // row instead of stacked bar segments. null (no secondary field set) means every row
+      // renders exactly as before this existed.
+      const hasSecondary = !!chart.secondaryField;
       return (
         <div>
           <div className="overflow-x-auto chart-canvas-scroll">
@@ -2557,15 +3323,42 @@ export function CustomChartRenderer({ chart, sites }) {
                 <th className="text-right py-1.5 px-2 font-semibold text-gray-600">%</th>
               </tr></thead>
               <tbody>
-                {items.map(([label, count], i) => (
-                  <tr key={label} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                    onClick={() => handleClick(label)}>
-                    <td className="py-1.5 px-2 text-gray-400">{(currentPage - 1) * 8 + i + 1}</td>
-                    <td className="py-1.5 px-2 text-gray-700 dark:text-gray-300">{displayLabel(label)}</td>
-                    <td className="py-1.5 px-2 text-right font-bold">{count}</td>
-                    <td className="py-1.5 px-2 text-right text-gray-500">{((count / total) * 100).toFixed(1)}%</td>
-                  </tr>
-                ))}
+                {items.flatMap(([label, count], i) => {
+                  const subGroups = hasSecondary ? getSubGroups(label) : null;
+                  const rows = [
+                    <tr key={label} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                      onClick={() => handleClick(label)}>
+                      <td className="py-1.5 px-2 text-gray-400">{(currentPage - 1) * 8 + i + 1}</td>
+                      <td className="py-1.5 px-2 text-gray-700 dark:text-gray-300 font-medium">{displayLabel(label)}</td>
+                      <td className="py-1.5 px-2 text-right font-bold">{count}</td>
+                      <td className="py-1.5 px-2 text-right text-gray-500">{((count / total) * 100).toFixed(1)}%</td>
+                    </tr>,
+                  ];
+                  (subGroups || []).forEach(([subLabel, subCount]) => {
+                    rows.push(
+                      <tr key={`${label}__${subLabel}`} className="border-t border-gray-50 dark:border-gray-800/50 bg-gray-50/60 dark:bg-gray-800/30">
+                        <td className="py-1 px-2" />
+                        <td className="py-1 px-2 pl-5 text-[11px] text-gray-500 dark:text-gray-400 chart-label-wrap">{displaySecondaryLabel(subLabel)}</td>
+                        <td className="py-1 px-2 text-right text-[11px] text-gray-500">{subCount}</td>
+                        <td className="py-1 px-2 text-right text-[11px] text-gray-400">{((subCount / (count || 1)) * 100).toFixed(1)}%</td>
+                      </tr>
+                    );
+                    // Optional third level — one more indent under this secondary sub-row.
+                    if (chart.tertiaryField) {
+                      (getSubSubGroups(label, subLabel) || []).forEach(([subSubLabel, subSubCount]) => {
+                        rows.push(
+                          <tr key={`${label}__${subLabel}__${subSubLabel}`} className="border-t border-gray-50 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/10">
+                            <td className="py-1 px-2" />
+                            <td className="py-1 px-2 pl-9 text-[10px] text-gray-400 dark:text-gray-500 chart-label-wrap">{displayTertiaryLabel(subSubLabel)}</td>
+                            <td className="py-1 px-2 text-right text-[10px] text-gray-400">{subSubCount}</td>
+                            <td className="py-1 px-2 text-right text-[10px] text-gray-400">{((subSubCount / (subCount || 1)) * 100).toFixed(1)}%</td>
+                          </tr>
+                        );
+                      });
+                    }
+                  });
+                  return rows;
+                })}
               </tbody>
             </table>
           </div>
@@ -2584,7 +3377,7 @@ export function CustomChartRenderer({ chart, sites }) {
                   style={{ backgroundColor: `${colorFor(label, i)}10` }}
                   onClick={() => handleClick(label)}>
                   <p className="text-xl font-black" style={{ color: colorFor(label, i) }}>{count}</p>
-                  <p className="text-[10px] text-gray-500 chart-h-scroll">{displayLabel(label)}</p>
+                  <p className="text-[10px] text-gray-500 chart-label-wrap">{displayLabel(label)}</p>
                 </div>
               </Tooltip>
             ))}
@@ -2606,7 +3399,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     style={{ backgroundColor: colorFor(label, i) }}>
                     {(currentPage - 1) * 10 + i + 1}
                   </div>
-                  <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 chart-h-scroll">{displayLabel(label)}</span>
+                  <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
                   <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0">{count}</span>
                   <span className="text-xs text-gray-400 shrink-0">{((count / total) * 100).toFixed(1)}%</span>
                 </div>
@@ -2626,7 +3419,7 @@ export function CustomChartRenderer({ chart, sites }) {
               <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
                 <div className="cursor-pointer hover:opacity-80" onClick={() => handleClick(label)}>
                   <div className="flex items-center justify-between mb-1 gap-2">
-                    <span className="text-sm text-gray-700 dark:text-gray-300 chart-h-scroll min-w-0">{displayLabel(label)}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 chart-label-wrap min-w-0">{displayLabel(label)}</span>
                     <span className="text-sm font-bold shrink-0">{count} <span className="text-xs text-gray-400">({((count / total) * 100).toFixed(1)}%)</span></span>
                   </div>
                   <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -2674,7 +3467,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     }}
                     onClick={() => handleClick(label)}
                   >
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 chart-h-scroll leading-tight">{displayLabel(label)}</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 chart-label-wrap leading-tight">{displayLabel(label)}</span>
                     <div className="leading-tight">
                       <span className={isShort ? 'text-sm font-bold' : 'text-xl font-black'} style={{ color: colorFor(label, i) }}>{count}</span>
                       <span className="text-[10px] text-gray-400 ml-1">{pct.toFixed(0)}%</span>
@@ -2701,17 +3494,17 @@ export function CustomChartRenderer({ chart, sites }) {
                   <div className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg"
                     onClick={() => handleClick(label)}>
                     <div className="flex items-center justify-between mb-2 gap-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 chart-h-scroll min-w-0">{displayLabel(label)}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 chart-label-wrap min-w-0">{displayLabel(label)}</span>
                       <span className="text-sm font-bold shrink-0">{count}</span>
                     </div>
                     {subGroups.length > 0 ? (
                       <div className="space-y-1">
                         {subGroups.map(([subLabel, subCount]) => (
                           <div key={subLabel} className="flex items-center gap-2">
-                            <span className="w-24 shrink-0 text-[11px] text-gray-500 chart-h-scroll">{subLabel}</span>
+                            <span className="w-24 shrink-0 text-[11px] text-gray-500 chart-label-wrap">{displaySecondaryLabel(subLabel)}</span>
                             <div className="flex-1 h-4 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
                               <div className="h-full rounded flex items-center px-2"
-                                style={{ width: `${(subCount / subMax) * 100}%`, backgroundColor: colorFor(label, i) }}>
+                                style={{ width: `${(subCount / subMax) * 100}%`, backgroundColor: chart.secondaryCategoryColors?.[subLabel] || colorFor(label, i) }}>
                                 <span className="text-[9px] font-bold text-white">{subCount}</span>
                               </div>
                             </div>
@@ -2756,7 +3549,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     style={{ width: `${width}%`, backgroundColor: `${colorFor(label, i)}20`, borderLeft: `4px solid ${colorFor(label, i)}` }}
                     onClick={() => handleClick(label)}
                   >
-                    <span className="text-sm text-gray-700 dark:text-gray-300 chart-h-scroll min-w-0">{displayLabel(label)}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 chart-label-wrap min-w-0">{displayLabel(label)}</span>
                     <span className="text-sm font-bold shrink-0" style={{ color: colorFor(label, i) }}>{count}</span>
                   </div>
                 </Tooltip>
@@ -2806,7 +3599,7 @@ export function CustomChartRenderer({ chart, sites }) {
               <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
                 <div className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 max-w-[140px]" onClick={() => handleClick(label)}>
                   <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorFor(label, i) }} />
-                  <span className="text-xs text-gray-600 dark:text-gray-400 chart-h-scroll min-w-0">{displayLabel(label)}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 chart-label-wrap min-w-0">{displayLabel(label)}</span>
                 </div>
               </Tooltip>
             ))}
@@ -2850,7 +3643,7 @@ export function CustomChartRenderer({ chart, sites }) {
             {legendItems.map(([[label, count], i]) => (
               <div key={label} className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 max-w-[160px]" onClick={() => handleClick(label)}>
                 <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorFor(label, i) }} />
-                <span className="text-xs text-gray-600 dark:text-gray-400 chart-h-scroll min-w-0">{displayLabel(label)} ({count})</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 chart-label-wrap min-w-0">{displayLabel(label)} ({count})</span>
               </div>
             ))}
           </div>
@@ -2863,13 +3656,6 @@ export function CustomChartRenderer({ chart, sites }) {
   }
   };
 
-  // "{top} leads with {pct}%" needs the TRUE highest-count entry, not just sorted[0] —
-  // that used to be the same thing back when display order was always count-descending,
-  // but chart.categoryOrder (see buildChartTallyData) can now put any category first for
-  // DISPLAY purposes while it's still far from actually leading, so this has to search
-  // for the real max explicitly instead of assuming position 0 is it. Line/Area (sorted
-  // chronologically either way) get their own footer below instead of this one.
-  const [topLabel, topCount] = sorted.reduce((max, cur) => (cur[1] > max[1] ? cur : max), sorted[0]);
   const periodWord = { day: 'day', week: 'week', month: 'month', quarter: 'quarter', year: 'year' }[chart.dateGroupBy || 'month'] || 'period';
   const latest = sorted[sorted.length - 1];
   return (
@@ -2879,17 +3665,14 @@ export function CustomChartRenderer({ chart, sites }) {
         {isDateTrend ? (
           <>
             <span className="shrink-0">{sorted.length.toLocaleString()} {periodWord}{sorted.length === 1 ? '' : 's'} · {total.toLocaleString()} total</span>
-            <span className="chart-h-scroll min-w-0">
+            <span className="chart-label-wrap min-w-0">
               {chart.cumulative
                 ? `Reached ${latest[1].toLocaleString()} by ${displayLabel(latest[0])}`
                 : `Latest: ${displayLabel(latest[0])} — ${latest[1].toLocaleString()}`}
             </span>
           </>
         ) : (
-          <>
-            <span className="shrink-0">{sorted.length.toLocaleString()} {sorted.length === 1 ? 'category' : 'categories'} · {total.toLocaleString()} total</span>
-            <span className="chart-h-scroll min-w-0">{displayLabel(topLabel)} leads with {((topCount / total) * 100).toFixed(1)}%</span>
-          </>
+          <span className="shrink-0">{sorted.length.toLocaleString()} {sorted.length === 1 ? 'category' : 'categories'} · {total.toLocaleString()} total</span>
         )}
       </div>
     </div>
@@ -2937,27 +3720,39 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
     <div
       onDragOver={onDragOver}
       onDrop={() => onDrop(index)}
+      className="h-full"
     >
-      <div className={`bg-white dark:bg-gray-800 rounded-xl border overflow-hidden transition-all ${
+      {/* h-full down this whole chain (this div, and the card below) — CSS Grid's own
+          default (align-items: stretch) already makes each grid CELL match its row's
+          tallest sibling, but a plain block element doesn't automatically grow to fill
+          extra space in a taller parent just because the parent got taller; without this,
+          the invisible grid cell stretched fine while the visible card inside it stayed at
+          its own shorter content height, so same-row cards with a longer wrapped title
+          (2 lines vs 1) visibly mismatched even though their grid cells lined up. */}
+      <div className={`h-full flex flex-col bg-white dark:bg-gray-800 rounded-xl border overflow-hidden transition-all ${
         isDragging ? 'border-[#0038A8] scale-[0.98] opacity-60' : 'border-gray-200 dark:border-gray-700'
       }`}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
+        {/* min-h below: keeps every card's header the same height within a row regardless
+            of whether its title wraps to 1 or 2 lines or has a subtitle — line-clamp-2/-1
+            on the text caps the worst case so a longer title can't stretch the header past
+            it and break that uniformity against shorter-titled cards alongside it. */}
+        <div className="flex items-center justify-between gap-2 p-4 border-b border-gray-200 dark:border-gray-700 min-h-[88px]">
+          <div className="flex items-center gap-3 min-w-0">
             <span
               draggable
               onDragStart={(e) => { e.stopPropagation(); onDragStart(index); }}
               onDragEnd={onDragEnd}
-              className="cursor-grab active:cursor-grabbing"
+              className="cursor-grab active:cursor-grabbing shrink-0"
               title="Drag to reorder"
             >
               <GripVertical size={16} className="text-gray-400" />
             </span>
-            <div>
-              <h3 className="font-bold text-gray-900 dark:text-white">{title}</h3>
-              {subtitle && <p className="text-[10px] text-gray-500">{subtitle}</p>}
+            <div className="min-w-0">
+              <h3 className="font-bold text-gray-900 dark:text-white line-clamp-2 break-words">{title}</h3>
+              {subtitle && <p className="text-[10px] text-gray-500 line-clamp-1 break-words">{subtitle}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {onDataSourceChange && (
               <div className="w-36" onClick={(e) => e.stopPropagation()} title="Data source">
                 <Select value={selectValue(DATA_SOURCE_OPTIONS, dataSource)}
@@ -3029,7 +3824,7 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
             )}
           </div>
         </div>
-        <div ref={contentRef} className={noPadding ? '' : 'p-4'}>
+        <div ref={contentRef} className={`flex-1 ${noPadding ? '' : 'p-4'}`}>
           {children}
         </div>
       </div>
@@ -3259,6 +4054,48 @@ function ExtraTablesEditor({ chart, setChart, genericTables, needsSecondary, rec
   );
 }
 
+// Drops key `id` from a {tableId: value} map — used whenever removing an extra source
+// table also needs to clean up whatever was mapped against it (a field-map entry, a
+// table-condition list, ...). Shared by every "Additional source tables" remove handler
+// below (Map/Breakdown/Summary) and by ExtraTablesEditor's own `omit` above (kept
+// separate there rather than switched over, to avoid touching that already-hardened path).
+function omitKey(map, id) {
+  return Object.fromEntries(Object.entries(map || {}).filter(([k]) => Number(k) !== id));
+}
+
+// The add/remove half of "Additional source tables" for the 3 built-in widgets below —
+// same idea as ExtraTablesEditor above (combine another table's rows into this widget's
+// own via combineChartRecords), but simpler and NOT coupled to a single `chart` object,
+// since Map/Breakdown/Summary each keep their own settings as separate useState hooks
+// rather than one chart-shaped blob. `renderExtras(id, table)` supplies whatever
+// each caller needs per extra table (a field-map row or two, a per-table Filter rows) —
+// this component only owns the picker + the add/remove list shell around it.
+function ExtraTableList({ primaryId, extraIds, genericTables, onAdd, onRemove, renderExtras }) {
+  const addableTables = genericTables.filter((t) => t.id !== primaryId && !extraIds.includes(t.id));
+  return (
+    <div className="space-y-2">
+      <Select value={null} onChange={(opt) => opt && onAdd(opt.value)}
+        options={toOptions(addableTables.map((t) => t.id), (id) => genericTables.find((t2) => t2.id === id)?.name)}
+        placeholder="+ Add another source table..." isDisabled={addableTables.length === 0}
+        styles={selectStyles} />
+      {extraIds.map((id) => {
+        const table = genericTables.find((t) => t.id === id);
+        return (
+          <div key={id} className="p-2.5 border border-gray-100 dark:border-gray-800 rounded-lg space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{table?.name || `Table ${id}`}</span>
+              <button type="button" onClick={() => onRemove(id)} className="text-gray-400 hover:text-red-500">
+                <X size={12} />
+              </button>
+            </div>
+            {renderExtras?.(id, table)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Admin UI for one {field, value} AND-list — reused everywhere conditions are editable:
 // each custom chart, each Summary Card tile, and the whole Map/Breakdown widgets. `fieldOptions`
 // is the {value,label} list for the "Column" dropdown; `valuesFor(field)` returns that
@@ -3354,7 +4191,50 @@ function ConditionsEditor({ conditions, onChange, fieldOptions, valuesFor, extra
 // filters. Everything here is a local draft, only written on Save (Cancel discards it) —
 // unlike the marker-icon-style "apply immediately" pickers elsewhere, since adding/removing
 // filters and retagging several tables at once is much easier to get right as one commit.
-function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved }) {
+// Loose text match for auto-detecting a filter's column — lowercased, punctuation/
+// whitespace stripped, so "Site Status", "site_status", and "Site  Status" all collapse to
+// the same key. Deliberately not fuzzy beyond that (no typo-tolerance): a wrong guess that
+// LOOKS right is worse than no guess, since the admin might not notice it's wrong before
+// saving.
+function normalizeFilterLabel(s) {
+  return String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+// Finds a column on `table` whose own label or name matches `filterLabel` — the "same
+// header text" case the admin described as the common one.
+function findDirectFilterMatch(table, filterLabel) {
+  const target = normalizeFilterLabel(filterLabel);
+  if (!target) return '';
+  const match = (table?.fields || []).find(
+    (f) => normalizeFilterLabel(f.label) === target || normalizeFilterLabel(f.name) === target
+  );
+  return match ? match.name : '';
+}
+
+// Auto-detects which column on `table` should feed a filter, for FilterSettingsModal's
+// "just review and save" flow: try a direct name match first (the common case — most
+// tables literally share the same header text), and only if that fails, check whether one
+// of this table's LINKED columns (see the relationship diagram) points at a table that
+// itself has a matching column — using that merged field instead of leaving it blank. A
+// table with neither a matching column of its own NOR a relevant relationship is left
+// alone entirely (no guess), which is the point: two tables that happen to both have a
+// same-named column but no real relationship can still collide by coincidence, but a
+// table with NO match at all and NO relationship genuinely isn't the same kind of data —
+// don't force a filter onto it.
+function autoDetectFilterColumn(table, filterLabel, tablesById) {
+  const direct = findDirectFilterMatch(table, filterLabel);
+  if (direct) return direct;
+  for (const f of table?.fields || []) {
+    if (!f.reference_dataset || !f.reference_column) continue;
+    const targetTable = tablesById[f.reference_dataset];
+    if (!targetTable) continue;
+    const targetMatch = findDirectFilterMatch(targetTable, filterLabel);
+    if (targetMatch) return `${f.name}__${targetMatch}`;
+  }
+  return '';
+}
+
+function FilterSettingsModal({ slug, tables, initialFilters, layoutId = null, onClose, onSaved }) {
   // Each filter is { label, type: 'exact'|'range' } — 'range' is what the old hardcoded
   // From/To date filter now is, just no longer special-cased (admin can name it "Date" or
   // anything else, and add as many range filters as they want, e.g. "Installation Date"
@@ -3369,6 +4249,15 @@ function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved })
     return map;
   });
   const [saving, setSaving] = useState(false);
+  // Which (table, label) cells currently hold an auto-detected guess rather than a value
+  // the admin explicitly picked/confirmed — drives the small "Auto" hint below, cleared
+  // the moment setTableColumn touches that cell for any reason (a different pick, or an
+  // explicit clear-to-blank — both are the admin's own decision from then on).
+  const [autoSuggested, setAutoSuggested] = useState({});
+  // Every (table, label) pair already attempted, successful or not, so a cell the admin
+  // deliberately cleared doesn't get silently re-filled the next time this effect runs.
+  const attemptedRef = useRef(new Set());
+  const tablesById = useMemo(() => Object.fromEntries(tables.map((t) => [t.id, t])), [tables]);
 
   const addFilter = () => setFilters((prev) => [...prev, { label: '', type: 'exact' }]);
   const updateFilter = (i, patch) => setFilters((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
@@ -3389,16 +4278,56 @@ function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved })
   };
   const setTableColumn = (tableId, label, column) => {
     setTableFields((prev) => ({ ...prev, [tableId]: { ...(prev[tableId] || {}), [label]: column } }));
+    setAutoSuggested((prev) => {
+      const key = `${tableId}:${label}`;
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   const cleanFilters = filters
     .map((f) => ({ label: f.label.trim(), type: f.type === 'range' ? 'range' : 'exact' }))
     .filter((f) => f.label);
 
+  // Fills in a suggestion for every (table, label) cell that's still blank AND hasn't
+  // been attempted before — runs as filters are added/renamed, so typing a filter label
+  // that matches most tables' own header text pre-fills the whole column in one go instead
+  // of picking each table one at a time (see autoDetectFilterColumn's own doc for exactly
+  // what counts as a match).
+  useEffect(() => {
+    const additions = {};
+    const newlySuggested = {};
+    cleanFilters.forEach(({ label }) => {
+      tables.forEach((t) => {
+        const key = `${t.id}:${label}`;
+        if (attemptedRef.current.has(key)) return;
+        attemptedRef.current.add(key);
+        if ((tableFields[t.id] || {})[label]) return; // already has a value — leave it
+        const guess = autoDetectFilterColumn(t, label, tablesById);
+        if (!guess) return;
+        if (!additions[t.id]) additions[t.id] = {};
+        additions[t.id][label] = guess;
+        newlySuggested[key] = true;
+      });
+    });
+    if (Object.keys(additions).length === 0) return;
+    setTableFields((prev) => {
+      const next = { ...prev };
+      Object.entries(additions).forEach(([tableId, fieldMap]) => {
+        next[tableId] = { ...(next[tableId] || {}), ...fieldMap };
+      });
+      return next;
+    });
+    setAutoSuggested((prev) => ({ ...prev, ...newlySuggested }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanFilters.map((f) => f.label).join('|'), tables, tablesById]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateProjectChartSource(slug, { general_filters: cleanFilters });
+      await updateProjectChartSource(slug, { general_filters: cleanFilters }, layoutId);
       const labels = cleanFilters.map((f) => f.label);
       await Promise.all(tables.map((t) => {
         const fieldMap = tableFields[t.id] || {};
@@ -3459,7 +4388,16 @@ function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved })
                 <p className="text-xs text-gray-400">Create a table under the Datasets tab first.</p>
               ) : (
                 <div className="space-y-3">
-                  {tables.map((t) => (
+                  {tables.map((t) => {
+                    // Own columns first, then merged "<link>__<their column>" options from
+                    // any related table (see referencedFieldOptionsFor) — the same set the
+                    // auto-detect above can suggest from, so a suggested value always
+                    // resolves to a real, selectable option here instead of showing blank.
+                    const fieldOptions = [
+                      ...toOptions((t.fields || []).map(f => f.name), (n) => (t.fields || []).find(f => f.name === n)?.label),
+                      ...referencedFieldOptionsFor(t, tables),
+                    ];
+                    return (
                     <div key={t.id} className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 truncate" title={t.name}>{t.name}</p>
                       <div className="space-y-1.5">
@@ -3468,16 +4406,23 @@ function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved })
                             <span className="w-20 shrink-0 text-[11px] text-gray-500 dark:text-gray-400 truncate" title={label}>{label}</span>
                             <div className="flex-1">
                               <Select
-                                value={selectValue(toOptions((t.fields || []).map(f => f.name), (n) => (t.fields || []).find(f => f.name === n)?.label), (tableFields[t.id] || {})[label] || '')}
+                                value={fieldOptions.find((o) => o.value === ((tableFields[t.id] || {})[label] || '')) || null}
                                 onChange={(opt) => setTableColumn(t.id, label, opt ? opt.value : '')}
-                                options={toOptions((t.fields || []).map(f => f.name), (n) => (t.fields || []).find(f => f.name === n)?.label)}
+                                options={fieldOptions}
                                 placeholder="None" isClearable styles={selectStyles} />
                             </div>
+                            {autoSuggested[`${t.id}:${label}`] && (
+                              <span title="Auto-detected — review before saving"
+                                className="shrink-0 text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                                Auto
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -3512,7 +4457,54 @@ function FilterSettingsModal({ slug, tables, initialFilters, onClose, onSaved })
 // via `onSave`), so leaving it visible while editing an instance would silently let an
 // admin overwrite the ORIGINAL Map's marker icon instead of this instance's. Every other
 // field stays fully reusable since `initial`/`onSave` are already generic.
-function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = null, instanceMode = false, onSave, onClose, onDatasetUpdated, onChartSourceUpdated }) {
+// A collapsible, consistently-styled wrapper for one logical group of form fields — pulls
+// the same bordered-box-with-a-heading pattern already used throughout DataSourceModal/the
+// Add-Edit Chart modal into one place instead of every section hand-rolling its own
+// spacing, so a long form reads as a scannable list of section headers by default instead
+// of one continuous wall of fields. `collapsible=false` (a section that's the ONLY thing
+// showing, e.g. DataSourceModal's own focusSection view) renders as a plain always-open
+// header — no point offering to collapse the one thing already on screen.
+function FormSection({ title, subtitle, collapsible = true, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen || !collapsible);
+  // overflow-hidden only while CLOSED — it's there to keep the collapsed header's square
+  // corners from poking past the outer rounded-xl border. Left on while open, it would
+  // also clip anything a child pops open below its own bounds (e.g. a react-select
+  // dropdown menu, which isn't portaled and renders inline right under its trigger).
+  return (
+    <div className={`border border-gray-200 dark:border-gray-700 rounded-xl ${open ? '' : 'overflow-hidden'}`}>
+      {collapsible ? (
+        <button type="button" onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="min-w-0">
+            <h4 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h4>
+            {subtitle && <p className="text-[11px] text-gray-400 mt-0.5 truncate">{subtitle}</p>}
+          </div>
+          <ChevronDown size={16} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      ) : (
+        <div className="px-4 py-3">
+          <h4 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h4>
+          {subtitle && <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p>}
+        </div>
+      )}
+      {open && (
+        <div className={`p-4 space-y-4 ${collapsible ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = null, instanceMode = false, layoutId = null, onSave, onClose, onDatasetUpdated, onChartSourceUpdated }) {
+  // Every direct updateProjectChartSource call below edits the SINGLETON widget's own
+  // ProjectChartSource row (marker icon, stats icon, map style, filters, ...) — never
+  // shown at all in instanceMode (see this component's own docstring above) — which is
+  // now one row per (office, layout) instead of strictly one per office, so those calls
+  // need to target whichever layout is currently active on the parent Charts page.
+  // layoutId is null for a project that hasn't adopted layouts, matching
+  // updateProjectChartSource's own default and leaving that project's behavior unchanged.
+  const patchChartSource = (settings) => updateProjectChartSource(slug, settings, layoutId);
   // Custom Map marker icon (one image for every dot, replacing the default colored
   // circle) — file upload and URL both apply immediately, rather than waiting for the
   // modal's own Save button, since they're a separate multipart endpoint / a standalone
@@ -3541,13 +4533,13 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
   // Image and Lucide-icon are mutually exclusive — picking one clears the other (the
   // backend enforces this too; see ProjectChartSourceView.patch), so there's never a
   // question of which one actually shows on the map.
-  const uploadMarkerIconFile = (file) => applyMarkerIconUpdate(() => uploadProjectChartSourceMarkerIcon(slug, file));
-  const setMarkerIconUrl = () => applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon: markerIconUrlInput.trim() }));
-  const clearMarkerIcon = () => applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon: '', marker_icon_name: '' }));
-  const selectMarkerIconName = (name) => applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon_name: name, marker_icon_color: markerIconColor }));
+  const uploadMarkerIconFile = (file) => applyMarkerIconUpdate(() => uploadProjectChartSourceMarkerIcon(slug, file, layoutId));
+  const setMarkerIconUrl = () => applyMarkerIconUpdate(() => patchChartSource({ marker_icon: markerIconUrlInput.trim() }));
+  const clearMarkerIcon = () => applyMarkerIconUpdate(() => patchChartSource({ marker_icon: '', marker_icon_name: '' }));
+  const selectMarkerIconName = (name) => applyMarkerIconUpdate(() => patchChartSource({ marker_icon_name: name, marker_icon_color: markerIconColor }));
   const changeMarkerIconColor = (color) => {
     setMarkerIconColor(color);
-    if (markerIconName) applyMarkerIconUpdate(() => updateProjectChartSource(slug, { marker_icon_color: color }));
+    if (markerIconName) applyMarkerIconUpdate(() => patchChartSource({ marker_icon_color: color }));
   };
 
   // "Visible" stats badge's own icon — same persist-immediately pattern as the marker icon
@@ -3570,10 +4562,10 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
       setSavingStatsIcon(false);
     }
   };
-  const selectStatsIconName = (name) => applyStatsIconUpdate(() => updateProjectChartSource(slug, { stats_icon_name: name === statsIconName ? '' : name, stats_icon_color: statsIconColor }));
+  const selectStatsIconName = (name) => applyStatsIconUpdate(() => patchChartSource({ stats_icon_name: name === statsIconName ? '' : name, stats_icon_color: statsIconColor }));
   const changeStatsIconColor = (color) => {
     setStatsIconColor(color);
-    if (statsIconName) applyStatsIconUpdate(() => updateProjectChartSource(slug, { stats_icon_color: color }));
+    if (statsIconName) applyStatsIconUpdate(() => patchChartSource({ stats_icon_color: color }));
   };
 
   // Which free tile set the map renders — see MAP_TILE_STYLES in FreeWifiMap.tsx.
@@ -3582,7 +4574,7 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
   const selectMapTileStyle = async (value) => {
     setSavingTileStyle(true);
     try {
-      const updated = await updateProjectChartSource(slug, { map_tile_style: value });
+      const updated = await patchChartSource({ map_tile_style: value });
       setMapTileStyle(updated.map_tile_style || 'standard');
       if (onChartSourceUpdated) onChartSourceUpdated(updated);
     } catch (err) {
@@ -3604,6 +4596,19 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
     (initial?.summary_fields || []).map(t => (typeof t === 'string' ? { field: t, agg: 'sum', label: '' } : t))
   );
   const [dragTileIndex, setDragTileIndex] = useState(null);
+  // Additional source tables, unioned into every tile's own row set (see
+  // ProjectChartSource.summary_extra / computeSummaryTiles). Per-tile field mapping lives
+  // on each tile itself (t.fieldMap) since different tiles can map different fields —
+  // only the table list + each extra table's own row filter are shared at the widget level.
+  const [summaryExtraDatasets, setSummaryExtraDatasets] = useState(initial?.summary_extra?.datasets || []);
+  const [summaryTableConditions, setSummaryTableConditions] = useState(initial?.summary_extra?.table_conditions || {});
+  const addSummaryTable = (id) => setSummaryExtraDatasets((prev) => [...prev, id]);
+  const removeSummaryTable = (id) => {
+    setSummaryExtraDatasets((prev) => prev.filter((x) => x !== id));
+    setSummaryTableConditions((prev) => omitKey(prev, id));
+    setSummaryFields((prev) => prev.map((t) => ({ ...t, fieldMap: omitKey(t.fieldMap, id) })));
+  };
+  const setSummaryTableCondition = (id, next) => setSummaryTableConditions((prev) => ({ ...prev, [id]: next }));
 
   // Map
   const [mapDatasetId, setMapDatasetId] = useState(initial?.map_dataset || '');
@@ -3632,6 +4637,22 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
   // Admin-set floor under filterFields (those are visitor-interactive; this always
   // applies) — narrows which rows plot on the Map at all. See ConditionsEditor.
   const [mapConditions, setMapConditions] = useState(initial?.map_conditions || []);
+  // Additional source tables, unioned into the Map's own marker set (see
+  // ProjectChartSource.map_extra) — each extra table can map its own columns onto
+  // latField/lngField/mapColorField (field_maps.lat/lng/color) and gets its own row
+  // filter (table_conditions), independent of mapConditions above (which applies to the
+  // COMBINED set across every table).
+  const [mapExtraDatasets, setMapExtraDatasets] = useState(initial?.map_extra?.datasets || []);
+  const [mapFieldMaps, setMapFieldMaps] = useState(initial?.map_extra?.field_maps || {});
+  const [mapTableConditions, setMapTableConditions] = useState(initial?.map_extra?.table_conditions || {});
+  const addMapTable = (id) => setMapExtraDatasets((prev) => [...prev, id]);
+  const removeMapTable = (id) => {
+    setMapExtraDatasets((prev) => prev.filter((x) => x !== id));
+    setMapFieldMaps((prev) => ({ lat: omitKey(prev.lat, id), lng: omitKey(prev.lng, id), color: omitKey(prev.color, id) }));
+    setMapTableConditions((prev) => omitKey(prev, id));
+  };
+  const setMapFieldMap = (slot, id, col) => setMapFieldMaps((prev) => ({ ...prev, [slot]: { ...(prev[slot] || {}), [id]: col } }));
+  const setMapTableCondition = (id, next) => setMapTableConditions((prev) => ({ ...prev, [id]: next }));
 
   // Breakdown
   const [breakdownDatasetId, setBreakdownDatasetId] = useState(initial?.breakdown_dataset || '');
@@ -3644,6 +4665,20 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
   // Narrows which rows the Breakdown widget groups/counts at all, before group_field
   // splits them. See ConditionsEditor.
   const [breakdownConditions, setBreakdownConditions] = useState(initial?.breakdown_conditions || []);
+  // Additional source tables, unioned into the Breakdown's own grouped set (see
+  // ProjectChartSource.breakdown_extra) — same shape/reasoning as the Map's above, just
+  // one mapped field (groupField) instead of three.
+  const [breakdownExtraDatasets, setBreakdownExtraDatasets] = useState(initial?.breakdown_extra?.datasets || []);
+  const [breakdownFieldMap, setBreakdownFieldMap] = useState(initial?.breakdown_extra?.field_map || {});
+  const [breakdownTableConditions, setBreakdownTableConditions] = useState(initial?.breakdown_extra?.table_conditions || {});
+  const addBreakdownTable = (id) => setBreakdownExtraDatasets((prev) => [...prev, id]);
+  const removeBreakdownTable = (id) => {
+    setBreakdownExtraDatasets((prev) => prev.filter((x) => x !== id));
+    setBreakdownFieldMap((prev) => omitKey(prev, id));
+    setBreakdownTableConditions((prev) => omitKey(prev, id));
+  };
+  const setBreakdownFieldMapEntry = (id, col) => setBreakdownFieldMap((prev) => ({ ...prev, [id]: col }));
+  const setBreakdownTableCondition = (id, next) => setBreakdownTableConditions((prev) => ({ ...prev, [id]: next }));
 
   const [saving, setSaving] = useState(false);
 
@@ -3689,6 +4724,7 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
         summary_hide_title: summaryHideTitle,
         summary_fields: summaryFields.filter(t => t.agg === 'count' || t.field)
           .map(t => ({ ...t, conditions: (t.conditions || []).filter(c => c.field) })),
+        summary_extra: { datasets: summaryExtraDatasets, table_conditions: summaryTableConditions },
         map_dataset: mapDatasetId ? Number(mapDatasetId) : null,
         map_title: mapTitle,
         map_hide_title: mapHideTitle,
@@ -3698,12 +4734,18 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
         map_filter_fields: filterFields,
         map_color_field: mapColorField,
         map_conditions: mapConditions.filter(c => c.field),
+        map_extra: {
+          datasets: mapExtraDatasets,
+          field_maps: { lat: mapFieldMaps.lat, lng: combinedCoords ? mapFieldMaps.lat : mapFieldMaps.lng, color: mapFieldMaps.color },
+          table_conditions: mapTableConditions,
+        },
         breakdown_dataset: breakdownDatasetId ? Number(breakdownDatasetId) : null,
         breakdown_title: breakdownTitle,
         breakdown_hide_title: breakdownHideTitle,
         group_field: groupField,
         breakdown_fields: breakdownFields,
         breakdown_conditions: breakdownConditions.filter(c => c.field),
+        breakdown_extra: { datasets: breakdownExtraDatasets, field_map: breakdownFieldMap, table_conditions: breakdownTableConditions },
       });
     } finally {
       setSaving(false);
@@ -3732,8 +4774,7 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
 
           {/* Summary Card */}
           {(!focusSection || focusSection === 'summary') && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Summary Card</h4>
+          <FormSection title="Summary Card" collapsible={!focusSection}>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
               <input value={summaryTitle} onChange={(e) => setSummaryTitle(e.target.value)} placeholder={builtInTitles.summary}
@@ -3814,6 +4855,23 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                           fieldOptions={toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label)}
                           valuesFor={(field) => toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), field))} />
                       </div>
+                      {/* Per-tile field mapping onto the widget's extra tables below —
+                          only shown once at least one is added, since a tile with no extra
+                          tables has nothing to map. Every OTHER tile can map the SAME
+                          extra tables onto a DIFFERENT one of its own fields. */}
+                      {summaryExtraDatasets.length > 0 && t.field && (
+                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
+                          <p className="text-[10px] text-gray-400">Map "{t.field}" on the additional tables below (optional — defaults to the same column name)</p>
+                          {summaryExtraDatasets.map((id) => {
+                            const extraTable = tables.find((tt) => tt.id === id);
+                            return (
+                              <FieldMapRow key={id} label={extraTable?.name || `Table ${id}`} table={extraTable}
+                                baseFieldLabel={t.field} value={t.fieldMap?.[id]}
+                                onChange={(v) => updateSummaryTile(i, { fieldMap: { ...(t.fieldMap || {}), [id]: v } })} />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                   <button type="button" onClick={addSummaryTile}
@@ -3823,13 +4881,30 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                 </div>
               </div>
             )}
-          </div>
+
+            {summaryTable && (
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                  Additional source tables <span className="text-gray-400">(optional — combine rows from more tables into every tile above)</span>
+                </label>
+                <ExtraTableList primaryId={summaryDatasetId ? Number(summaryDatasetId) : null} extraIds={summaryExtraDatasets}
+                  genericTables={tables} onAdd={addSummaryTable} onRemove={removeSummaryTable}
+                  renderExtras={(id, extraTable) => (
+                    <div className="pt-1">
+                      <p className="text-[10px] text-gray-400 mb-1">Only include this table's rows where...</p>
+                      <ConditionsEditor conditions={summaryTableConditions[id]} onChange={(next) => setSummaryTableCondition(id, next)}
+                        fieldOptions={toOptions((extraTable?.fields || []).map((f) => f.name), (n) => extraTable?.fields?.find((f) => f.name === n)?.label)}
+                        valuesFor={(field) => toOptions(distinctFieldValues((extraTable?.rows || []).map((r) => r.values || {}), field))} />
+                    </div>
+                  )} />
+              </div>
+            )}
+          </FormSection>
           )}
 
           {/* Map */}
           {(!focusSection || focusSection === 'map') && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Map</h4>
+          <FormSection title="Map" collapsible={!focusSection}>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
               <input value={mapTitle} onChange={(e) => setMapTitle(e.target.value)} placeholder={builtInTitles.map}
@@ -4058,15 +5133,42 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                     fieldOptions={toOptions(mapTableFields.map(f => f.name), (n) => mapTableFields.find(f => f.name === n)?.label)}
                     valuesFor={(field) => toOptions(distinctFieldValues((mapTable?.rows || []).map(r => r.values || {}), field))} />
                 </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Additional source tables <span className="text-gray-400">(optional — combine markers from more tables onto this map)</span>
+                  </label>
+                  <ExtraTableList primaryId={mapDatasetId ? Number(mapDatasetId) : null} extraIds={mapExtraDatasets}
+                    genericTables={tables} onAdd={addMapTable} onRemove={removeMapTable}
+                    renderExtras={(id, extraTable) => (
+                      <>
+                        <FieldMapRow label="Latitude" table={extraTable} baseFieldLabel={latField || 'Latitude'}
+                          value={mapFieldMaps.lat?.[id]} onChange={(v) => setMapFieldMap('lat', id, v)} />
+                        {!combinedCoords && (
+                          <FieldMapRow label="Longitude" table={extraTable} baseFieldLabel={lngField || 'Longitude'}
+                            value={mapFieldMaps.lng?.[id]} onChange={(v) => setMapFieldMap('lng', id, v)} />
+                        )}
+                        {mapColorField && (
+                          <FieldMapRow label="Color field" table={extraTable} baseFieldLabel={mapColorField}
+                            value={mapFieldMaps.color?.[id]} onChange={(v) => setMapFieldMap('color', id, v)} />
+                        )}
+                        <div className="pt-1">
+                          <p className="text-[10px] text-gray-400 mb-1">Only include this table's rows where...</p>
+                          <ConditionsEditor conditions={mapTableConditions[id]} onChange={(next) => setMapTableCondition(id, next)}
+                            fieldOptions={toOptions((extraTable?.fields || []).map((f) => f.name), (n) => extraTable?.fields?.find((f) => f.name === n)?.label)}
+                            valuesFor={(field) => toOptions(distinctFieldValues((extraTable?.rows || []).map((r) => r.values || {}), field))} />
+                        </div>
+                      </>
+                    )} />
+                </div>
               </>
             )}
-          </div>
+          </FormSection>
           )}
 
           {/* Breakdown */}
           {(!focusSection || focusSection === 'breakdown') && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Breakdown</h4>
+          <FormSection title="Breakdown" collapsible={!focusSection}>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
               <input value={breakdownTitle} onChange={(e) => setBreakdownTitle(e.target.value)} placeholder={builtInTitles['province-breakdown']}
@@ -4107,6 +5209,26 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
 
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                    Additional source tables <span className="text-gray-400">(optional — combine rows from more tables into this breakdown)</span>
+                  </label>
+                  <ExtraTableList primaryId={breakdownDatasetId ? Number(breakdownDatasetId) : null} extraIds={breakdownExtraDatasets}
+                    genericTables={tables} onAdd={addBreakdownTable} onRemove={removeBreakdownTable}
+                    renderExtras={(id, extraTable) => (
+                      <>
+                        <FieldMapRow label="Group field" table={extraTable} baseFieldLabel={groupField || 'Group field'}
+                          value={breakdownFieldMap[id]} onChange={(v) => setBreakdownFieldMapEntry(id, v)} />
+                        <div className="pt-1">
+                          <p className="text-[10px] text-gray-400 mb-1">Only include this table's rows where...</p>
+                          <ConditionsEditor conditions={breakdownTableConditions[id]} onChange={(next) => setBreakdownTableCondition(id, next)}
+                            fieldOptions={toOptions((extraTable?.fields || []).map((f) => f.name), (n) => extraTable?.fields?.find((f) => f.name === n)?.label)}
+                            valuesFor={(field) => toOptions(distinctFieldValues((extraTable?.rows || []).map((r) => r.values || {}), field))} />
+                        </div>
+                      </>
+                    )} />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
                     Raw-data columns <span className="text-gray-400">(shown when a group row is clicked)</span>
                   </label>
                   {breakdownTableFields.length === 0 ? (
@@ -4129,7 +5251,7 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                 </div>
               </>
             )}
-          </div>
+          </FormSection>
           )}
 
           <div className="flex gap-2">
@@ -4169,6 +5291,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   const breakdownSites = datasets.breakdown || [];
   const [loading, setLoading] = useState(true);
   const [dragIndex, setDragIndex] = useState(null);
+  // See useEqualHeightGrid — only same-kind cards sharing a row get matched to the same
+  // height (e.g. two donut charts side by side), not every card in the row regardless of
+  // type.
+  const chartsGridRef = useRef(null);
   // "Show" / "Hidden" tab — switches the whole content area, same pattern as Awards/
   // Accomplishments/Highlights. The Show grid still maps over the FULL allCharts array
   // (see below) so drag-reorder stays index-coupled to true positions (handleDrop splices
@@ -4196,6 +5322,12 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   const [officeId, setOfficeId] = useState(null);
   const [genericTables, setGenericTables] = useState([]);
   const [chartSource, setChartSource] = useState(null);
+  // Chart Layouts (see ProjectChartLayout) — named, independently-scoped "pages" within
+  // this project's Charts tab. Empty `layouts` + `activeLayoutId === null` is a project
+  // that hasn't opted in yet, behaving exactly as it always has. `activeLayoutId` scopes
+  // every chart/widget/chart-source fetch and create below — see loadLayoutData.
+  const [layouts, setLayouts] = useState([]);
+  const [activeLayoutId, setActiveLayoutId] = useState(null);
   // false = closed; 'all' = every widget (the "Data Source" button); 'summary'/'map'/
   // 'breakdown' = just that one built-in chart's own settings (its "Edit" button) — see
   // DataSourceModal's focusSection prop.
@@ -4236,6 +5368,11 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     setDatasets(buildTaggedRecords(filteredGenericTables, chartSource));
   }, [isFreeWifi, filteredGenericTables, chartSource]);
 
+  // Unlocks per-tile "Additional source tables" combining in computeSummaryTiles (see its
+  // own doc) — the same recordsByDataset/genericTables pair custom charts already pass to
+  // combineChartRecords elsewhere in this file, reused here instead of a second copy.
+  const summaryCombineCtx = { recordsByDataset, genericTables };
+
   // Field list for the custom-chart builder: Free Wi-Fi's fixed list, or whichever table
   // a given chart is pointed at (each project can have several Datasets tables, unlike
   // Free Wi-Fi where custom charts implicitly always read Live Sites).
@@ -4257,24 +5394,29 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     } catch {}
     return sanitizeCharts([]);
   });
+  // Only the id/gridSize list, not the whole allCharts array — a chart's own content
+  // changing (e.g. editing its title) shouldn't re-run the row/kind measurement pass,
+  // only adding/removing/reordering/resizing a card should (see useEqualHeightGrid).
+  const equalHeightKey = allCharts.filter((c) => c.visible).map((c) => `${c.id}:${c.gridSize || ''}`).join('|');
+  useEqualHeightGrid(chartsGridRef, equalHeightKey);
 
   const [showAddChart, setShowAddChart] = useState(false);
   const [editingChart, setEditingChart] = useState(null);
   const [savingChart, setSavingChart] = useState(false);
   const [newChart, setNewChart] = useState({
-    title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal',
+    title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', tertiaryField: '', chartType: 'bar-horizontal',
     agg: 'sum', equals: '',
     aggregationEnabled: false, aggregationField: '', aggregationType: 'sum',
     cardDesign: 'big-number', cardIcon: '', cardColor: '#0038A8', cardTarget: '', cardImage: '', cardTextAlign: 'left',
     cardGradientColor: '#000000', cardDescription: '',
     hideTitle: false,
-    dateGroupBy: 'month', cumulative: false, valueLabels: {},
+    dateGroupBy: 'month', cumulative: false, valueLabels: {}, secondaryValueLabels: {}, tertiaryValueLabels: {},
     conditions: [],
-    gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '',
+    gridSize: 'full', showOnUser: true, showAllCategories: false, disablePagination: false, dataset: '',
     extraDatasets: [], fieldMap: {}, secondaryFieldMap: {}, aggregationFieldMap: {}, tableConditions: {},
     rowMode: false, rowColumns: [],
-    colorMode: 'palette', chartColor: '#0038A8', categoryColors: {},
-    categoryOrder: [], donutCenterMode: 'total',
+    colorMode: 'palette', chartColor: '#0038A8', categoryColors: {}, secondaryCategoryColors: {}, categorySecondaryColors: {},
+    categoryOrder: [], secondaryCategoryOrder: [], tertiaryCategoryOrder: [], donutCenterMode: 'total',
   });
   // 'image-bg' card design's background photo — URL mode just writes straight into
   // newChart.cardImage like any other text field; Upload mode holds the picked File here
@@ -4288,6 +5430,16 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // Summary Card tiles (see DataSourceModal's dragTileIndex), just scoped to this modal's
   // own newChart.categoryOrder instead of a tile list.
   const [dragLabelIndex, setDragLabelIndex] = useState(null);
+  // Same drag-reorder pattern, own state — "Customize sub-labels" (secondary field) is a
+  // separate list from "Customize labels" (primary field) above, so a drag in one must
+  // never be tracked by the other's index.
+  const [dragSecondaryLabelIndex, setDragSecondaryLabelIndex] = useState(null);
+  // Same idea, one level deeper — "Customize sub-labels" for the tertiary field.
+  const [dragTertiaryLabelIndex, setDragTertiaryLabelIndex] = useState(null);
+  // Which ONE primary category's "customize this row's own colors" panel (bar-100-stacked
+  // only, see categorySecondaryColors) is currently expanded in "Customize labels" — at
+  // most one open at a time, same as an accordion, so the list doesn't get overwhelming.
+  const [expandedCategoryColorRow, setExpandedCategoryColorRow] = useState(null);
   // Recomputed only when the picked file actually changes (not every render) — calling
   // createObjectURL on every render would mint a new, never-revoked blob URL each time.
   const cardImagePreviewUrl = useMemo(
@@ -4300,6 +5452,43 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   const [summaryStyle, setSummaryStyle] = useState(DEFAULT_SUMMARY_STYLE);
   const [showSummaryStyle, setShowSummaryStyle] = useState(false);
   const [savingSummaryStyle, setSavingSummaryStyle] = useState(false);
+
+  // Fetches everything scoped to ONE layout (chart source/configs/widgets) and applies it
+  // — shared by the initial load below and by switching tabs in the layout switcher.
+  // `tables` defaults to the current genericTables state, but the initial load passes the
+  // just-fetched value explicitly instead, since setGenericTables' own update wouldn't be
+  // visible yet within that same effect's closure.
+  const loadLayoutData = (layoutId, tables = genericTables) => {
+    setLoading(true);
+    return Promise.all([
+      getProjectChartSource(slug, layoutId),
+      getProjectChartConfigs(slug, layoutId),
+      getProjectBuiltinWidgets(slug, layoutId),
+    ])
+      .then(([source, configs, widgets]) => {
+        setChartSource(source);
+        setDatasets(buildTaggedRecords(tables, source));
+        setAllCharts(sanitizeCharts(
+          [...configs.map(chartConfigFromBackend), ...widgets.map(builtinWidgetFromBackend)],
+          source.chart_order, source.hidden_builtins || []
+        ));
+        setSummaryStyle({
+          colorFrom: source.color_from || '#0038A8',
+          colorTo: source.color_to || '#0055f1',
+          orientation: source.orientation || 'row',
+          accentColor: source.accent_color || '#FCD116',
+        });
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  // Switches which layout is being viewed/edited (a LayoutTabs onChange) — re-fetches
+  // only the layout-scoped data, not office id/tables/the layout list itself.
+  const switchLayout = (layoutId) => {
+    setActiveLayoutId(layoutId);
+    loadLayoutData(layoutId);
+  };
 
   useEffect(() => {
     if (isFreeWifi) {
@@ -4318,25 +5507,18 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         .finally(() => setLoading(false));
       return;
     }
-    Promise.all([
-      getProjectOfficeId(slug), getProjectDatasets(slug), getProjectChartSource(slug), getProjectChartConfigs(slug),
-      getProjectBuiltinWidgets(slug),
-    ])
-      .then(([id, tables, source, configs, widgets]) => {
+    Promise.all([getProjectOfficeId(slug), getProjectDatasets(slug), getProjectChartLayouts(slug)])
+      .then(([id, tables, fetchedLayouts]) => {
         setOfficeId(id);
         setGenericTables(tables);
-        setChartSource(source);
-        setDatasets(buildTaggedRecords(tables, source));
-        setAllCharts(sanitizeCharts(
-          [...configs.map(chartConfigFromBackend), ...widgets.map(builtinWidgetFromBackend)],
-          source.chart_order, source.hidden_builtins || []
-        ));
-        setSummaryStyle({
-          colorFrom: source.color_from || '#0038A8',
-          colorTo: source.color_to || '#0055f1',
-          orientation: source.orientation || 'row',
-          accentColor: source.accent_color || '#FCD116',
-        });
+        setLayouts(fetchedLayouts);
+        // A project that has adopted layouts always shows SOME layout, defaulting to the
+        // first (typically "Default", the auto-created one holding pre-adoption content) —
+        // never the now-empty layout=NULL slot. A project with none yet keeps null,
+        // preserving today's behavior exactly.
+        const resolvedLayoutId = fetchedLayouts.length ? fetchedLayouts[0].id : null;
+        setActiveLayoutId(resolvedLayoutId);
+        return loadLayoutData(resolvedLayoutId, tables);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -4445,7 +5627,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       const isBackedChart = editingChart && typeof editingChart.id === 'number';
       const payload = {
         ...chartConfigToBackend(newChart),
-        ...(isFreeWifi ? {} : { dataset: Number(newChart.dataset), ...(isBackedChart ? {} : { office: officeId, order: allCharts.length }) }),
+        ...(isFreeWifi ? {} : { dataset: Number(newChart.dataset), ...(isBackedChart ? {} : { office: officeId, layout: activeLayoutId, order: allCharts.length }) }),
       };
       let saved = isFreeWifi
         ? (isBackedChart ? await updateFreeWifiChartConfig(editingChart.id, payload) : await createFreeWifiChartConfig(payload))
@@ -4465,7 +5647,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       }
       setShowAddChart(false);
       setEditingChart(null);
-      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', chartType: 'bar-horizontal', agg: 'sum', equals: '', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '' });
+      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', tertiaryField: '', chartType: 'bar-horizontal', agg: 'sum', equals: '', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '' });
       setCardImageMode('url');
       setPendingCardImageFile(null);
     } catch (err) {
@@ -4506,7 +5688,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       // reload since nothing was ever persisted.
       const current = chartSource?.hidden_builtins || [];
       const next = willBeVisible ? current.filter(x => x !== id) : [...new Set([...current, id])];
-      updateProjectChartSource(slug, { hidden_builtins: next }).then(setChartSource).catch(console.error);
+      updateProjectChartSource(slug, { hidden_builtins: next }, activeLayoutId).then(setChartSource).catch(console.error);
     }
   };
 
@@ -4540,7 +5722,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         await updateProjectChartSource(slug, {
           color_from: draft.colorFrom, color_to: draft.colorTo,
           orientation: draft.orientation, accent_color: draft.accentColor,
-        });
+        }, activeLayoutId);
       }
       setSummaryStyle(draft);
       setShowSummaryStyle(false);
@@ -4569,7 +5751,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         const customOrder = arr.filter(c => c.type === 'custom').map((c, i) => ({ id: c.id, order: i }));
         if (customOrder.length) reorderProjectChartConfigs(customOrder).catch(console.error);
         const chartOrder = arr.map(c => c.id);
-        updateProjectChartSource(slug, { chart_order: chartOrder })
+        updateProjectChartSource(slug, { chart_order: chartOrder }, activeLayoutId)
           .then(saved => setChartSource(saved))
           .catch(console.error);
       }
@@ -4691,7 +5873,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     const source = chartSource || {};
     if (chartId === 'summary') {
       const taggedFields = genericTables.find(t => t.id === source.summary_dataset)?.fields || [];
-      return builtinSummaryCSVRows({ isFreeWifi: false, tiles: computeSummaryTiles(summarySites, source, taggedFields) });
+      return builtinSummaryCSVRows({ isFreeWifi: false, tiles: computeSummaryTiles(summarySites, source, taggedFields, summaryCombineCtx) });
     }
     if (chartId === 'map') {
       const taggedFields = genericTables.find(t => t.id === source.map_dataset)?.fields || [];
@@ -4702,7 +5884,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       const records = filterRecordsByConditions(breakdownSites, source.breakdown_conditions);
       const taggedFields = genericTables.find(t => t.id === source.breakdown_dataset)?.fields || [];
       const groupLabel = taggedFields.find(f => f.name === source.group_field)?.label || source.group_field;
-      return builtinBreakdownCSVRows({ isFreeWifi: false, records, groupField: source.group_field, groupLabel });
+      return builtinBreakdownCSVRows({ isFreeWifi: false, records, groupField: source.group_field, groupLabel, taggedFields, breakdownFields: source.breakdown_fields });
     }
     return [];
   };
@@ -4716,7 +5898,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       case 'summary': {
         const records = summarySites;
         const taggedFields = genericTables.find(t => t.id === source.summary_dataset)?.fields || [];
-        const tiles = computeSummaryTiles(records, source, taggedFields);
+        const tiles = computeSummaryTiles(records, source, taggedFields, summaryCombineCtx);
         return (
           <div className="rounded-2xl p-8 text-white -m-4" style={{ background: `linear-gradient(135deg, ${summaryStyle.colorFrom}, ${summaryStyle.colorTo})` }}>
             <div className="flex items-center gap-2 mb-6">
@@ -4939,7 +6121,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     if (chart.widgetType === 'province-breakdown') {
       const records = filterRecordsByConditions(baseRecords, settings.breakdown_conditions);
       const groupLabel = taggedFields.find(f => f.name === settings.group_field)?.label || settings.group_field;
-      return builtinBreakdownCSVRows({ isFreeWifi: false, records, groupField: settings.group_field, groupLabel });
+      return builtinBreakdownCSVRows({ isFreeWifi: false, records, groupField: settings.group_field, groupLabel, taggedFields, breakdownFields: settings.breakdown_fields });
     }
     return [];
   };
@@ -5006,11 +6188,58 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // other useState calls, above the `if (loading) return` below — declaring hooks after
   // an early return means they'd only run once loading finished, changing the hook count
   // between renders and tripping React's Rules of Hooks.)
+  // Layout management (see ProjectChartLayout) — creating the office's FIRST layout is
+  // what triggers the backend's one-time "fold everything existing into a Default layout"
+  // migration (see ProjectChartLayoutViewSet.create), so a full reload of layouts +
+  // layout-scoped data is needed here specifically (not just appending the new one to
+  // local state), since the office's whole layout-less/legacy content just moved.
+  const addLayout = async () => {
+    const name = window.prompt(layouts.length ? 'Name for the new layout:' : 'This project has no layouts yet — name your first one:');
+    if (!name || !name.trim()) return;
+    try {
+      const created = await createProjectChartLayout({ office: officeId, name: name.trim() });
+      const refreshed = await getProjectChartLayouts(slug);
+      setLayouts(refreshed);
+      setActiveLayoutId(created.id);
+      loadLayoutData(created.id);
+    } catch {
+      alert('Failed to create the layout.');
+    }
+  };
+  const renameActiveLayout = async () => {
+    const current = layouts.find((l) => l.id === activeLayoutId);
+    if (!current) return;
+    const name = window.prompt('Rename this layout:', current.name);
+    if (!name || !name.trim() || name.trim() === current.name) return;
+    try {
+      const updated = await updateProjectChartLayout(current.id, { name: name.trim() });
+      setLayouts((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+    } catch {
+      alert('Failed to rename the layout.');
+    }
+  };
+  const deleteActiveLayout = async () => {
+    const current = layouts.find((l) => l.id === activeLayoutId);
+    if (!current) return;
+    if (layouts.length <= 1) return alert("Can't delete a project's last layout.");
+    if (!window.confirm(`Delete "${current.name}" and everything on it? This can't be undone.`)) return;
+    try {
+      await deleteProjectChartLayout(current.id);
+      const refreshed = await getProjectChartLayouts(slug);
+      setLayouts(refreshed);
+      const nextId = refreshed.length ? refreshed[0].id : null;
+      setActiveLayoutId(nextId);
+      loadLayoutData(nextId);
+    } catch {
+      alert('Failed to delete the layout.');
+    }
+  };
+
   const addBuiltinWidget = async (widgetType) => {
     setAddingWidgetType(false);
     try {
       const created = await createProjectBuiltinWidget({
-        office: officeId, widget_type: widgetType, settings: {}, order: allCharts.length,
+        office: officeId, layout: activeLayoutId, widget_type: widgetType, settings: {}, order: allCharts.length,
       });
       const chart = builtinWidgetFromBackend(created);
       setAllCharts(prev => [...prev, chart]);
@@ -5038,6 +6267,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // value, CARD_DESIGNS) vs "Chart" mode (a category breakdown, CHART_TYPES) — see the
   // Chart/Card toggle in that modal below.
   const isCardMode = newChart.chartType === 'aggregate-cards';
+  // The one Card design with no data binding at all — see CARD_DESIGNS' own comment and
+  // AggregateValueCard's TEXT_DESIGN_IDS branch. Gates out every data-field/aggregation
+  // control below, replacing them with the Text Design grid + a plain textarea.
+  const isTextNoteCard = isCardMode && TEXT_DESIGN_IDS.has(newChart.cardDesign);
 
   // Whether the filter bar shows on the PUBLIC Charts page (ProjectChartSource.
   // show_filter_bar — undefined on charts saved before this existed, so `!== false` keeps
@@ -5045,7 +6278,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // it's also how the admin filters what THEY see while building/testing charts here.
   const dateFilterVisible = chartSource?.show_filter_bar !== false;
   const toggleDateFilterVisibility = () => {
-    updateProjectChartSource(slug, { show_filter_bar: !dateFilterVisible })
+    updateProjectChartSource(slug, { show_filter_bar: !dateFilterVisible }, activeLayoutId)
       .then(setChartSource)
       .catch(console.error);
   };
@@ -5116,6 +6349,41 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         </div>
       </div>
 
+      {/* Chart Layouts (see ProjectChartLayout) — opt-in: a project with none of these
+          (layouts.length === 0) shows just the "+ Add Layout" entry point below and is
+          otherwise unaffected, exactly as it always has been. The moment an admin creates
+          one, this becomes a real tab bar with a management control for the active tab. */}
+      {!isFreeWifi && (
+        <div className="flex items-center justify-between gap-3">
+          <LayoutTabs
+            tabs={layouts.map((l) => ({ id: l.id, label: l.name }))}
+            activeId={activeLayoutId}
+            onChange={switchLayout}
+            className="flex-1 min-w-0"
+          />
+          <div className="flex items-center gap-1 shrink-0">
+            {activeLayoutId != null && (
+              <>
+                <button type="button" onClick={renameActiveLayout} title="Rename this layout"
+                  className="p-1.5 text-gray-400 hover:text-[#0038A8] transition-colors">
+                  <Edit2 size={14} />
+                </button>
+                {layouts.length > 1 && (
+                  <button type="button" onClick={deleteActiveLayout} title="Delete this layout"
+                    className="p-1.5 text-red-400 hover:text-red-600 transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </>
+            )}
+            <button type="button" onClick={addLayout}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:border-[#0038A8] whitespace-nowrap">
+              <Plus size={13} /> Add Layout
+            </button>
+          </div>
+        </div>
+      )}
+
       {!isFreeWifi && (
         <div className="flex items-center gap-2">
           <div className="flex-1">
@@ -5148,9 +6416,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
           slug={slug}
           tables={genericTables}
           initialFilters={generalFilterLabels}
+          layoutId={activeLayoutId}
           onClose={() => setShowFilterSettings(false)}
           onSaved={async () => {
-            const [source, ds] = await Promise.all([getProjectChartSource(slug), getProjectDatasets(slug)]);
+            const [source, ds] = await Promise.all([getProjectChartSource(slug, activeLayoutId), getProjectDatasets(slug)]);
             setChartSource(source);
             setGenericTables(ds);
             setShowFilterSettings(false);
@@ -5165,12 +6434,13 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
           initial={chartSource}
           builtInTitles={builtInTitles}
           focusSection={dataSourceModalSection === 'all' ? null : dataSourceModalSection}
+          layoutId={activeLayoutId}
           onClose={() => setDataSourceModalSection(false)}
           onDatasetUpdated={async () => setGenericTables(await getProjectDatasets(slug))}
           onChartSourceUpdated={(updated) => setChartSource(updated)}
           onSave={async (draft) => {
             try {
-              const saved = await updateProjectChartSource(slug, draft);
+              const saved = await updateProjectChartSource(slug, draft, activeLayoutId);
               setChartSource(saved);
               setDatasets(buildTaggedRecords(genericTables, saved));
               setDataSourceModalSection(false);
@@ -5225,10 +6495,16 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
             <div className="flex">
               {/* Left Side - Settings */}
               <div className="flex-1 p-6 border-r border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto">
-                {/* Chart vs Card — two different questions (which visualization vs. which
-                    single-value layout), so two separate pickers instead of one grid mixing
-                    16 chart types with 5 card designs. Switching modes swaps chartType
-                    between a chart default and the fixed 'aggregate-cards' id. */}
+                {/* Chart vs Card vs Text — three different questions (which visualization,
+                    which single-value layout, or no data at all), so three separate entry
+                    points instead of burying "no data needed" as one of several Card
+                    designs where it wasn't obvious it skipped Table/Field entirely. "Text"
+                    locks chartType to 'aggregate-cards' + cardDesign to 'text-note' AND
+                    silently fills in `dataset` (genericTables[0] — always exists, since the
+                    "Add Custom Chart" button that opens this modal is itself disabled when
+                    a project has none) so a text card genuinely never shows a table picker
+                    at all, satisfying the backend's dataset FK without the admin ever
+                    seeing that requirement. */}
                 <div className="flex gap-2 mb-4">
                   <button type="button"
                     onClick={() => { if (isCardMode) setNewChart(c => ({ ...c, chartType: 'bar-horizontal' })); }}
@@ -5238,11 +6514,18 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     Chart
                   </button>
                   <button type="button"
-                    onClick={() => { if (!isCardMode) setNewChart(c => ({ ...c, chartType: 'aggregate-cards', cardDesign: c.cardDesign || 'big-number' })); }}
+                    onClick={() => { if (!isCardMode || isTextNoteCard) setNewChart(c => ({ ...c, chartType: 'aggregate-cards', cardDesign: (!c.cardDesign || TEXT_DESIGN_IDS.has(c.cardDesign)) ? 'big-number' : c.cardDesign })); }}
                     className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
-                      isCardMode ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 text-[#0038A8] dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                      isCardMode && !isTextNoteCard ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 text-[#0038A8] dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
                     }`}>
                     Card
+                  </button>
+                  <button type="button"
+                    onClick={() => { if (!isTextNoteCard) setNewChart(c => ({ ...c, chartType: 'aggregate-cards', cardDesign: TEXT_DESIGN_IDS.has(c.cardDesign) ? c.cardDesign : 'text-note', dataset: c.dataset || (isFreeWifi ? c.dataset : (genericTables[0]?.id != null ? String(genericTables[0].id) : c.dataset)) })); }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
+                      isTextNoteCard ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 text-[#0038A8] dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                    }`}>
+                    Text
                   </button>
                 </div>
 
@@ -5286,11 +6569,35 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
             </div>
                 )}
 
-                {/* Card Design Selection */}
-                {isCardMode && (
+                {/* Card Design Selection — not shown in Text mode, which has its own
+                    template grid below instead (TEXT_DESIGNS). */}
+                {isCardMode && !isTextNoteCard && (
                 <div className="mb-5">
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {CARD_DESIGNS.map((design) => (
+                      <button key={design.id} type="button"
+                        onClick={() => setNewChart(c => ({ ...c, cardDesign: design.id }))}
+                        title={design.label}
+                        className={`p-3 rounded-xl border-2 transition-all ${
+                          newChart.cardDesign === design.id
+                            ? 'border-[#0038A8] bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                        }`}>
+                        <div className="h-16 flex items-center justify-center mb-2">{design.preview()}</div>
+                        <p className="text-[10px] font-bold text-gray-900 dark:text-white text-center">{design.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                )}
+
+                {/* Text Design Selection — same grid pattern as Chart Type / Card Design
+                    above, just scoped to TEXT_DESIGNS (every option here is still stored in
+                    the same chart.cardDesign field CARD_DESIGNS uses — see TEXT_DESIGN_IDS). */}
+                {isTextNoteCard && (
+                <div className="mb-5">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {TEXT_DESIGNS.map((design) => (
                       <button key={design.id} type="button"
                         onClick={() => setNewChart(c => ({ ...c, cardDesign: design.id }))}
                         title={design.label}
@@ -5355,18 +6662,28 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                             className="rounded border-gray-300" />
                           <span className="text-[11px] text-blue-700 dark:text-blue-300">Show all {count} categories (ignore the limit)</span>
                         </label>
+                        {newChart.showAllCategories && (
+                          <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                            <input type="checkbox" checked={!!newChart.disablePagination}
+                              onChange={(e) => setNewChart(c => ({ ...c, disablePagination: e.target.checked }))}
+                              className="rounded border-gray-300" />
+                            <span className="text-[11px] text-blue-700 dark:text-blue-300">
+                              Show them all on one page <span className="text-blue-400">(no Next/Previous — everything at once)</span>
+                            </span>
+                          </label>
+                        )}
                       </>
                     )}
                   </div>
                 );
               })()}
 
-              {!isFreeWifi && (
+              {!isFreeWifi && !isTextNoteCard && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
                   <Select value={selectValue(toOptions(genericTables.map(t => t.id), (id) => genericTables.find(t => t.id === id)?.name), newChart.dataset ? Number(newChart.dataset) : null)}
                     onChange={(opt) => setNewChart(c => ({
-                      ...c, dataset: opt ? opt.value : '', field: '', secondaryField: '',
+                      ...c, dataset: opt ? opt.value : '', field: '', secondaryField: '', tertiaryField: '',
                       extraDatasets: [], fieldMap: {}, secondaryFieldMap: {}, aggregationFieldMap: {}, tableConditions: {},
                     }))}
                     options={toOptions(genericTables.map(t => t.id), (id) => genericTables.find(t => t.id === id)?.name)}
@@ -5404,7 +6721,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   Value Card across two separately-tracked tables. Not offered together
                   with row mode — that's about picking one table's own single row, not
                   combining several tables' worth of rows. */}
-              {!isFreeWifi && newChart.dataset && !newChart.rowMode && (
+              {!isFreeWifi && newChart.dataset && !newChart.rowMode && !isTextNoteCard && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
                     Additional source tables <span className="text-gray-400">(optional — combine rows from more tables into this chart)</span>
@@ -5422,7 +6739,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
               </div>
 
-              {newChart.rowMode ? (
+              {!isTextNoteCard && (newChart.rowMode ? (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Columns to compare</label>
                   <Select isMulti
@@ -5459,7 +6776,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   <p className="text-[11px] text-gray-400 mt-1">Fields marked "Date" above will work — others won't, even if their name sounds date-like.</p>
                 )}
               </div>
-              )}
+              ))}
 
               {/* Aggregation — optional. Off, every chart type counts rows per category
                   (the original, still-default behavior). On, each category shows a
@@ -5520,11 +6837,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
               )}
 
               {/* Donut center — 'total' (default) shows the raw row/aggregate total, same as
-                  before this option existed. 'percentage' instead shows the TRUE leading
-                  category's share of the total (the same number the "leads with X%" footer
-                  already reports), which reads more like an at-a-glance summary than a bare
-                  count when what matters is how dominant one category is. Only donut has a
-                  center to put anything in — plain pie has no hole. */}
+                  before this option existed. 'percentage' instead shows the display-order
+                  leading category's share of the total, which reads more like an at-a-glance
+                  summary than a bare count when what matters is how dominant one category
+                  is. Only donut has a center to put anything in — plain pie has no hole. */}
               {newChart.chartType === 'donut' && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Donut center</label>
@@ -5549,8 +6865,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   place). Not shown in Card mode, which already has its own accent color
                   (card_color) — a whole different setting for a whole different purpose. */}
               {!isCardMode && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Colors</label>
+                <FormSection title="Colors" collapsible>
                   <div className="flex gap-2 mb-2">
                     {[
                       { value: 'palette', label: 'Default' },
@@ -5578,7 +6893,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   {newChart.colorMode === 'custom' && (
                     <p className="text-[11px] text-gray-400">Pick each category's color in "Customize labels" below.</p>
                   )}
-                </div>
+                </FormSection>
               )}
 
               {/* Customize labels — per-CHART display overrides for a field's raw values
@@ -5612,6 +6927,22 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     })();
                 if (rawValues.length === 0 || rawValues.length > 20) return null;
                 const showColorSwatch = !isCardMode && newChart.colorMode === 'custom';
+                // Per-row "customize this ONE row's own segment colors" (categorySecondaryColors)
+                // — only meaningful for a chart type that actually reads it (bar-100-stacked
+                // today), and only once there's a secondary field whose segments it would
+                // even override. secondaryValuesForRow mirrors "Customize sub-labels"' own
+                // distinct-value list exactly, just computed here too since that section
+                // renders separately below and its `values` aren't in scope at this point.
+                const showRowColorOverride = newChart.chartType === 'bar-100-stacked' && !!newChart.secondaryField;
+                const secondaryValuesForRow = showRowColorOverride ? (() => {
+                  const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
+                  const distinct = distinctFieldValues(records, newChart.secondaryField);
+                  const hasBlank = records.some((r) => {
+                    const val = r[newChart.secondaryField];
+                    return val === null || val === undefined || String(val).trim() === '';
+                  });
+                  return hasBlank ? [...distinct, 'N/A'] : distinct;
+                })() : [];
                 // Non-row-mode charts sort categories by count by default (see
                 // buildChartTallyData) — categoryOrder overrides that when set, letting the
                 // admin drag them into whatever order they want here instead. Row mode has
@@ -5638,23 +6969,178 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     </label>
                     <div className="space-y-1.5">
                       {values.map((v, i) => (
+                        <div key={v}>
+                          <div draggable
+                            onDragStart={() => setDragLabelIndex(i)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => reorderTo(i)}
+                            onDragEnd={() => setDragLabelIndex(null)}
+                            className={`flex items-center gap-2 rounded-lg transition-opacity ${dragLabelIndex === i ? 'opacity-40' : ''}`}>
+                            <GripVertical size={14} className="text-gray-300 dark:text-gray-600 shrink-0 cursor-grab active:cursor-grabbing" />
+                            {showColorSwatch && (
+                              <input type="color" value={newChart.categoryColors?.[v] || COLORS[i % COLORS.length]}
+                                onChange={(e) => setNewChart(c => ({ ...c, categoryColors: { ...c.categoryColors, [v]: e.target.value } }))}
+                                title={`Color for "${v}"`}
+                                className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                            )}
+                            <span className="w-28 shrink-0 text-xs text-gray-500 chart-label-wrap" title={v}>{v}</span>
+                            <span className="text-gray-300 shrink-0">→</span>
+                            <input type="text" value={newChart.valueLabels?.[v] || ''}
+                              onChange={(e) => setNewChart(c => ({ ...c, valueLabels: { ...c.valueLabels, [v]: e.target.value } }))}
+                              placeholder={v}
+                              className="flex-1 px-2.5 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                            {showRowColorOverride && (
+                              <button type="button" onClick={() => setExpandedCategoryColorRow(x => x === v ? null : v)}
+                                title={`Customize just "${v}"'s own bar colors`}
+                                className={`p-1.5 rounded-lg shrink-0 transition-colors ${
+                                  expandedCategoryColorRow === v || newChart.categorySecondaryColors?.[v]
+                                    ? 'text-[#0038A8] bg-blue-50 dark:bg-blue-900/20' : 'text-gray-300 dark:text-gray-600 hover:text-gray-500'
+                                }`}>
+                                <Palette size={14} />
+                              </button>
+                            )}
+                          </div>
+                          {/* Overrides JUST this one row's bar segments (categorySecondaryColors),
+                              leaving "Customize sub-labels" below as every OTHER row's shared
+                              default — e.g. recoloring only Lanao del Norte's own bar to
+                              red/gray without touching Bukidnon's, Iligan's, etc. */}
+                          {showRowColorOverride && expandedCategoryColorRow === v && (
+                            <div className="mt-1.5 ml-6 pl-3 border-l-2 border-gray-100 dark:border-gray-800 space-y-1.5">
+                              <p className="text-[11px] text-gray-400">Colors just for "{v}"'s own bar — every other row keeps the shared colors below.</p>
+                              {secondaryValuesForRow.map((sv) => (
+                                <div key={sv} className="flex items-center gap-2">
+                                  <input type="color"
+                                    value={newChart.categorySecondaryColors?.[v]?.[sv] || newChart.secondaryCategoryColors?.[sv] || COLORS[secondaryValuesForRow.indexOf(sv) % COLORS.length]}
+                                    onChange={(e) => setNewChart(c => ({
+                                      ...c,
+                                      categorySecondaryColors: { ...c.categorySecondaryColors, [v]: { ...c.categorySecondaryColors?.[v], [sv]: e.target.value } },
+                                    }))}
+                                    title={`"${v}"'s own color for "${sv}"`}
+                                    className="w-6 h-6 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                                  <span className="text-xs text-gray-500 chart-label-wrap">{newChart.secondaryValueLabels?.[sv] || sv}</span>
+                                  {newChart.categorySecondaryColors?.[v]?.[sv] && (
+                                    <button type="button"
+                                      onClick={() => setNewChart(c => {
+                                        const rest = { ...c.categorySecondaryColors?.[v] };
+                                        delete rest[sv];
+                                        return { ...c, categorySecondaryColors: { ...c.categorySecondaryColors, [v]: rest } };
+                                      })}
+                                      className="text-[11px] text-gray-400 hover:text-red-500">Reset</button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Customize sub-labels — same idea as "Customize labels" above, but for
+                  secondary_field's own sub-groups (e.g. district numbers nested under each
+                  province bar) instead of the primary field's categories: reorder, relabel,
+                  and color each sub-value. Color here is independent of colorMode/palette
+                  (which only ever govern the PRIMARY field) — it's a separate, always-
+                  available per-sub-value override, applied uniformly across every primary
+                  category's own sub-breakdown rather than a separate order/label/color per
+                  category (see getSubGroups/displaySecondaryLabel). */}
+              {!isCardMode && !newChart.rowMode && newChart.secondaryField && (() => {
+                const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
+                const distinct = distinctFieldValues(records, newChart.secondaryField);
+                const hasBlank = records.some((r) => {
+                  const v = r[newChart.secondaryField];
+                  return v === null || v === undefined || String(v).trim() === '';
+                });
+                const rawValues = hasBlank ? [...distinct, 'N/A'] : distinct;
+                if (rawValues.length === 0 || rawValues.length > 20) return null;
+                const savedOrder = newChart.secondaryCategoryOrder || [];
+                const values = savedOrder.length
+                  ? [...savedOrder.filter((v) => rawValues.includes(v)), ...rawValues.filter((v) => !savedOrder.includes(v))]
+                  : rawValues;
+                const reorderTo = (dropIndex) => {
+                  if (dragSecondaryLabelIndex === null || dragSecondaryLabelIndex === dropIndex) { setDragSecondaryLabelIndex(null); return; }
+                  const arr = [...values];
+                  const [moved] = arr.splice(dragSecondaryLabelIndex, 1);
+                  arr.splice(dropIndex, 0, moved);
+                  setNewChart(c => ({ ...c, secondaryCategoryOrder: arr }));
+                  setDragSecondaryLabelIndex(null);
+                };
+                return (
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                      Customize sub-labels <span className="text-gray-400">(optional — change how a value in the "{newChart.secondaryField}" breakdown is shown, its color, or drag <GripVertical size={11} className="inline -mt-0.5" /> to reorder)</span>
+                    </label>
+                    <div className="space-y-1.5">
+                      {values.map((v, i) => (
                         <div key={v} draggable
-                          onDragStart={() => setDragLabelIndex(i)}
+                          onDragStart={() => setDragSecondaryLabelIndex(i)}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={() => reorderTo(i)}
-                          onDragEnd={() => setDragLabelIndex(null)}
-                          className={`flex items-center gap-2 rounded-lg transition-opacity ${dragLabelIndex === i ? 'opacity-40' : ''}`}>
+                          onDragEnd={() => setDragSecondaryLabelIndex(null)}
+                          className={`flex items-center gap-2 rounded-lg transition-opacity ${dragSecondaryLabelIndex === i ? 'opacity-40' : ''}`}>
                           <GripVertical size={14} className="text-gray-300 dark:text-gray-600 shrink-0 cursor-grab active:cursor-grabbing" />
-                          {showColorSwatch && (
-                            <input type="color" value={newChart.categoryColors?.[v] || COLORS[i % COLORS.length]}
-                              onChange={(e) => setNewChart(c => ({ ...c, categoryColors: { ...c.categoryColors, [v]: e.target.value } }))}
-                              title={`Color for "${v}"`}
-                              className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
-                          )}
-                          <span className="w-28 shrink-0 text-xs text-gray-500 chart-h-scroll" title={v}>{v}</span>
+                          <input type="color" value={newChart.secondaryCategoryColors?.[v] || COLORS[i % COLORS.length]}
+                            onChange={(e) => setNewChart(c => ({ ...c, secondaryCategoryColors: { ...c.secondaryCategoryColors, [v]: e.target.value } }))}
+                            title={`Color for "${v}"`}
+                            className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                          <span className="w-24 shrink-0 text-xs text-gray-500 chart-label-wrap" title={v}>{v}</span>
                           <span className="text-gray-300 shrink-0">→</span>
-                          <input type="text" value={newChart.valueLabels?.[v] || ''}
-                            onChange={(e) => setNewChart(c => ({ ...c, valueLabels: { ...c.valueLabels, [v]: e.target.value } }))}
+                          <input type="text" value={newChart.secondaryValueLabels?.[v] || ''}
+                            onChange={(e) => setNewChart(c => ({ ...c, secondaryValueLabels: { ...c.secondaryValueLabels, [v]: e.target.value } }))}
+                            placeholder={v}
+                            className="flex-1 px-2.5 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Same idea again, one level deeper — reorder/relabel for the tertiary
+                  field's own values (e.g. district names nested under each secondary
+                  sub-row). No color picker here — a tertiary value isn't drawn as a
+                  colored bar/segment/swatch anywhere, just a plain row label. */}
+              {!isCardMode && !newChart.rowMode && newChart.tertiaryField && (() => {
+                const records = isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []);
+                const distinct = distinctFieldValues(records, newChart.tertiaryField);
+                const hasBlank = records.some((r) => {
+                  const v = r[newChart.tertiaryField];
+                  return v === null || v === undefined || String(v).trim() === '';
+                });
+                const rawValues = hasBlank ? [...distinct, 'N/A'] : distinct;
+                if (rawValues.length === 0 || rawValues.length > 20) return null;
+                const savedOrder = newChart.tertiaryCategoryOrder || [];
+                const values = savedOrder.length
+                  ? [...savedOrder.filter((v) => rawValues.includes(v)), ...rawValues.filter((v) => !savedOrder.includes(v))]
+                  : rawValues;
+                const reorderTo = (dropIndex) => {
+                  if (dragTertiaryLabelIndex === null || dragTertiaryLabelIndex === dropIndex) { setDragTertiaryLabelIndex(null); return; }
+                  const arr = [...values];
+                  const [moved] = arr.splice(dragTertiaryLabelIndex, 1);
+                  arr.splice(dropIndex, 0, moved);
+                  setNewChart(c => ({ ...c, tertiaryCategoryOrder: arr }));
+                  setDragTertiaryLabelIndex(null);
+                };
+                return (
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                      Customize sub-labels <span className="text-gray-400">(optional — change how a value in the "{newChart.tertiaryField}" breakdown is shown, or drag <GripVertical size={11} className="inline -mt-0.5" /> to reorder)</span>
+                    </label>
+                    <div className="space-y-1.5">
+                      {values.map((v, i) => (
+                        <div key={v} draggable
+                          onDragStart={() => setDragTertiaryLabelIndex(i)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => reorderTo(i)}
+                          onDragEnd={() => setDragTertiaryLabelIndex(null)}
+                          className={`flex items-center gap-2 rounded-lg transition-opacity ${dragTertiaryLabelIndex === i ? 'opacity-40' : ''}`}>
+                          <GripVertical size={14} className="text-gray-300 dark:text-gray-600 shrink-0 cursor-grab active:cursor-grabbing" />
+                          <span className="w-24 shrink-0 text-xs text-gray-500 chart-label-wrap" title={v}>{v}</span>
+                          <span className="text-gray-300 shrink-0">→</span>
+                          <input type="text" value={newChart.tertiaryValueLabels?.[v] || ''}
+                            onChange={(e) => setNewChart(c => ({ ...c, tertiaryValueLabels: { ...c.tertiaryValueLabels, [v]: e.target.value } }))}
                             placeholder={v}
                             className="flex-1 px-2.5 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
                         </div>
@@ -5670,35 +7156,45 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   bar chart of "Contract" can be scoped to just Province = Bukidnon, or a
                   Value Card's Sum can be scoped to Province = Bukidnon AND Status = Active
                   — same idea as the old count_equals special case, generalized so it
-                  applies to any chart and stacks past one condition. */}
-              <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
-                  Filter rows <span className="text-gray-400">
-                    {newChart.rowMode ? '(pick which single row this chart uses — add conditions until exactly one row matches)' : '(optional — only rows matching every condition are counted)'}
-                  </span>
-                </label>
+                  applies to any chart and stacks past one condition. Not offered for a Text
+                  Note card, which has no data/aggregation to narrow down at all. */}
+              {!isTextNoteCard && (
+              <FormSection title="Filter rows"
+                subtitle={newChart.rowMode ? 'Pick which single row this chart uses — add conditions until exactly one row matches' : 'Optional — only rows matching every condition are counted'}
+                collapsible defaultOpen={(newChart.conditions || []).length > 0 || !!newChart.rowMode}>
                 <ConditionsEditor conditions={newChart.conditions}
                   onChange={(next) => setNewChart(c => ({ ...c, conditions: next }))}
                   fieldOptions={toOptions(availableFieldsFor(newChart.dataset).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
                   valuesFor={(field) => toOptions(distinctFieldValues(isFreeWifi ? sites : combineChartRecords(newChart, recordsByDataset, genericTables), field))}
                   extraTables={!isFreeWifi ? (newChart.extraDatasets || []).map(id => genericTables.find(t => t.id === id)).filter(Boolean) : []} />
-              </div>
+              </FormSection>
+              )}
 
               {/* Aggregation (Value Card only) — same vocabulary as the Summary Card tile
-                  editor: Sum/Average/Count all rows/Count unique values/Count where equals. */}
-              {newChart.chartType === 'aggregate-cards' && (
+                  editor: Sum/Average/Count all rows/Count unique values/Count where equals.
+                  Not offered for a Text Note card, which has no number to aggregate. */}
+              {newChart.chartType === 'aggregate-cards' && !isTextNoteCard && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Aggregation</label>
                   <Select value={selectValue(CARD_AGG_OPTIONS, newChart.agg)}
                     onChange={(opt) => setNewChart(c => ({ ...c, agg: opt.value }))}
                     options={CARD_AGG_OPTIONS} isSearchable={false} styles={selectStyles} />
-                  {newChart.agg === 'count_equals' && (
-                    <div className="mt-2">
+                  {(newChart.agg === 'count_equals' || newChart.agg === 'percentage') && (
+                    <div className="mt-2 space-y-2">
                       <Select
-                        value={selectValue(toOptions(distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field)), newChart.equals)}
+                        value={selectValue(toOptions(distinctFieldValuesWithNA(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field)), newChart.equals)}
                         onChange={(opt) => setNewChart(c => ({ ...c, equals: opt ? opt.value : '' }))}
-                        options={toOptions(distinctFieldValues(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field))}
-                        placeholder="Value..." isClearable styles={selectStyles} />
+                        options={toOptions(distinctFieldValuesWithNA(isFreeWifi ? sites : (recordsByDataset[Number(newChart.dataset)] || []), newChart.field))}
+                        placeholder="Value... (includes N/A for blank rows)" isClearable styles={selectStyles} />
+                      {newChart.agg === 'percentage' && (
+                        <div>
+                          <input type="text" value={newChart.percentageLabel || ''}
+                            onChange={(e) => setNewChart(c => ({ ...c, percentageLabel: e.target.value }))}
+                            placeholder="Word shown after the %, e.g. Live"
+                            className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                          <p className="text-[11px] text-gray-400 mt-1">Optional — shows as "{(0).toFixed(1)}% {newChart.percentageLabel || 'Live'}" instead of a bare percentage.</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -5711,6 +7207,11 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   reused rather than duplicated. */}
               {isCardMode && (
                 <div className="space-y-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  {/* Skipped only for the 'text-note' (Plain) text design, which renders
+                      with no color of its own — the other three (Quote/Banner/Callout)
+                      all use this as their icon/background/border color, same as every
+                      CARD_DESIGNS layout does. */}
+                  {newChart.cardDesign !== 'text-note' && (
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Accent color</label>
                     <div className="flex items-center gap-3">
@@ -5722,6 +7223,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                         className="flex-1 px-3 py-2 text-sm font-mono border rounded-lg bg-white dark:bg-gray-800" />
                     </div>
                   </div>
+                  )}
 
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">Text alignment</label>
@@ -5739,11 +7241,38 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
 
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
-                      Description <span className="text-gray-400">(optional — a sentence or two of context shown under the number)</span>
+                      Font size <span className="text-gray-400 font-normal">(optional — leave unset to use this design's own default size)</span>
+                    </label>
+                    <div className="flex gap-1.5">
+                      <button type="button" onClick={() => setNewChart(c => ({ ...c, fontSize: '' }))}
+                        title="Use this design's own default size"
+                        className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                          !newChart.fontSize ? 'bg-[#0038A8] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        }`}>
+                        Default
+                      </button>
+                      {FONT_SIZE_OPTIONS.map((opt) => (
+                        <button key={opt.value} type="button" onClick={() => setNewChart(c => ({ ...c, fontSize: opt.value }))}
+                          title={`${opt.px}px`}
+                          className={`flex-1 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                            newChart.fontSize === opt.value ? 'bg-[#0038A8] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                          }`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                      {isTextNoteCard
+                        ? 'Text'
+                        : <>Description <span className="text-gray-400">(optional — a sentence or two of context shown under the number)</span></>}
                     </label>
                     <textarea value={newChart.cardDescription || ''}
                       onChange={(e) => setNewChart(c => ({ ...c, cardDescription: e.target.value }))}
-                      rows={3} placeholder="e.g. Cumulative participants trained under the NGP program across Region 10."
+                      rows={isTextNoteCard ? 5 : 3}
+                      placeholder={isTextNoteCard ? 'Whatever this card should say — a note, an announcement, a caption.' : 'e.g. Cumulative participants trained under the NGP program across Region 10.'}
                       className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />
                   </div>
 
@@ -5774,7 +7303,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     </div>
                   )}
 
-                  {newChart.cardDesign === 'image-bg' && (
+                  {(newChart.cardDesign === 'image-bg' || newChart.cardDesign === 'text-image-bg') && (
                     <div>
                       <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Gradient color</label>
                       <div className="flex items-center gap-3 mb-3">
@@ -5830,6 +7359,26 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.secondaryField)}
                     onChange={(opt) => setNewChart(c => ({ ...c, secondaryField: opt ? opt.value : '' }))}
                     options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
+                    placeholder="None" isClearable styles={selectStyles} />
+                </div>
+              )}
+
+              {/* Third field — a further breakdown nested one level under each secondary
+                  sub-row (Province > District > Wi-Fi status, say). Only offered once a
+                  secondary field is actually picked, same as "Customize sub-labels" below —
+                  a third level nested under a second level that doesn't exist yet has
+                  nothing to nest under. Rendered today by the chart types whose sub-row
+                  layout has room for it (see getSubSubGroups); saved for every
+                  needsSecondary chart type regardless, so it's ready once more types do. */}
+              {!newChart.rowMode && CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && newChart.secondaryField && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Third Field <span className="text-gray-400">(optional — a further breakdown nested under each secondary row)</span>
+                  </label>
+                  <Select
+                    value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field && f.value !== newChart.secondaryField).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.tertiaryField)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, tertiaryField: opt ? opt.value : '' }))}
+                    options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field && f.value !== newChart.secondaryField).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
                     placeholder="None" isClearable styles={selectStyles} />
                 </div>
               )}
@@ -5898,7 +7447,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                       public/admin rendering (ChartCard/DraggableChart's own noPadding) —
                       otherwise the preview shows a padded inset that the real chart won't
                       have. */}
-                  <div className={newChart.chartType === 'aggregate-cards' && newChart.cardDesign === 'image-bg' ? '' : 'px-5 pb-5'}>
+                  <div className={newChart.chartType === 'aggregate-cards' && (newChart.cardDesign === 'image-bg' || newChart.cardDesign === 'text-image-bg') ? '' : 'px-5 pb-5'}>
                     <CustomChartRenderer
                       chart={{ ...newChart, id: 'preview', cardImage: cardImagePreviewUrl || newChart.cardImage }}
                       sites={isFreeWifi ? sites : combineChartRecords(newChart, recordsByDataset, genericTables)}
@@ -5942,7 +7491,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 <span className="text-sm font-medium">{summaryAsOfLabel(summaryDateFrom, summaryDateTo, today)}</span>
               </div>
               {renderSummaryCardBody(
-                computeSummaryTiles(summarySites, chartSource, genericTables.find(t => t.id === chartSource?.summary_dataset)?.fields || []),
+                computeSummaryTiles(summarySites, chartSource, genericTables.find(t => t.id === chartSource?.summary_dataset)?.fields || [], summaryCombineCtx),
                 draft
               )}
             </div>
@@ -5979,15 +7528,20 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
            fit right there. Trade-off: dense packing can render a later chart visually
            ahead of an earlier one when it fits a gap better — drag-reorder still sets
            the underlying order, this only affects which gap each chart lands in. */
-        <div className="grid grid-cols-12 gap-6 grid-flow-dense">
+        <div className="grid grid-cols-12 gap-6 grid-flow-dense" ref={chartsGridRef}>
           {allCharts.map((chart, index) => {
             if (!chart.visible) return null;
             const isCustom = chart.type === 'custom';
             const isWidgetInstance = chart.type === 'builtin-extra';
             const gridSize = isCustom || isWidgetInstance ? gridSizeClass(chart.gridSize) : 'col-span-12';
+            // self-start: opts this item OUT of CSS Grid's default row stretch — see
+            // useEqualHeightGrid, which applies an explicit height only within a same-kind
+            // group so unrelated chart types/cards/text sharing a row don't get forced to
+            // match each other's height.
+            const ehKind = isWidgetInstance ? `widget:${chart.widgetType}` : isCustom ? customChartKind(chart) : `builtin:${chart.id}`;
 
             return (
-              <div key={chart.id} className={gridSize}>
+              <div key={chart.id} className={`${gridSize} self-start`} data-eh-id={chart.id} data-eh-kind={ehKind}>
                 <DraggableChart
                   index={index}
                   onDragStart={handleDragStart}
@@ -5997,15 +7551,23 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   isDragging={dragIndex === index}
                   title={isCustom ? chart.title : isWidgetInstance ? builtinWidgetTitle(chart) : (isFreeWifi ? chart.label : builtInTitles[chart.id])}
                   subtitle={
-                    isCustom ? `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${
-                        chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
-                      }`
+                    isCustom ? (
+                      // A Text card has no field/table binding to describe — naming it
+                      // "Value Card · <stale field>" (chart.field is never cleared when
+                      // switching a card to Text mode, since nothing else reads it there)
+                      // would be both wrong and misleading. Name its actual template instead.
+                      TEXT_DESIGN_IDS.has(chart.cardDesign)
+                        ? `Text · ${TEXT_DESIGNS.find(d => d.id === chart.cardDesign)?.label || 'Plain'}`
+                        : `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${
+                            chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
+                          }`
+                    )
                       : isWidgetInstance ? `${WIDGET_TYPE_LABELS[chart.widgetType]} · extra instance` : undefined
                   }
                   isCustom={isCustom || isWidgetInstance}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, categoryOrder: chart.categoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total' });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total' });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);
@@ -6028,7 +7590,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   onToggleVisibility={() => toggleVisibility(chart.id)}
                   dataSource={isFreeWifi && !isCustom && !isWidgetInstance ? (chart.dataSource || 'live') : undefined}
                   onDataSourceChange={isFreeWifi && !isCustom && !isWidgetInstance ? (ds) => setChartDataSource(chart.id, ds) : undefined}
-                  noPadding={isCustom && chart.chartType === 'aggregate-cards' && chart.cardDesign === 'image-bg'}
+                  noPadding={isCustom && chart.chartType === 'aggregate-cards' && (chart.cardDesign === 'image-bg' || chart.cardDesign === 'text-image-bg')}
                 >
                   {isCustom ? (
                     <CustomChartRenderer chart={chart} sites={isFreeWifi ? sites : combineChartRecords(chart, recordsByDataset, genericTables)} />

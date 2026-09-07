@@ -145,6 +145,17 @@
   border-radius: 2px;
 }
 
+/* A long chart label wraps onto more lines instead of either .chart-h-scroll's hidden-
+   until-hovered scroll or a CSS ellipsis truncation — full text always visible without
+   needing to interact with it. Used wherever the label sits in a row that can grow
+   taller to fit it (legend rows, bar rows, under-bar category labels, ...) instead of a
+   fixed single-line slot. */
+.chart-label-wrap {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 /* The chart's own plot canvas (Line/Area/bar-vertical/bar-grouped in
    CustomChartRenderer) scrolls horizontally when it's wider than its card — this keeps
    that scrollbar slim instead of the browser's full-size default, which otherwise reads

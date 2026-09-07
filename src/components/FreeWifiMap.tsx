@@ -33,17 +33,22 @@ export const PROVINCE_COLORS = {
 const FILTER_COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#dc2626', '#0891b2', '#db2777', '#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#8b5cf6'];
 const DEFAULT_DOT_COLOR = '#0038A8';
 
-// Alternate tile sets (ProjectChartSource.map_tile_style) — all free, no API key required,
-// unlike most satellite/terrain providers (Mapbox, Google, Stadia's hosted Stamen tiles).
-// Esri's World Imagery and OpenTopoMap are both long-standing free tile services commonly
-// used in open-source Leaflet projects for exactly this reason.
+// Alternate tile sets (ProjectChartSource.map_tile_style) — Standard/Satellite/Terrain are
+// free with no API key, unlike most other satellite/terrain providers (Mapbox, Google,
+// Stadia's hosted Stamen tiles); Esri's World Imagery and OpenTopoMap are both long-standing
+// free tile services commonly used in open-source Leaflet projects for exactly that reason.
+// Simple/Light/Dark (CARTO) do need a key — see CARTO_API_KEY below.
+const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || '';
 export const MAP_TILE_STYLES = [
   { value: 'standard', label: 'Standard', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap' },
-  // CARTO's "Voyager" style — soft green parkland, pale water, muted roads — is the
-  // closest free/no-key equivalent to Google Maps' own clean default look.
-  { value: 'simple', label: 'Simple', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
-  { value: 'light', label: 'Light', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
-  { value: 'dark', label: 'Dark', url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
+  // CARTO's Voyager/Positron/Dark Matter raster tiles — CARTO now requires a signed-up
+  // API key to serve these (a free tier covers this app's usage; see VITE_CARTO_API_KEY
+  // in .env, from https://carto.com/basemaps/apikey/), appended as the `key` query param
+  // their docs specify. Without it these show a tiled "API KEY REQUIRED" watermark instead
+  // of the actual map.
+  { value: 'simple', label: 'Simple', url: `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`, attribution: '&copy; OpenStreetMap &copy; CARTO' },
+  { value: 'light', label: 'Light', url: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`, attribution: '&copy; OpenStreetMap &copy; CARTO' },
+  { value: 'dark', label: 'Dark', url: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`, attribution: '&copy; OpenStreetMap &copy; CARTO' },
   { value: 'satellite', label: 'Satellite', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: '&copy; Esri' },
   { value: 'terrain', label: 'Terrain', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap' },
 ];

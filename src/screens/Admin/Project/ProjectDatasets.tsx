@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Plus, Trash2, Edit2, X, Save, Table, Settings2, Upload, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight, Link2, RefreshCw,
+  Search, ChevronLeft, ChevronRight, Link2, RefreshCw, Network,
 } from 'lucide-react';
 import {
   getProjectOfficeId, getProjectDatasets, createProjectDataset, updateProjectDataset, deleteProjectDataset,
@@ -10,6 +10,7 @@ import {
   createProjectDatasetRow, updateProjectDatasetRow, deleteProjectDatasetRow,
   importProjectDatasetCsv, syncProjectDatasetSheet,
 } from '../../../services/projects';
+import DatasetRelationshipDiagram from './DatasetRelationshipDiagram';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
@@ -113,6 +114,7 @@ export default function ProjectDatasets({ slug }) {
 
   const [showAddDataset, setShowAddDataset] = useState(false);
   const [newDatasetName, setNewDatasetName] = useState('');
+  const [showDiagram, setShowDiagram] = useState(false);
 
   const [showFieldForm, setShowFieldForm] = useState(false);
   const [fieldForm, setFieldForm] = useState({ label: '', field_type: 'text' });
@@ -133,6 +135,8 @@ export default function ProjectDatasets({ slug }) {
   const [sheetUrlInput, setSheetUrlInput] = useState('');
   const [sheetHeaderRow, setSheetHeaderRow] = useState(1);
   const [syncingSheet, setSyncingSheet] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [syncAllStatus, setSyncAllStatus] = useState('');
 
   // Table toolbar — search / sort / pagination, same shape as FreeWifiDatasets
   const [searchTerm, setSearchTerm] = useState('');
@@ -159,6 +163,15 @@ export default function ProjectDatasets({ slug }) {
   };
 
   useEffect(() => { fetchAll(); }, [slug]);
+
+  // Refetches datasets and returns the fresh list — used by DatasetRelationshipDiagram
+  // after every link/unlink so its own canvas stays in sync AND this page's table
+  // view/pill list (which reads the same `datasets` state) picks up the change too.
+  const refreshDatasetsForDiagram = async () => {
+    const ds = await getProjectDatasets(slug);
+    setDatasets(ds);
+    return ds;
+  };
 
   const activeDataset = datasets.find((d) => d.id === activeId) || null;
   const fields = activeDataset?.fields || [];
@@ -226,6 +239,17 @@ export default function ProjectDatasets({ slug }) {
       fetchAll();
     } catch (err) {
       alert('Failed to delete column.');
+    }
+  };
+
+  const handleDeleteAllFields = async () => {
+    if (!activeDataset || fields.length === 0) return;
+    if (!confirm(`Delete all ${fields.length} column(s) from "${activeDataset.name}"? Existing row data will no longer show until columns are re-added. This cannot be undone.`)) return;
+    try {
+      await Promise.all(fields.map((f) => deleteProjectDatasetField(f.id)));
+      fetchAll();
+    } catch (err) {
+      alert('Failed to delete all columns.');
     }
   };
 
@@ -329,6 +353,37 @@ export default function ProjectDatasets({ slug }) {
     }
   };
 
+  // Re-syncs every table that already has a linked sheet, one at a time (not in
+  // parallel — keeps the per-table progress readable and avoids hammering the Google
+  // Sheets API with a burst of simultaneous requests). Each call omits sheet_url/
+  // header_row so the backend reuses what's already saved on that dataset (see
+  // sync_sheet's own docstring in kms/views.py) — nothing new to ask the admin for.
+  const handleSyncAll = async () => {
+    const targets = datasets.filter((d) => d.sheet_url);
+    if (!targets.length) return;
+    if (!confirm(`Sync all ${targets.length} linked table(s) now? Each one's rows will be replaced with what's currently in its sheet.`)) return;
+    setSyncingAll(true);
+    let succeeded = 0;
+    const failed = [];
+    for (let i = 0; i < targets.length; i++) {
+      const d = targets[i];
+      setSyncAllStatus(`Syncing ${i + 1}/${targets.length}: ${d.name}...`);
+      try {
+        await syncProjectDatasetSheet(d.id);
+        succeeded += 1;
+      } catch (err) {
+        failed.push(d.name);
+      }
+    }
+    setSyncingAll(false);
+    setSyncAllStatus('');
+    fetchAll();
+    alert(
+      `Synced ${succeeded} of ${targets.length} table(s).` +
+      (failed.length ? ` Failed: ${failed.join(', ')}.` : '')
+    );
+  };
+
   // ── Row add/edit (modal) ──────────────────────────────────────────────────────
 
   const openAddForm = () => {
@@ -410,7 +465,24 @@ export default function ProjectDatasets({ slug }) {
   return (
     <div className="space-y-4">
       {/* Table tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {datasets.length > 0 && (
+          <div className="flex items-center justify-end gap-3 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+            {syncingAll && <span className="text-xs text-gray-500 dark:text-gray-400">{syncAllStatus}</span>}
+            {datasets.length > 1 && (
+              <button onClick={() => setShowDiagram(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#0038A8] hover:text-[#0038A8]">
+                <Network size={13} /> Relationships
+              </button>
+            )}
+            {datasets.some((d) => d.sheet_url) && (
+              <button onClick={handleSyncAll} disabled={syncingAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#0038A8] hover:text-[#0038A8] disabled:opacity-50">
+                <RefreshCw size={13} className={syncingAll ? 'animate-spin' : ''} /> {syncingAll ? 'Syncing...' : 'Sync All Tables'}
+              </button>
+            )}
+          </div>
+        )}
         <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
           {datasets.map((d) => (
             <button key={d.id} onClick={() => switchDataset(d.id)}
@@ -558,6 +630,14 @@ export default function ProjectDatasets({ slug }) {
 
             {showFieldForm && (
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 space-y-3">
+                {fields.length > 0 && (
+                  <div className="flex justify-end">
+                    <button onClick={handleDeleteAllFields}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                      <Trash2 size={12} /> Delete All Columns
+                    </button>
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {fields.map((f) => {
                     const linkedDataset = f.reference_dataset ? datasets.find((d) => d.id === f.reference_dataset) : null;
@@ -729,6 +809,11 @@ export default function ProjectDatasets({ slug }) {
           </>
         )}
       </div>
+
+      {showDiagram && (
+        <DatasetRelationshipDiagram datasets={datasets} onDatasetsChange={refreshDatasetsForDiagram}
+          onClose={() => { setShowDiagram(false); fetchAll(); }} />
+      )}
 
       {/* Add/Edit Row Modal */}
       {showForm && (

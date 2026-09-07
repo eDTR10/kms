@@ -119,7 +119,7 @@ export default function Navbar() {
                 <ChevronDown size={14} className={`transition-transform ${aboutOpen ? 'rotate-180' : ''}`} />
               </button>
               {aboutOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-card dark:border dark:border-border rounded-lg shadow-xl py-1 z-50">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-card dark:border dark:border-border rounded-lg shadow-xl py-1 z-50 overflow-hidden">
                   {ABOUT_LINKS.map((data) => (
                     <Link
                       key={data.path}
@@ -145,7 +145,7 @@ export default function Navbar() {
                 <ChevronDown size={14} className={`transition-transform ${projectsOpen ? 'rotate-180' : ''}`} />
               </button>
               {projectsOpen && (
-                <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-card dark:border dark:border-border rounded-lg shadow-xl py-1 z-50">
+                <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-card dark:border dark:border-border rounded-lg shadow-xl py-1 z-50 overflow-hidden">
                   {PROJECT_LINKS.map((child) => (
                     <Link
                       key={child.path}
