@@ -1,5 +1,5 @@
 // @ts-nocheck
-import logoIlcdb from '../assets/project-logo/ILCDB.png';
+import logoIlcdb from '../assets/project-logo/ICTAcademy.jpg';
 import logoEGov from '../assets/project-logo/eGovPH Logo.png';
 import logoPnpki from '../assets/project-logo/PNPKI.jpg';
 import logoGovnet from '../assets/project-logo/NBP.png';

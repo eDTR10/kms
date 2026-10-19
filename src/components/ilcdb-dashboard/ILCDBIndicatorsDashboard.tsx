@@ -56,7 +56,7 @@ export default function ILCDBIndicatorsDashboard() {
       <div>
         <h2 className="text-lg font-bold text-foreground">Key indicators</h2>
         <p className="text-sm text-muted-foreground">
-          ILCDB program KPIs &middot;{" "}
+          ICT Academy program KPIs &middot;{" "}
           <span className="font-medium text-foreground">{describePeriod(scope)}</span>
         </p>
         <p className="text-xs text-muted-foreground">

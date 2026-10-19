@@ -1,7 +1,7 @@
 // @ts-nocheck
 import ProjectHighlightsSlider from '../../components/ProjectHighlightsSlider';
 import ProjectChartsDisplay from '../../components/ProjectChartsDisplay';
-import logoIlcdb from '../../assets/project-logo/ILCDB.png';
+import logoIlcdb from '../../assets/project-logo/ICTAcademy.jpg';
 
 export default function ILCDB() {
   return (
@@ -9,11 +9,11 @@ export default function ILCDB() {
       <ProjectHighlightsSlider slug="ilcdb" />
       <div className="mb-6 flex items-center gap-6">
         <div className="shrink-0 w-24 h-24 bg-[#0038A8] rounded-xl flex items-center justify-center p-2 shadow-md">
-          <img src={logoIlcdb} alt="ILCDB" className="max-h-full max-w-full object-contain" />
+          <img src={logoIlcdb} alt="ICT Academy" className="max-h-full max-w-full object-contain" />
         </div>
         <div>
           <p className="text-sm text-[#CE1126] font-semibold uppercase tracking-wider">Projects</p>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white mt-1">ILCDB Program</h1>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white mt-1">ICT Academy</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
             ICT Livelihood and Community Development Barangay – beneficiaries and report dashboard.
           </p>

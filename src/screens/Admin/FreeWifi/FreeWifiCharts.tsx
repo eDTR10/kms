@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toCanvas as htmlNodeToCanvas } from 'html-to-image';
 import {
   Save, BarChart3, TrendingUp, MapPin, Wifi, ChevronDown, ChevronRight, Search, ChevronLeft, GripVertical,
@@ -23,6 +24,7 @@ import {
   getProjectChartLayouts, createProjectChartLayout, updateProjectChartLayout, deleteProjectChartLayout,
 } from '../../../services/projects';
 import LayoutTabs from '../../../components/LayoutTabs';
+import IctPlansAndPolicies from '../../../components/IctPlansAndPolicies';
 
 export const PROVINCE_COLORS = {
   'Bukidnon': '#2563eb',
@@ -114,6 +116,17 @@ const CHART_TYPES = [
   ) },
   { id: 'horizontal-stack', label: 'Horizontal Stack', needsSecondary: false, minItems: 2, maxItems: 6, category: 'distribution', preview: () => (
     <div className="flex h-6 rounded overflow-hidden w-full">{[40, 30, 20, 10].map((w, i) => <div key={i} style={{ width: `${w}%`, backgroundColor: COLORS[i] }} />)}</div>
+  ) },
+  // Each category is a circle whose AREA (not diameter) scales with its value, so a
+  // category twice as big reads as twice as big instead of four times — see its case in
+  // CustomChartRenderer.
+  { id: 'bubble', label: 'Bubble Chart', needsSecondary: false, minItems: 2, maxItems: 30, category: 'distribution', preview: () => (
+    <div className="flex items-center justify-center gap-1 h-16 w-full">
+      <div className="rounded-full" style={{ width: 30, height: 30, backgroundColor: COLORS[0] }} />
+      <div className="rounded-full" style={{ width: 20, height: 20, backgroundColor: COLORS[1] }} />
+      <div className="rounded-full" style={{ width: 38, height: 38, backgroundColor: COLORS[2] }} />
+      <div className="rounded-full" style={{ width: 14, height: 14, backgroundColor: COLORS[3] }} />
+    </div>
   ) },
   // One full-width, 100%-normalized bar per PRIMARY category (unlike 'bar-stacked' above,
   // whose segments only add up to that row's own raw count, not a shared 0-100% axis) —
@@ -313,7 +326,7 @@ const matchesEqualsValue = (raw, target) => {
 // a field named e.g. "Integration Date" isn't necessarily typed/detected as one.
 const fieldOptionLabel = (f, fieldCardinality, fieldIsDateLike) => {
   const count = fieldCardinality[f.value] || 0;
-  const countLabel = `${count} ${count === 1 ? 'value' : 'values'}`;
+  const countLabel = `${fmtNum(count)} ${count === 1 ? 'value' : 'values'}`;
   return `${f.label} (${fieldIsDateLike[f.value] ? 'Date · ' : ''}${countLabel})`;
 };
 
@@ -381,6 +394,10 @@ function dateBucketKey(rawValue, groupBy) {
       return weekStart.toISOString().slice(0, 10);
     }
     case 'quarter': return `${y}-Q${Math.floor(m / 3) + 1}`;
+    // Jan–Jun = 1st semester, Jul–Dec = 2nd — only used by the range-overlap general
+    // filter's period mode today (see RANGE_OVERLAP_GRANULARITY_OPTIONS), not offered in
+    // DATE_GROUP_BY_OPTIONS.
+    case 'semester': return `${y}-S${m < 6 ? 1 : 2}`;
     case 'year': return String(y);
     case 'month':
     default: return `${y}-${String(m + 1).padStart(2, '0')}`;
@@ -388,11 +405,46 @@ function dateBucketKey(rawValue, groupBy) {
 }
 
 function dateBucketLabel(key, groupBy) {
+  if (groupBy === 'semester') {
+    const [y, s] = key.split('-S');
+    return `${s === '1' ? '1st' : '2nd'} Semester ${y}`;
+  }
   if (groupBy === 'quarter' || groupBy === 'year') return key;
   if (groupBy === 'week') return `Week of ${new Date(key).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   if (groupBy === 'day') return new Date(key).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   const [y, m] = key.split('-');
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
+// The inverse of dateBucketKey for 'quarter'/'semester'/'year' — turns a picked bucket
+// (e.g. "2026-Q1") into concrete calendar boundary dates, so the range-overlap filter's
+// period mode can run the exact same [start,end]-overlaps-[from,to] check its manual
+// From/To mode already does, just with `to`/`from` computed from the period instead of
+// typed in. `new Date(y, monthAfterEnd, 0, ...)` is "day 0" of the month AFTER the bucket
+// ends, which JS resolves to the last day of the bucket's own last month.
+function periodBoundsFromKey(key, granularity) {
+  if (granularity === 'year') {
+    const year = Number(key);
+    if (!Number.isFinite(year)) return null;
+    return { from: new Date(year, 0, 1), to: new Date(year, 12, 0, 23, 59, 59, 999) };
+  }
+  if (granularity === 'semester') {
+    const [yStr, sStr] = key.split('-S');
+    const year = Number(yStr);
+    if (!Number.isFinite(year)) return null;
+    return sStr === '1'
+      ? { from: new Date(year, 0, 1), to: new Date(year, 6, 0, 23, 59, 59, 999) }
+      : { from: new Date(year, 6, 1), to: new Date(year, 12, 0, 23, 59, 59, 999) };
+  }
+  if (granularity === 'quarter') {
+    const [yStr, qStr] = key.split('-Q');
+    const year = Number(yStr);
+    const q = Number(qStr);
+    if (!Number.isFinite(year) || !Number.isFinite(q)) return null;
+    const startMonth = (q - 1) * 3;
+    return { from: new Date(year, startMonth, 1), to: new Date(year, startMonth + 3, 0, 23, 59, 59, 999) };
+  }
+  return null;
 }
 
 // A single condition's type — 'equals' (the original, and the default when `type` is
@@ -406,6 +458,29 @@ export const CONDITION_TYPE_OPTIONS = [
   { value: 'multi', label: 'Is one of' },
   { value: 'range', label: 'Range' },
 ];
+
+// Parses a raw dataset cell value into a number, tolerating thousand-separator commas
+// (e.g. "1,381,933") — a bare Number(...)/parseFloat(...) on a string like that returns
+// NaN (Number) or silently truncates at the first comma (parseFloat), either of which
+// makes a real numeric column read as 0/broken once someone pastes/imports a
+// comma-formatted number. Every numeric coercion of a raw row value anywhere in this
+// file's chart aggregation/filtering should go through this, not a bare Number(...).
+function toNum(v) {
+  if (typeof v === 'number') return v;
+  if (v === null || v === undefined) return NaN;
+  const cleaned = String(v).replace(/,/g, '').trim();
+  return cleaned === '' ? NaN : Number(cleaned);
+}
+
+// Formats a chart value for display: thousand-separator commas, decimal point preserved
+// when the number actually has a fractional part (not silently rounded away) — e.g.
+// 1381933 -> "1,381,933", 1234.5 -> "1,234.5". Falls back to the raw value unchanged if
+// it isn't a finite number (defensive — every real call site here is a plain number from
+// tallyBy's own arithmetic, but this avoids ever rendering "NaN" on a chart).
+function fmtNum(n) {
+  const num = Number(n);
+  return Number.isFinite(num) ? num.toLocaleString() : n;
+}
 
 function conditionMatches(row, c) {
   // A field entirely absent as a KEY on this row (not just blank) only happens for a
@@ -430,10 +505,10 @@ function conditionMatches(row, c) {
     // real number fields); otherwise fall back to date compare (covers "May 19, 2022"-style
     // text date fields, the common case elsewhere in this file — see isDateLikeField).
     // Neither parsing is a match — pass the row through rather than silently dropping it.
-    const rawNum = Number(raw);
+    const rawNum = toNum(raw);
     if (raw !== '' && raw != null && !isNaN(rawNum)) {
-      if (hasFrom && !isNaN(Number(c.from)) && rawNum < Number(c.from)) return false;
-      if (hasTo && !isNaN(Number(c.to)) && rawNum > Number(c.to)) return false;
+      if (hasFrom && !isNaN(toNum(c.from)) && rawNum < toNum(c.from)) return false;
+      if (hasTo && !isNaN(toNum(c.to)) && rawNum > toNum(c.to)) return false;
       return true;
     }
     const rawDate = new Date(raw);
@@ -489,12 +564,12 @@ function tallyBy(records, keyFn, isAgg, aggField, aggType) {
       result[k] = helper[k].size;
     } else if (aggType === 'average') {
       if (!helper[k]) helper[k] = { sum: 0, count: 0 };
-      const num = Number(rawVal);
+      const num = toNum(rawVal);
       if (!isNaN(num)) { helper[k].sum += num; helper[k].count += 1; }
       result[k] = helper[k].count > 0 ? Math.round(helper[k].sum / helper[k].count) : 0;
     } else {
       // 'sum' (default)
-      const num = Number(rawVal) || 0;
+      const num = toNum(rawVal) || 0;
       result[k] = (result[k] || 0) + num;
     }
   });
@@ -717,12 +792,50 @@ const CHART_AGG_OPTIONS = [
 ];
 
 // A general filter (GlobalDateFilterBar) is either an 'exact' dropdown of a column's
-// distinct values, or a 'range' From/To pair (dates, compared as timestamps) — see
-// FilterSettingsModal and filterTablesByGeneralFilter.
+// distinct values, a 'range' From/To pair matched against ONE date column (compared as
+// timestamps), or a 'range-overlap' filter matched against a PAIR of columns — a
+// "started" column (required) and an "ended" column (optional, blank/unset meaning still
+// ongoing) — where a row matches if its [started, ended-or-forever] span overlaps the
+// selected window at all, e.g. "which sites were live at some point during this period,
+// including ones that haven't been deactivated yet." A range-overlap filter has its own
+// `granularity`: 'exact' (default — a manual From/To date pair, like 'range' but checked
+// against the start/end column PAIR instead of one column) or 'period' — three separate
+// multi-selects: Year (the actual years present in the data), Semester (generic "1st
+// Sem"/"2nd Sem", not tied to any one year), and Quarter (generic "Q1"–"Q4"). Year is the
+// anchor — Semester/Quarter picks are only meaningful paired with a selected year (e.g.
+// Year=2026 + Quarter=Q1 means "Q1 2026", not "Q1 of every year"), so the filter is only
+// "active" once at least one year is picked, and picking a Semester/Quarter with NO year
+// picked has no effect yet. A row matches if its [start,end] span overlaps ANY of the
+// resulting year×semester / year×quarter (or, with neither picked, whole-year) windows.
+// See FilterSettingsModal and filterTablesByGeneralFilter.
 const FILTER_TYPE_OPTIONS = [
   { value: 'exact', label: 'Exact value (dropdown)' },
   { value: 'range', label: 'Range (From/To)' },
+  { value: 'range-overlap', label: 'Range — active during (start/end columns)' },
 ];
+const RANGE_OVERLAP_GRANULARITY_OPTIONS = [
+  { value: 'exact', label: 'Exact dates (From/To)' },
+  { value: 'period', label: 'Period — Year / Semester / Quarter' },
+];
+// Semester/Quarter are generic (not per-year) — same 2/4 options regardless of what's in
+// the data, since they only ever apply combined with whichever year(s) are picked.
+const PERIOD_SEMESTER_OPTIONS = [{ value: '1', label: '1st Sem' }, { value: '2', label: '2nd Sem' }];
+const PERIOD_QUARTER_OPTIONS = [
+  { value: '1', label: 'Q1' }, { value: '2', label: 'Q2' }, { value: '3', label: 'Q3' }, { value: '4', label: 'Q4' },
+];
+// Whether this filter renders as two date inputs (value shape {from,to}) rather than a
+// dropdown — 'range' always does; 'range-overlap' only does while its granularity is
+// 'exact' (the default/unset case) or missing.
+export const isRangeFilterType = (type, granularity) =>
+  type === 'range' || (type === 'range-overlap' && (!granularity || granularity === 'exact'));
+// range-overlap + granularity:'period' renders as the Year/Semester/Quarter trio (value
+// shape: {years:[...], semesters:[...], quarters:[...]}) instead of the plain 'exact'
+// type's single-select (value shape: one string). Also treats the old 'quarter'/
+// 'semester'/'year' granularity values as 'period' too — those were this filter's own
+// separate granularity values for a brief window before landing on this Year-anchored
+// design; a filter saved with one of those old values just upgrades automatically.
+const isPeriodOverlapFilter = (type, granularity) =>
+  type === 'range-overlap' && ['period', 'quarter', 'semester', 'year'].includes(granularity);
 
 // Built-in charts' data-source picks are published settings (KmsSettings), not per-browser
 // state — whatever the admin sets here is exactly what the public page shows, with no
@@ -1065,26 +1178,71 @@ export function resolveMapSites(records, source, taggedFields) {
 // other filter. Shared by the admin preview and the public page so both filter identically.
 export function filterTablesByGeneralFilter(tables, filters, values) {
   const typeByLabel = {};
-  (filters || []).forEach((f) => { typeByLabel[f.label] = f.type; });
-  const active = Object.entries(values || {}).filter(([label, v]) =>
-    typeByLabel[label] === 'range' ? Boolean(v?.from || v?.to) : Boolean(v));
+  const granularityByLabel = {};
+  (filters || []).forEach((f) => { typeByLabel[f.label] = f.type; granularityByLabel[f.label] = f.granularity; });
+  const active = Object.entries(values || {}).filter(([label, v]) => {
+    if (isRangeFilterType(typeByLabel[label], granularityByLabel[label])) return Boolean(v?.from || v?.to);
+    // Year is the anchor — Semester/Quarter picks with no year picked don't constrain
+    // anything yet (see this file's own FILTER_TYPE_OPTIONS doc comment).
+    if (isPeriodOverlapFilter(typeByLabel[label], granularityByLabel[label])) return Boolean(v?.years?.length);
+    return Boolean(v);
+  });
   if (!active.length) return tables;
   return tables.map((t) => {
     const fieldMap = t.general_filter_fields || {};
     const applicable = active
-      .filter(([label]) => fieldMap[label])
-      .map(([label, val]) => [label, val, buildFieldResolver(t, fieldMap[label], tables)]);
+      // range-overlap's tag is {start, end} — only start is required (a table with no
+      // "ended" concept at all just never excludes a row on that side) — regardless of
+      // granularity, the same two columns feed both the exact-date and period modes.
+      .filter(([label]) => typeByLabel[label] === 'range-overlap' ? fieldMap[label]?.start : fieldMap[label])
+      .map(([label, val]) => [label, val, typeByLabel[label] === 'range-overlap'
+        ? { resolveStart: buildFieldResolver(t, fieldMap[label].start, tables), resolveEnd: fieldMap[label].end ? buildFieldResolver(t, fieldMap[label].end, tables) : () => null }
+        : buildFieldResolver(t, fieldMap[label], tables)]);
     if (!applicable.length) return t;
-    const rows = (t.rows || []).filter((r) => applicable.every(([label, val, resolve]) => {
-      const raw = resolve(r);
-      if (typeByLabel[label] === 'range') {
-        if (!raw) return false;
-        const time = new Date(raw).getTime();
-        if (Number.isNaN(time)) return false;
+    const rows = (t.rows || []).filter((r) => applicable.every(([label, val, resolveOrResolvers]) => {
+      if (typeByLabel[label] === 'range-overlap') {
+        const granularity = granularityByLabel[label];
+        const startRaw = resolveOrResolvers.resolveStart(r);
+        if (!startRaw) return false;
+        const startTime = new Date(startRaw).getTime();
+        if (Number.isNaN(startTime)) return false;
+        const endRaw = resolveOrResolvers.resolveEnd(r);
+        const endTime = endRaw ? new Date(endRaw).getTime() : NaN;
+        // Blank "ended" (or one that doesn't parse) means still ongoing — never excludes a
+        // row on that side, for either mode below.
+        const stillOngoing = !endRaw || Number.isNaN(endTime);
+        const overlaps = (fromTime, toTime) => startTime <= toTime && (stillOngoing || endTime >= fromTime);
+        if (isPeriodOverlapFilter('range-overlap', granularity)) {
+          // Period mode: `val` is {years, semesters, quarters} — Semester/Quarter are
+          // generic (not per-year), so every window is a YEAR × semester-or-quarter pair;
+          // with neither picked, the whole selected year(s) are the window. A row matches
+          // if it overlaps ANY resulting window (OR across the full cross-product).
+          const years = val?.years || [];
+          if (!years.length) return true;
+          const quarters = val?.quarters || [];
+          const semesters = val?.semesters || [];
+          const windows = [];
+          years.forEach((y) => {
+            if (quarters.length) quarters.forEach((q) => windows.push(periodBoundsFromKey(`${y}-Q${q}`, 'quarter')));
+            if (semesters.length) semesters.forEach((s) => windows.push(periodBoundsFromKey(`${y}-S${s}`, 'semester')));
+            if (!quarters.length && !semesters.length) windows.push(periodBoundsFromKey(String(y), 'year'));
+          });
+          return windows.some((w) => w && overlaps(w.from.getTime(), w.to.getTime()));
+        }
+        // Exact mode: `val` is the usual {from,to} pair typed into the date inputs.
         const fromTime = val.from ? new Date(val.from).getTime() : -Infinity;
         // Inclusive through the end of the "To" day — a bare date has no time component,
         // so without this, picking the same day for From and To would match nothing.
         const toTime = val.to ? new Date(val.to).getTime() + (24 * 60 * 60 * 1000 - 1) : Infinity;
+        return overlaps(fromTime, toTime);
+      }
+      const fromTime = val.from ? new Date(val.from).getTime() : -Infinity;
+      const toTime = val.to ? new Date(val.to).getTime() + (24 * 60 * 60 * 1000 - 1) : Infinity;
+      const raw = resolveOrResolvers(r);
+      if (typeByLabel[label] === 'range') {
+        if (!raw) return false;
+        const time = new Date(raw).getTime();
+        if (Number.isNaN(time)) return false;
         return time >= fromTime && time <= toTime;
       }
       return String(raw ?? '').trim().toLowerCase() === String(val).trim().toLowerCase();
@@ -1113,22 +1271,32 @@ export function summaryAsOfLabel(dateFrom, dateTo, today) {
 // picking a value doesn't shrink what's offered by another filter.
 export function generalFilterOptionsFor(tables, filters) {
   const result = {};
-  (filters || []).forEach(({ label, type }) => {
-    if (type === 'range') return;
+  (filters || []).forEach(({ label, type, granularity }) => {
+    if (isRangeFilterType(type, granularity)) return;
     // Keyed by lowercase so e.g. "Cagayan de Oro" (tagged on one table) and "cagayan de
     // oro" (tagged on another table under the same filter) collapse into ONE dropdown
     // option instead of showing as two — filterTablesByGeneralFilter already matches
     // case-insensitively (see its `.toLowerCase()` comparison below), so surfacing every
     // raw casing here was pure duplication, not a real distinction. First casing seen
-    // wins for display.
+    // wins for display. A period-mode range-overlap filter only needs YEAR options
+    // computed here (read off its "started" column) — Semester/Quarter are generic,
+    // always PERIOD_SEMESTER_OPTIONS/PERIOD_QUARTER_OPTIONS regardless of what's in the
+    // data, since they only ever apply paired with whichever year(s) get picked.
+    const isPeriod = isPeriodOverlapFilter(type, granularity);
     const values = new Map();
     (tables || []).forEach((t) => {
-      const field = (t.general_filter_fields || {})[label];
+      const fieldSpec = (t.general_filter_fields || {})[label];
+      const field = isPeriod ? fieldSpec?.start : fieldSpec;
       if (!field) return;
       const resolve = buildFieldResolver(t, field, tables);
       (t.rows || []).forEach((r) => {
         const v = resolve(r);
         if (v === null || v === undefined) return;
+        if (isPeriod) {
+          const year = dateBucketKey(v, 'year');
+          if (year && !values.has(year)) values.set(year, year);
+          return;
+        }
         const trimmed = String(v).trim();
         if (!trimmed) return;
         const key = trimmed.toLowerCase();
@@ -1137,7 +1305,7 @@ export function generalFilterOptionsFor(tables, filters) {
     });
     result[label] = [...values.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([, display]) => ({ value: display, label: display }));
+      .map(([key, display]) => ({ value: isPeriod ? key : display, label: display }));
   });
   return result;
 }
@@ -1150,7 +1318,9 @@ export function generalFilterOptionsFor(tables, filters) {
 export function GlobalDateFilterBar({ filters = [], values = {}, onChange, onClear, generalFilterOptions = {} }) {
   const hasFilter = filters.some((f) => {
     const v = values[f.label];
-    return f.type === 'range' ? Boolean(v?.from || v?.to) : Boolean(v);
+    if (isRangeFilterType(f.type, f.granularity)) return Boolean(v?.from || v?.to);
+    if (isPeriodOverlapFilter(f.type, f.granularity)) return Boolean(v?.years?.length);
+    return Boolean(v);
   });
   return (
     <div className="flex flex-wrap items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -1158,24 +1328,61 @@ export function GlobalDateFilterBar({ filters = [], values = {}, onChange, onCle
       {filters.length === 0 && (
         <span className="text-xs text-gray-400">None configured yet.</span>
       )}
-      {filters.map((f) => f.type === 'range' ? (
-        <div key={f.label} className="flex flex-wrap items-center gap-1.5">
-          <label className="text-xs text-gray-500 dark:text-gray-400">{f.label} from</label>
-          <input type="date" value={values[f.label]?.from || ''}
-            onChange={(e) => onChange(f.label, { ...(values[f.label] || {}), from: e.target.value })}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-          <label className="text-xs text-gray-500 dark:text-gray-400">to</label>
-          <input type="date" value={values[f.label]?.to || ''}
-            onChange={(e) => onChange(f.label, { ...(values[f.label] || {}), to: e.target.value })}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-        </div>
-      ) : (
-        <div key={f.label} className="min-w-[160px]">
-          <Select value={selectValue(generalFilterOptions[f.label] || [], values[f.label] || '')}
-            onChange={(opt) => onChange(f.label, opt ? opt.value : '')}
-            options={generalFilterOptions[f.label] || []} placeholder={f.label} isClearable styles={selectStyles} />
-        </div>
-      ))}
+      {filters.map((f) => {
+        if (isRangeFilterType(f.type, f.granularity)) {
+          return (
+            <div key={f.label} className="flex flex-wrap items-center gap-1.5">
+              <label className="text-xs text-gray-500 dark:text-gray-400">{f.label} from</label>
+              <input type="date" value={values[f.label]?.from || ''}
+                onChange={(e) => onChange(f.label, { ...(values[f.label] || {}), from: e.target.value })}
+                className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+              <label className="text-xs text-gray-500 dark:text-gray-400">to</label>
+              <input type="date" value={values[f.label]?.to || ''}
+                onChange={(e) => onChange(f.label, { ...(values[f.label] || {}), to: e.target.value })}
+                className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+          );
+        }
+        if (isPeriodOverlapFilter(f.type, f.granularity)) {
+          // Three separate multi-selects — Year (real years from the data, via
+          // generalFilterOptions), Semester and Quarter (generic — PERIOD_SEMESTER_OPTIONS/
+          // PERIOD_QUARTER_OPTIONS, same options no matter what's in the data). Semester
+          // and Quarter are disabled until at least one Year is picked, since they only
+          // ever apply combined with the selected year(s) — see filterTablesByGeneralFilter.
+          const yearOpts = generalFilterOptions[f.label] || [];
+          const val = values[f.label] || {};
+          const years = val.years || [];
+          const semesters = val.semesters || [];
+          const quarters = val.quarters || [];
+          const setPart = (part, arr) => onChange(f.label, { ...val, [part]: arr });
+          return (
+            <div key={f.label} className="flex flex-wrap items-center gap-1.5">
+              <div className="min-w-[110px]">
+                <Select isMulti value={yearOpts.filter((o) => years.includes(o.value))}
+                  onChange={(sel) => setPart('years', (sel || []).map((o) => o.value))}
+                  options={yearOpts} placeholder="Year" styles={selectStyles} />
+              </div>
+              <div className="min-w-[130px]">
+                <Select isMulti isDisabled={!years.length} value={PERIOD_SEMESTER_OPTIONS.filter((o) => semesters.includes(o.value))}
+                  onChange={(sel) => setPart('semesters', (sel || []).map((o) => o.value))}
+                  options={PERIOD_SEMESTER_OPTIONS} placeholder={years.length ? 'Semester' : 'Pick a year first'} styles={selectStyles} />
+              </div>
+              <div className="min-w-[130px]">
+                <Select isMulti isDisabled={!years.length} value={PERIOD_QUARTER_OPTIONS.filter((o) => quarters.includes(o.value))}
+                  onChange={(sel) => setPart('quarters', (sel || []).map((o) => o.value))}
+                  options={PERIOD_QUARTER_OPTIONS} placeholder={years.length ? 'Quarter' : 'Pick a year first'} styles={selectStyles} />
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={f.label} className="min-w-[160px]">
+            <Select value={selectValue(generalFilterOptions[f.label] || [], values[f.label] || '')}
+              onChange={(opt) => onChange(f.label, opt ? opt.value : '')}
+              options={generalFilterOptions[f.label] || []} placeholder={f.label} isClearable styles={selectStyles} />
+          </div>
+        );
+      })}
       {hasFilter && (
         <button type="button" onClick={onClear} className="text-xs font-medium text-red-500 hover:underline">Clear</button>
       )}
@@ -1231,9 +1438,9 @@ export function computeSummaryTiles(records, source, taggedFields, combineCtx) {
         } else if (cfg.agg === 'row_value') {
           // Not an aggregate at all — this tile's own `conditions` pick ONE row (the
           // first match), and its raw value for `field` is shown as-is.
-          value = rows.length ? (Number(rows[0][cfg.field]) || 0) : 0;
+          value = rows.length ? (toNum(rows[0][cfg.field]) || 0) : 0;
         } else {
-          value = rows.reduce((s, r) => s + (Number(r[cfg.field]) || 0), 0);
+          value = rows.reduce((s, r) => s + (toNum(r[cfg.field]) || 0), 0);
         }
         return { label: cfg.label || fieldDef?.label || cfg.field || 'Count', value, highlight: Boolean(cfg.highlight) };
       })
@@ -1359,7 +1566,7 @@ export function BreakdownAccordion({ records, source, taggedFields }) {
               <div className="flex-1 min-w-0 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-[#0038A8]" style={{ width: `${(count / maxCount) * 100}%` }} />
               </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400 w-16 sm:w-20 text-right shrink-0 truncate">{count} rows</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 w-16 sm:w-20 text-right shrink-0 truncate">{fmtNum(count)} rows</span>
               {isOpen ? <ChevronDown size={18} className="text-gray-400 shrink-0" /> : <ChevronRight size={18} className="text-gray-400 shrink-0" />}
             </button>
             {isOpen && (
@@ -1410,7 +1617,7 @@ export function BreakdownAccordion({ records, source, taggedFields }) {
 // Display label for each of the 3 widget types an extra ProjectBuiltinWidget instance
 // can be — used wherever a widget instance needs a fallback title (before the admin sets
 // its own via DataSourceModal) or a name in the "Add widget" menu.
-export const WIDGET_TYPE_LABELS = { summary: 'Summary', map: 'Map', 'province-breakdown': 'Breakdown' };
+export const WIDGET_TYPE_LABELS = { summary: 'Summary', map: 'Map', 'province-breakdown': 'Breakdown', 'ict-plans-policies': 'ICT Plans and Policies' };
 
 // Turns one ProjectBuiltinWidget row (a backend id + widget_type + settings blob) into
 // the chart-like shape the Charts page's unified allCharts list/render loop expects —
@@ -1495,6 +1702,11 @@ export function chartConfigFromBackend(c) {
     // Per-chart display overrides for `field`'s raw values — see the model field's
     // docstring. Applied in CustomChartRenderer's displayLabel helper.
     valueLabels: c.value_labels || {},
+    // Per-category "out of" target — {rawValue: 100} shows "50/100" instead of just "50"
+    // for that category, e.g. progress toward a goal. Display-only: does NOT change the
+    // real tallied count, bar height, or percentage-of-total math anywhere — see the
+    // model field's docstring and displayValue() in CustomChartRenderer.
+    valueTargets: c.value_targets || {},
     // Same idea, for secondary_field's own sub-group values — see displaySecondaryLabel.
     secondaryValueLabels: c.secondary_value_labels || {},
     // {field, value} pairs, ANDed together, narrowing which rows this chart counts —
@@ -1523,6 +1735,9 @@ export function chartConfigFromBackend(c) {
     // "Compare columns for one row" mode — see CustomChartRenderer's rowMode branch.
     rowMode: !!c.row_mode,
     rowColumns: c.row_columns || [],
+    // line/area only — one line per matching row instead of one line grouping `field`'s
+    // values — see buildMultiRowSeries/renderMultiRowLine in CustomChartRenderer.
+    multiRowMode: !!c.multi_row_mode,
     // Color customization — see colorFor's docstring in CustomChartRenderer.
     colorMode: c.color_mode || 'palette',
     chartColor: c.chart_color || '#0038A8',
@@ -1541,6 +1756,16 @@ export function chartConfigFromBackend(c) {
     tertiaryCategoryOrder: c.tertiary_category_order || [],
     // Donut's own center content — see the "Donut center" toggle in the chart builder.
     donutCenterMode: c.donut_center_mode || 'total',
+    // Comparison chart type only — each primary category starts collapsed, expanding on
+    // click to reveal its secondary_field breakdown rows.
+    comparisonCollapsible: !!c.comparison_collapsible,
+    // bar-vertical + row mode only — the automatic per-bar "% change" readout.
+    // Defaults true (opt-out, not opt-in) so it keeps showing for every chart saved before
+    // this field existed, since c.show_row_increase comes back undefined for those.
+    showRowIncrease: c.show_row_increase !== false,
+    rowIncreaseColor: c.row_increase_color || '',
+    rowDecreaseColor: c.row_decrease_color || '',
+    rowIncreaseInHeader: !!c.row_increase_in_header,
   };
 }
 
@@ -1572,6 +1797,7 @@ export function chartConfigToBackend(chart) {
     date_group_by: isDateTrend ? (chart.dateGroupBy || 'month') : '',
     cumulative: isDateTrend ? !!chart.cumulative : false,
     value_labels: Object.fromEntries(Object.entries(chart.valueLabels || {}).filter(([, v]) => v && v.trim())),
+    value_targets: Object.fromEntries(Object.entries(chart.valueTargets || {}).filter(([, v]) => v !== '' && v !== null && v !== undefined)),
     secondary_value_labels: Object.fromEntries(Object.entries(chart.secondaryValueLabels || {}).filter(([, v]) => v && v.trim())),
     conditions: (chart.conditions || []).filter(cond => cond.field),
     grid_size: chart.gridSize || 'full',
@@ -1588,7 +1814,8 @@ export function chartConfigToBackend(chart) {
       Object.entries(chart.tableConditions || {}).map(([id, conds]) => [id, (conds || []).filter(c => c.field)])
     ),
     row_mode: !isCard && !!chart.rowMode,
-    row_columns: !isCard && chart.rowMode ? (chart.rowColumns || []) : [],
+    row_columns: !isCard && (chart.rowMode || chart.multiRowMode) ? (chart.rowColumns || []) : [],
+    multi_row_mode: !isCard && (chart.chartType === 'line' || chart.chartType === 'area') && !chart.rowMode && !!chart.multiRowMode,
     color_mode: !isCard ? (chart.colorMode || 'palette') : 'palette',
     chart_color: !isCard ? (chart.chartColor || '#0038A8') : '',
     category_colors: !isCard ? (chart.categoryColors || {}) : {},
@@ -1599,6 +1826,11 @@ export function chartConfigToBackend(chart) {
     tertiary_value_labels: !isCard ? (chart.tertiaryValueLabels || {}) : {},
     tertiary_category_order: !isCard && !chart.rowMode ? (chart.tertiaryCategoryOrder || []) : [],
     donut_center_mode: chart.chartType === 'donut' ? (chart.donutCenterMode || 'total') : 'total',
+    comparison_collapsible: chart.chartType === 'comparison' ? !!chart.comparisonCollapsible : false,
+    show_row_increase: chart.chartType === 'bar-vertical' ? chart.showRowIncrease !== false : true,
+    row_increase_color: chart.chartType === 'bar-vertical' ? (chart.rowIncreaseColor || '') : '',
+    row_decrease_color: chart.chartType === 'bar-vertical' ? (chart.rowDecreaseColor || '') : '',
+    row_increase_in_header: chart.chartType === 'bar-vertical' ? !!chart.rowIncreaseInHeader : false,
   };
 }
 
@@ -1663,11 +1895,11 @@ function getChartFit(type, count, isDateLike = false, fieldSelected = true) {
   if (!type) return { status: 'ok' };
   if (!fieldSelected) return { status: 'ok' };
   if (type.requiresDateField && !isDateLike) return { status: 'disabled', reason: "Needs a date field — pick one with date values, or mark a field's type as Date on the Datasets tab" };
-  if (count < type.minItems) return { status: 'disabled', reason: `Needs at least ${type.minItems} categories — this field only has ${count}` };
+  if (count < type.minItems) return { status: 'disabled', reason: `Needs at least ${type.minItems} categories — this field only has ${fmtNum(count)}` };
   if (type.maxItems && count > type.maxItems) {
     return { status: 'partial', reason: type.requiresDateField
-      ? `Shows the most recent ${type.maxItems} of ${count} dates`
-      : `Shows the top ${type.maxItems} of ${count} categories` };
+      ? `Shows the most recent ${type.maxItems} of ${fmtNum(count)} dates`
+      : `Shows the top ${type.maxItems} of ${fmtNum(count)} categories` };
   }
   return { status: 'ok' };
 }
@@ -1817,7 +2049,7 @@ export function ProvinceBreakdown({ province, data, sites, color, maxSites, hasA
               {siteTypes.map(([type, count]) => (
                 <button key={type} onClick={() => { setSelectedType(selectedType === type ? '' : type); setPage(1); }}
                   className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-colors ${selectedType === type ? 'bg-[#0038A8] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600'}`}>
-                  {type}: {count}
+                  {type}: {fmtNum(count)}
                 </button>
               ))}
             </div>
@@ -1884,11 +2116,11 @@ function computeAggregateValue(records, field, agg) {
     const nums = records
       .map(r => r[field])
       .filter(v => v !== null && v !== undefined && String(v).trim() !== '')
-      .map(Number)
+      .map(toNum)
       .filter(Number.isFinite);
     return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
   }
-  return records.reduce((s, r) => s + (Number(r[field]) || 0), 0); // sum (default)
+  return records.reduce((s, r) => s + (toNum(r[field]) || 0), 0); // sum (default)
 }
 
 
@@ -2049,7 +2281,7 @@ function AggregateValueCard({ chart, sites }) {
     ? `${value.toFixed(1)}%${chart.percentageLabel ? ' ' + chart.percentageLabel : ''}`
     : agg === 'average'
     ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
-    : Math.round(value).toLocaleString();
+    : value.toLocaleString();
   const Icon = chart.cardIcon ? MARKER_ICON_OPTIONS.find(o => o.name === chart.cardIcon)?.Icon : null;
 
   // Optional longer text (chart.cardDescription) — a sentence or two of context, distinct
@@ -2169,6 +2401,30 @@ function AggregateValueCard({ chart, sites }) {
   );
 }
 
+// Row mode ("Compare columns for one row") needs exactly one row — but "Filter rows" only
+// has to narrow it down to SOME matches, and a "Is one of" condition on its own field can
+// easily leave several (e.g. "Summary is one of [Live count, Not-live count]" matches both
+// of those rows). Picking plain filteredSites[0] then means whichever row the underlying
+// table happens to list first wins — not necessarily the one the admin meant — and if THAT
+// row's compared columns are blank, the chart just renders empty bars with no explanation.
+// This instead tries each of the admin's own selected values IN ORDER (the first one
+// picked is treated as the intended one), and within that, skips straight past a matching
+// row that has no real number in any compared column to the next candidate — a blank/
+// text-only row is never useful to chart, so there's no reason to prefer it over one with
+// actual data just because it happened to match first.
+function pickRowModeRow(filteredSites, conditions, rowColumns) {
+  const hasNumericValue = (row) => (rowColumns || []).some((col) => Number.isFinite(toNum(row[col])));
+  const multiCond = (conditions || []).find((c) => c.field && c.type === 'multi' && (c.values || []).length > 1);
+  if (multiCond) {
+    for (const wantedValue of multiCond.values) {
+      const wanted = String(wantedValue).trim().toLowerCase();
+      const match = filteredSites.find((r) => String(r[multiCond.field] ?? '').trim().toLowerCase() === wanted && hasNumericValue(r));
+      if (match) return match;
+    }
+  }
+  return filteredSites.find(hasNumericValue) || filteredSites[0] || null;
+}
+
 // Builds the {label: value} category data every chart type below renders from — pulled
 // out of CustomChartRenderer so the CSV export (exportChartDataCSV) can compute the
 // EXACT same data through one shared function instead of a second, separately-maintained
@@ -2178,14 +2434,14 @@ function AggregateValueCard({ chart, sites }) {
 function buildChartTallyData(chart, sites) {
   const filteredSites = filterRecordsByConditions(sites, chart.conditions);
   const isRowMode = !!chart.rowMode;
-  const rowModeRow = isRowMode ? (filteredSites[0] || null) : null;
+  const rowModeRow = isRowMode ? pickRowModeRow(filteredSites, chart.conditions, chart.rowColumns) : null;
   const isDateTrend = !isRowMode && (chart.chartType === 'line' || chart.chartType === 'area');
   const dateGroupBy = chart.dateGroupBy || 'month';
   const isAgg = !isRowMode && !!chart.aggregationEnabled && !!chart.aggregationField;
   const aggType = chart.aggregationType || 'sum';
   const bucketLabels = {};
   const fieldData = isRowMode
-    ? Object.fromEntries((chart.rowColumns || []).map((col) => [col, rowModeRow ? (Number(rowModeRow[col]) || 0) : 0]))
+    ? Object.fromEntries((chart.rowColumns || []).map((col) => [col, rowModeRow ? (toNum(rowModeRow[col]) || 0) : 0]))
     : tallyBy(filteredSites, (s) => {
         if (!isDateTrend) return s[chart.field] || 'N/A';
         const raw = s[chart.field];
@@ -2222,6 +2478,56 @@ function buildChartTallyData(chart, sites) {
     sorted = sorted.map(([key, count]) => { running += count; return [key, running]; });
   }
   return { sorted, total, bucketLabels, isRowMode, rowModeRow, isDateTrend };
+}
+
+// bar-vertical + row mode + chart.rowIncreaseInHeader only — swaps the chart's own title
+// for the computed first-vs-last-column "+X% Increase from <label>" text instead of
+// showing it inline above the bars (see CustomChartRenderer's per-bar changePct), matching
+// a design where that line IS the header rather than living inside the chart body. Called
+// from the same place chart.title normally gets read (DraggableChart/ChartCard's title
+// prop, plus the builder's own Live Preview header) — never from inside
+// CustomChartRenderer, which keeps rendering its own per-bar badges independent of this.
+export function rowIncreaseHeaderText(chart, sites) {
+  if (chart.chartType !== 'bar-vertical' || !chart.rowIncreaseInHeader) return null;
+  const { sorted, isRowMode } = buildChartTallyData(chart, sites);
+  if (!isRowMode || sorted.length < 2 || !sorted[0][1]) return null;
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const pct = ((last[1] - first[1]) / first[1]) * 100;
+  const firstLabel = chart.valueLabels?.[first[0]] || first[0];
+  return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% ${pct >= 0 ? 'Increase' : 'Decrease'} from ${firstLabel}`;
+}
+
+// A wide table (one row per category, one column per period — e.g. REGION rows with
+// 2023/2024/2025/2026 columns) doesn't fit buildChartTallyData's one-line-total model at
+// all: the point isn't grouping `field`'s values into buckets, it's turning every matching
+// ROW into its own LINE, plotted across the same shared `row_columns` X-axis — one series
+// per row instead of one series total. Capped at MAX_MULTI_ROW_SERIES lines so a table with
+// hundreds of rows doesn't turn into an unreadable tangle; narrow it down with Filter rows.
+const MAX_MULTI_ROW_SERIES = 12;
+
+function buildMultiRowSeries(chart, sites) {
+  const filteredSites = filterRecordsByConditions(sites, chart.conditions);
+  const columns = chart.rowColumns || [];
+  const matchedRows = filteredSites.slice(0, MAX_MULTI_ROW_SERIES);
+  let series = matchedRows.map((row) => ({
+    rawLabel: String(row[chart.field] ?? 'N/A'),
+    points: columns.map((col) => toNum(row[col]) || 0),
+  }));
+  // Same "drag to reorder in Customize labels, anything new appends at the end" convention
+  // every other category list in this file already follows — chart.categoryOrder is keyed
+  // by the row's own `field` value here, exactly like a normal (non-multi-row) chart keys
+  // it by that field's distinct values.
+  if (chart.categoryOrder?.length) {
+    const orderIndex = new Map(chart.categoryOrder.map((v, idx) => [v, idx]));
+    series = [...series].sort((a, b) => {
+      const ai = orderIndex.has(a.rawLabel) ? orderIndex.get(a.rawLabel) : Infinity;
+      const bi = orderIndex.has(b.rawLabel) ? orderIndex.get(b.rawLabel) : Infinity;
+      return ai - bi;
+    });
+  }
+  const max = Math.max(...series.flatMap((s) => s.points), 1);
+  return { series, columns, max, matchedCount: filteredSites.length };
 }
 
 // Strips characters most filesystems reject in a filename, and caps length so an admin's
@@ -2482,6 +2788,17 @@ export async function exportChartAsImage(node, title, { width, height, includeHe
 export function CustomChartRenderer({ chart, sites }) {
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [hoveredItem, setHoveredItem] = useState(null);
+  // chart_type='comparison' + chart.comparisonCollapsible only — which primary categories
+  // are currently expanded to show their secondary_field breakdown. Empty by default (every
+  // category starts collapsed), matching "the first thing you see is the primary field".
+  const [expandedComparisonRows, setExpandedComparisonRows] = useState(() => new Set());
+  const toggleComparisonRow = (label) => {
+    setExpandedComparisonRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      return next;
+    });
+  };
   // Paginates the "vertical list" chart types (bar-horizontal, table, list, ...) once
   // "Show all categories" is on — dumping e.g. 97 categories into one long scrolling block
   // was the alternative, this instead pages through them in the type's normal batch size.
@@ -2560,6 +2877,30 @@ export function CustomChartRenderer({ chart, sites }) {
   // never itself a date-trend axis.
   const displaySecondaryLabel = (rawLabel) => chart.secondaryValueLabels?.[rawLabel] || rawLabel;
   const displayTertiaryLabel = (rawLabel) => chart.tertiaryValueLabels?.[rawLabel] || rawLabel;
+  // Per-category "out of" target (chart.valueTargets: {rawValue: number}, set via
+  // "Customize labels") — shows "50/100" instead of just "50" for a category with a target
+  // set (used in tooltips/legends/table cells/cards, which all have room for the combined
+  // text). `count` here is always the real tallied/aggregated value; percent-of-total is
+  // unaffected by a target either way.
+  const targetFor = (rawLabel) => {
+    const t = toNum(chart.valueTargets?.[rawLabel]);
+    return Number.isFinite(t) && t > 0 ? t : null;
+  };
+  const displayValue = (rawLabel, count) => {
+    const target = targetFor(rawLabel);
+    return target !== null ? `${fmtNum(count)}/${fmtNum(target)}` : fmtNum(count);
+  };
+  // Just the "/target" suffix (or '' with no target) — for the handful of bar-style chart
+  // types (bar-horizontal, funnel, comparison's fallback bar) where the value label sits
+  // INSIDE a width-proportional colored fill: a short bar's text would otherwise overflow
+  // past its own colored area once "/target" made the label longer, so those render the
+  // plain count inside the bar and this suffix as a separate label just outside it instead.
+  const targetLabel = (rawLabel) => { const t = targetFor(rawLabel); return t !== null ? `/${fmtNum(t)}` : ''; };
+  // A category with a target sizes its own bar/fill relative to THAT target instead of
+  // `max` (the greatest raw value across every category) — so e.g. a small town's bar isn't
+  // visually dwarfed by a big city's raw count just because they're being measured against
+  // completely different goals. A category with no target is unaffected, still uses `max`.
+  const maxFor = (rawLabel) => targetFor(rawLabel) || max;
 
   // Paginates a "vertical list" of rows (bar-horizontal, table, list, progress, ...) in
   // batches of `pageSize` once "Show all categories" is checked — with it off, behaves
@@ -2662,7 +3003,28 @@ export function CustomChartRenderer({ chart, sites }) {
   };
 
   // Percent-of-total helper shared by every tooltip
-  const pctOf = (count) => ((count / total) * 100).toFixed(1);
+  // A category with a target shows progress toward THAT target (count/target) instead of
+  // its share of the grand total across every category — otherwise "25/26 (40.3%)" would
+  // show a percentage that doesn't correspond to 25 of 26 at all.
+  const pctOf = (rawLabel, count) => {
+    const target = targetFor(rawLabel);
+    const denom = target !== null ? target : total;
+    return denom > 0 ? ((count / denom) * 100).toFixed(1) : '0.0';
+  };
+  // The value shown INSIDE a target-aware bar — "50 (50%)" (count and its progress toward
+  // the target) when a target is set, or just the plain count otherwise. The percentage
+  // renders smaller/lighter than the count itself so it reads as secondary detail rather
+  // than competing with it — especially important on a short/narrow bar. The "/target"
+  // itself renders separately, just outside the bar — see targetLabel below.
+  const valueWithPct = (rawLabel, count) => {
+    const target = targetFor(rawLabel);
+    if (target === null) return fmtNum(count);
+    return (
+      <>
+        {fmtNum(count)} <span className="text-[9px] font-normal opacity-80">({pctOf(rawLabel, count)}%)</span>
+      </>
+    );
+  };
 
   // SVG points (line/area/radar) can't wrap an HTML Tooltip div around a
   // <circle>, so hover state drives a positioned overlay instead. x/y are
@@ -2671,27 +3033,128 @@ export function CustomChartRenderer({ chart, sites }) {
     <div className="absolute px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg pointer-events-none whitespace-nowrap z-50 -translate-x-1/2 -translate-y-[130%]"
       style={{ left: `${hoveredItem.x}%`, top: `${hoveredItem.y}%` }}>
       <p className="font-bold">{hoveredItem.label}</p>
-      <p>{hoveredItem.count} ({hoveredItem.percent}%)</p>
+      {/* percent is omitted (not just 0) for multi-row mode's per-series dots — "% of
+          total" has no meaningful shared denominator across independent rows/lines, unlike
+          every single-series chart type where it's this point's share of one real total. */}
+      <p>{displayValue(hoveredItem.rawLabel, hoveredItem.count)}{hoveredItem.percent != null && ` (${hoveredItem.percent}%)`}</p>
     </div>
   );
 
   // Tooltip component. `style`/`className` land on the wrapper div itself —
   // pass grid sizing (gridColumn/gridRow span) here, not on `children`, since
   // this wrapper is what actually participates in the parent grid/flex layout.
-  const Tooltip = ({ label, count, percent, children, style, className = '' }) => (
+  const Tooltip = ({ label, rawLabel, count, percent, children, style, className = '' }) => (
     <div className={`relative group/tip ${className}`} style={style}>
       {children}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
         <p className="font-bold">{label}</p>
-        <p>{count} ({percent}%)</p>
+        <p>{displayValue(rawLabel, count)}{percent !== null && percent !== undefined ? ` (${percent}%)` : ''}</p>
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
       </div>
     </div>
   );
 
-  if (!sorted.length) {
+  if (!sorted.length && !chart.multiRowMode) {
     return <div className="py-10 text-center text-sm text-gray-400">No data available for this field</div>;
   }
+
+  // chart.multiRowMode (line/area only) — one line per matching row instead of one line
+  // grouping `field`'s values. See buildMultiRowSeries's own docstring for the shape this
+  // computes. Dots are plain HTML divs, not SVG <circle>s — same reason the single-series
+  // line/area cases below use them (see their own comments): the SVG's non-uniform stretch
+  // (preserveAspectRatio="none") would otherwise squash circles into ellipses.
+  const renderMultiRowLine = (isArea) => {
+    const { series, columns, max: seriesMax, matchedCount } = buildMultiRowSeries(chart, sites);
+    if (!columns.length) {
+      return <div className="py-10 text-center text-sm text-gray-400">Pick at least one column to compare.</div>;
+    }
+    if (!series.length) {
+      return <div className="py-10 text-center text-sm text-gray-400">No rows match the Filter rows conditions above.</div>;
+    }
+    const divisor = Math.max(columns.length - 1, 1);
+    const sideInset = 70;
+    const canvasWidth = columns.length * 60 + sideInset * 2;
+    const pointAt = (v, i) => ({ x: (i / divisor) * 100, y: 100 - (v / seriesMax) * 90 });
+    return (
+      <div>
+        <div className="overflow-x-auto chart-canvas-scroll">
+          <div style={{ width: `${canvasWidth}px`, minWidth: '100%' }}>
+            <div className="h-14" />
+            <div className="flex">
+              <div style={{ width: `${sideInset}px` }} className="shrink-0" />
+              <div className="h-48 relative flex-1">
+                <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                  {[0, 25, 50, 75, 100].map(y => (
+                    <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#e5e7eb" strokeWidth="0.5" />
+                  ))}
+                  {isArea && (
+                    <defs>
+                      {series.map((s, si) => (
+                        <linearGradient key={s.rawLabel} id={`multiAreaGrad-${chart.id}-${si}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={colorFor(s.rawLabel, si)} stopOpacity="0.25" />
+                          <stop offset="100%" stopColor={colorFor(s.rawLabel, si)} stopOpacity="0.03" />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                  )}
+                  {isArea && series.map((s, si) => (
+                    <path key={`area-${s.rawLabel}`}
+                      d={`M${s.points.map((v, i) => { const p = pointAt(v, i); return `${p.x},${p.y}`; }).join(' L')} L100,100 L0,100 Z`}
+                      fill={`url(#multiAreaGrad-${chart.id}-${si})`} />
+                  ))}
+                  {series.map((s, si) => (
+                    <polyline key={s.rawLabel}
+                      points={s.points.map((v, i) => { const p = pointAt(v, i); return `${p.x},${p.y}`; }).join(' ')}
+                      fill="none" stroke={colorFor(s.rawLabel, si)} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  ))}
+                </svg>
+                {series.map((s, si) => s.points.map((v, i) => {
+                  const { x, y } = pointAt(v, i);
+                  return (
+                    <div key={`${s.rawLabel}-${i}`} className="absolute -translate-x-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
+                      <div
+                        className="w-2.5 h-2.5 -translate-y-1/2 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer"
+                        style={{ backgroundColor: colorFor(s.rawLabel, si) }}
+                        onMouseEnter={() => setHoveredItem({
+                          // No "% of total" here — unlike every single-series chart type,
+                          // there's no one shared total across independent rows/lines for
+                          // a percentage to meaningfully be a share of (see HoverTooltip).
+                          label: `${displayLabel(s.rawLabel)} · ${displayLabel(columns[i])}`,
+                          rawLabel: s.rawLabel, count: v, percent: null, x, y,
+                        })}
+                        onMouseLeave={() => setHoveredItem(null)} />
+                    </div>
+                  );
+                }))}
+                <HoverTooltip />
+              </div>
+              <div style={{ width: `${sideInset}px` }} className="shrink-0" />
+            </div>
+            <div className="flex mt-2">
+              <div style={{ width: `${sideInset}px` }} className="shrink-0" />
+              <div className="flex-1 flex justify-between px-2">
+                {columns.map((col) => <span key={col} className="text-[9px] text-gray-500 whitespace-nowrap">{displayLabel(col)}</span>)}
+              </div>
+              <div style={{ width: `${sideInset}px` }} className="shrink-0" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3 mt-4">
+          {series.map((s, si) => (
+            <div key={s.rawLabel} className="flex items-center gap-1.5 cursor-pointer hover:opacity-80" onClick={() => handleClick(s.rawLabel)}>
+              <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorFor(s.rawLabel, si) }} />
+              <span className="text-xs text-gray-600 dark:text-gray-400">{displayLabel(s.rawLabel)}</span>
+            </div>
+          ))}
+        </div>
+        {matchedCount > series.length && (
+          <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
+            Showing {series.length} of {matchedCount} matching rows — narrow Filter rows to plot different ones.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   const renderChart = () => {
   switch (chart.chartType) {
@@ -2708,18 +3171,21 @@ export function CustomChartRenderer({ chart, sites }) {
           )}
           <div className="space-y-3">
             {items.map(([label, count], i) => {
-              const pct = ((count / total) * 100).toFixed(1);
+              const pct = pctOf(label, count);
               return (
                 <div key={label}>
-                  <Tooltip label={displayLabel(label)} count={count} percent={pct}>
+                  <Tooltip label={displayLabel(label)} rawLabel={label} count={count} percent={pct}>
                     <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => handleClick(label)}>
                       <span className="w-40 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
-                      <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                        <div className="h-full rounded-lg flex items-center px-3"
-                          style={{ width: `${(count / max) * 100}%`, backgroundColor: colorFor(label, i) }}>
-                          <span className="text-xs font-bold text-white">{count}</span>
+                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                        <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden min-w-0">
+                          <div className="h-full rounded-lg flex items-center px-3"
+                            style={{ width: `${(count / maxFor(label)) * 100}%`, backgroundColor: colorFor(label, i) }}>
+                            <span className="text-xs font-bold text-white">{valueWithPct(label, count)}</span>
+                          </div>
                         </div>
+                        {targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
                       </div>
                     </div>
                   </Tooltip>
@@ -2731,29 +3197,54 @@ export function CustomChartRenderer({ chart, sites }) {
         </div>
       );
     }
-    case 'bar-vertical':
+    case 'bar-vertical': {
       // Horizontal layout (more categories = more columns, not more rows) — scrolls
       // sideways instead of squishing bars/labels when "Show all categories" adds more
       // than fit. `flex-1 min-w-[56px]` grows bars to fill the space when there's room but
       // won't shrink past 56px, which is what forces the scroll instead of a squeeze.
+      // Bar height is already count/max — the tallest bar always belongs to whichever
+      // column has the highest value, no matter its left-to-right position. Row mode
+      // (comparing a fixed, small set of columns rather than every category) also gets a
+      // per-bar "+X%" readout, each column vs the one immediately before it (year-over-year,
+      // not just first-vs-last) — the first bar has nothing before it to compare against, so
+      // it shows no badge.
+      const showIncrease = isRowMode && sorted.length >= 2 && chart.showRowIncrease !== false;
       return (
         <div className="overflow-x-auto chart-canvas-scroll">
           {/* Reserved headroom above the bars — the hover Tooltip renders above its bar
               (bottom-full), and .chart-canvas-scroll is overflow-y: hidden (needed to kill
               an unwanted vertical scrollbar, see that class's own comment), so without this
               the tooltip for any bar gets clipped instead of showing. Same fix Line/Area
-              already needed for its own hover tooltip. */}
-          <div className="h-14" />
+              already needed for its own hover tooltip. Taller than the plain value+bar case
+              (h-14) needs to be, since the per-bar % badge above the value pushes the
+              Tooltip wrapper's own top edge — and the tooltip itself, positioned bottom-full
+              off THAT edge — higher up by the badge's own height too. */}
+          <div className={showIncrease ? 'h-20' : 'h-14'} />
           <div className="flex items-end gap-2 h-48">
             {sorted.slice(0, cap(8)).map(([label, count], i) => {
-              const pct = ((count / total) * 100).toFixed(1);
+              const pct = pctOf(label, count);
+              const prevCount = i > 0 ? sorted[i - 1][1] : null;
+              const changePct = showIncrease && prevCount ? ((count - prevCount) / prevCount) * 100 : null;
+              const changeColor = changePct === null ? null : (changePct >= 0 ? (chart.rowIncreaseColor || '#059669') : (chart.rowDecreaseColor || '#dc2626'));
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={pct} className="flex-1 min-w-[56px]">
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pct} className="flex-1 min-w-[56px]">
                   <div className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => handleClick(label)}>
-                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{count}</span>
+                    {changePct !== null && (
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold mb-0.5" style={{ color: changeColor }}>
+                        <TrendingUp size={10} className={changePct < 0 ? 'rotate-180' : ''} />
+                        {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                      </span>
+                    )}
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{displayValue(label, count)}</span>
+                    {/* A CSS "height: X%" bar needs every ancestor up to the h-48 container to
+                        have a DEFINITE height for that percentage to resolve against — but
+                        items-end (needed so short and tall bars share a bottom edge) makes each
+                        column's own height content-based (auto) instead, so the percentage was
+                        silently resolving to 0 and every bar was just sitting at minHeight. A
+                        plain pixel height computed here isn't affected by that at all. */}
                     <div className="w-full rounded-t-lg transition-all"
-                      style={{ height: `${(count / max) * 100}%`, backgroundColor: selectedFilter === label ? '#0038A8' : colorFor(label, i), minHeight: '20px' }} />
+                      style={{ height: `${Math.max(20, (count / max) * 150)}px`, backgroundColor: selectedFilter === label ? '#0038A8' : colorFor(label, i) }} />
                     <span className="text-[10px] text-gray-500 mt-1 chart-label-wrap w-full text-center">{displayLabel(label)}</span>
                   </div>
                 </Tooltip>
@@ -2762,6 +3253,7 @@ export function CustomChartRenderer({ chart, sites }) {
           </div>
         </div>
       );
+    }
     case 'bar-stacked': {
       const { items, totalPages, currentPage } = pageOf(sorted, 6);
       return (
@@ -2770,18 +3262,18 @@ export function CustomChartRenderer({ chart, sites }) {
             {items.map(([label, count], i) => {
               const subGroups = getSubGroups(label) || [];
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
                   <div className="cursor-pointer hover:opacity-80" onClick={() => handleClick(label)}>
                     <div className="flex items-center gap-3 mb-1">
                       <span className="w-32 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
-                      <span className="text-xs font-bold">{count}</span>
+                      <span className="text-xs font-bold">{displayValue(label, count)}</span>
                     </div>
                     <div className="flex h-6 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                       {subGroups.slice(0, 5).map(([subLabel, subCount], si) => (
                         <div key={subLabel} className="h-full flex items-center justify-center"
                           style={{ width: `${(subCount / (count || 1)) * 100}%`, backgroundColor: chart.secondaryCategoryColors?.[subLabel] || COLORS[si % COLORS.length] }}
-                          title={`${displaySecondaryLabel(subLabel)}: ${subCount}`}>
-                          {subCount > 5 && <span className="text-[9px] font-bold text-white">{subCount}</span>}
+                          title={`${displaySecondaryLabel(subLabel)}: ${fmtNum(subCount)}`}>
+                          {subCount > 5 && <span className="text-[9px] font-bold text-white">{fmtNum(subCount)}</span>}
                         </div>
                       ))}
                     </div>
@@ -2795,6 +3287,108 @@ export function CustomChartRenderer({ chart, sites }) {
       );
     }
     case 'bar-100-stacked': {
+      // Row mode has no secondary FIELD to stack by — there's only ever one row, so a
+      // "sub-group of this category" from a field has no meaning. But when Filter rows
+      // uses "is one of" with multiple values (e.g. Summary is one of [Live count, Not
+      // live count]), the admin clearly means each of THOSE rows to be one stack segment
+      // per compared column — Bukidnon's bar becomes [7 live | 9 not live], not just
+      // whichever one row got picked. Falls back to a plain single-color bar (no segments)
+      // when there's no such multi-condition, or fewer than 2 of its values actually matched
+      // a row.
+      if (isRowMode) {
+        const multiCond = (chart.conditions || []).find(c => c.field && c.type === 'multi' && (c.values || []).length > 1);
+        const segmentSources = multiCond
+          ? multiCond.values
+              .map(v => ({ value: v, row: filteredSites.find(r => String(r[multiCond.field] ?? '').trim().toLowerCase() === String(v).trim().toLowerCase()) }))
+              .filter(sr => sr.row)
+          : [];
+        if (segmentSources.length > 1) {
+          // Segment color/label reuse the SAME per-value customization ("Customize
+          // sub-labels") every other chart's secondary field already uses — keyed by each
+          // selected value's own raw text instead of a field's distinct values, since
+          // that's the actual stacking dimension here.
+          const segmentColor = (v) => chart.secondaryCategoryColors?.[v] || COLORS[multiCond.values.indexOf(v) % COLORS.length];
+          const { items, totalPages, currentPage } = pageOf(sorted, 10);
+          return (
+            <div>
+              <div className="flex flex-wrap gap-3 mb-3">
+                {segmentSources.map(({ value }) => (
+                  <div key={value} className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: segmentColor(value) }} />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">{displaySecondaryLabel(value)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                {items.map(([label]) => {
+                  const segs = segmentSources.map(({ value, row }) => [value, toNum(row[label]) || 0]);
+                  const colTotal = segs.reduce((s, [, v]) => s + v, 0);
+                  return (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="w-28 shrink-0 text-xs text-gray-700 dark:text-gray-300 chart-label-wrap cursor-pointer hover:opacity-80"
+                        onClick={() => handleClick(label)} title={displayLabel(label)}>
+                        {displayLabel(label)}
+                      </span>
+                      <div className="relative group/tip flex-1 min-w-0">
+                        <div className="flex h-6 rounded overflow-hidden bg-gray-100 dark:bg-gray-700">
+                          {segs.map(([value, segCount]) => {
+                            const pct = colTotal > 0 ? (segCount / colTotal) * 100 : 0;
+                            return pct > 0 ? (
+                              <div key={value} className="h-full flex items-center justify-center"
+                                style={{ width: `${pct}%`, backgroundColor: segmentColor(value) }}>
+                                {pct > 8 && <span className="text-[9px] font-bold text-white">{fmtNum(segCount)}</span>}
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                          <p className="font-bold mb-1">{displayLabel(label)}</p>
+                          {segs.map(([value, segCount]) => (
+                            <p key={value} className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: segmentColor(value) }} />
+                              {displaySecondaryLabel(value)}: {fmtNum(segCount)} ({colTotal > 0 ? ((segCount / colTotal) * 100).toFixed(1) : '0.0'}%)
+                            </p>
+                          ))}
+                          <p className="mt-1 pt-1 border-t border-white/20">Total: {fmtNum(colTotal)}</p>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pager totalPages={totalPages} currentPage={currentPage} />
+            </div>
+          );
+        }
+        const { items, totalPages, currentPage } = pageOf(sorted, 10);
+        return (
+          <div>
+            <div className="space-y-3">
+              {items.map(([label, count], i) => (
+                <div key={label}>
+                  <Tooltip label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
+                    <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleClick(label)}>
+                      <span className="w-28 shrink-0 text-xs text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
+                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                        <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden min-w-0">
+                          <div className="h-full flex items-center px-2"
+                            style={{ width: `${(count / maxFor(label)) * 100}%`, backgroundColor: colorFor(label, i) }}>
+                            <span className="text-xs font-bold text-white">{fmtNum(count)}</span>
+                          </div>
+                        </div>
+                        {targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
+                      </div>
+                    </div>
+                  </Tooltip>
+                </div>
+              ))}
+            </div>
+            <Pager totalPages={totalPages} currentPage={currentPage} />
+          </div>
+        );
+      }
       // Every row's segments are colored/ordered off ONE shared legend built from every
       // row this chart counts (filteredSites), not just each row's own subGroups — a
       // segment's color (and POSITION) has to mean the same thing no matter which row it's
@@ -2870,7 +3464,7 @@ export function CustomChartRenderer({ chart, sites }) {
                         return (
                           <div key={subLabel} className="h-full flex items-center justify-center"
                             style={{ width: `${pct}%`, backgroundColor: segmentColorForRow(label, subLabel) }}>
-                            {pct > 8 && <span className="text-[9px] font-bold text-white">{subCount}</span>}
+                            {pct > 8 && <span className="text-[9px] font-bold text-white">{fmtNum(subCount)}</span>}
                           </div>
                         );
                       })}
@@ -2885,10 +3479,10 @@ export function CustomChartRenderer({ chart, sites }) {
                       {subGroups.map(([subLabel, subCount]) => (
                         <p key={subLabel} className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: segmentColorForRow(label, subLabel) }} />
-                          {displaySecondaryLabel(subLabel)}: {subCount} ({((subCount / (count || 1)) * 100).toFixed(2)}%)
+                          {displaySecondaryLabel(subLabel)}: {fmtNum(subCount)} ({((subCount / (count || 1)) * 100).toFixed(2)}%)
                         </p>
                       ))}
-                      <p className="mt-1 pt-1 border-t border-white/20">Total: {count}</p>
+                      <p className="mt-1 pt-1 border-t border-white/20">Total: {displayValue(label, count)}</p>
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
                     </div>
                   </div>
@@ -2912,7 +3506,7 @@ export function CustomChartRenderer({ chart, sites }) {
                                 return (
                                   <div key={subLabel} className="h-full flex items-center justify-center"
                                     style={{ width: `${pct}%`, backgroundColor: segmentColor(subLabel) }}>
-                                    {pct > 12 && <span className="text-[8px] font-bold text-white leading-none">{subCount}</span>}
+                                    {pct > 12 && <span className="text-[8px] font-bold text-white leading-none">{fmtNum(subCount)}</span>}
                                   </div>
                                 );
                               })}
@@ -2924,10 +3518,10 @@ export function CustomChartRenderer({ chart, sites }) {
                               {tertiarySubGroups.map(([subLabel, subCount]) => (
                                 <p key={subLabel} className="flex items-center gap-1.5">
                                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: segmentColor(subLabel) }} />
-                                  {displaySecondaryLabel(subLabel)}: {subCount} ({((subCount / (tCount || 1)) * 100).toFixed(2)}%)
+                                  {displaySecondaryLabel(subLabel)}: {fmtNum(subCount)} ({((subCount / (tCount || 1)) * 100).toFixed(2)}%)
                                 </p>
                               ))}
-                              <p className="mt-1 pt-1 border-t border-white/20">Total: {tCount}</p>
+                              <p className="mt-1 pt-1 border-t border-white/20">Total: {fmtNum(tCount)}</p>
                               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
                             </div>
                           </div>
@@ -2962,7 +3556,7 @@ export function CustomChartRenderer({ chart, sites }) {
             {sorted.slice(0, cap(6)).map(([label, count], i) => {
               const subGroups = getSubGroups(label) || [];
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)} className="flex-1 min-w-[64px]">
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)} className="flex-1 min-w-[64px]">
                   <div className="flex flex-col items-center cursor-pointer hover:opacity-80"
                     onClick={() => handleClick(label)}>
                     <div className="w-full flex items-end gap-1 h-40">
@@ -2980,6 +3574,7 @@ export function CustomChartRenderer({ chart, sites }) {
         </div>
       );
     case 'line': {
+      if (chart.multiRowMode) return renderMultiRowLine(false);
       // Divisor must match the actual point count, not a hardcoded 8-1 — otherwise
       // fewer categories (say 5) bunch up on the left instead of spanning the chart.
       // Sliced from the end (not the start) since `sorted` is chronological ascending here —
@@ -3040,13 +3635,13 @@ export function CustomChartRenderer({ chart, sites }) {
                   return (
                     <div key={label} className="absolute -translate-x-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
                       <span className="absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        {count}
+                        {displayValue(label, count)}
                       </span>
                       <div
                         className="w-3 h-3 -translate-y-1/2 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer"
                         style={{ backgroundColor: colorFor(null, 0) }}
                         onClick={() => handleClick(label)}
-                        onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x, y })}
+                        onMouseEnter={() => setHoveredItem({ label: displayLabel(label), rawLabel: label, count, percent: pctOf(label, count), x, y })}
                         onMouseLeave={() => setHoveredItem(null)} />
                     </div>
                   );
@@ -3074,6 +3669,7 @@ export function CustomChartRenderer({ chart, sites }) {
       );
     }
     case 'area': {
+      if (chart.multiRowMode) return renderMultiRowLine(true);
       // Sliced from the end — see the 'line' case above for why (chronological ascending
       // order means the cap should keep the most recent dates).
       const points = sorted.slice(-cap(8));
@@ -3121,13 +3717,13 @@ export function CustomChartRenderer({ chart, sites }) {
                   return (
                     <div key={label} className="absolute -translate-x-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
                       <span className="absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        {count}
+                        {displayValue(label, count)}
                       </span>
                       <div
                         className="w-2.5 h-2.5 -translate-y-1/2 rounded-full border-2 border-white dark:border-gray-800 cursor-pointer"
                         style={{ backgroundColor: colorFor(null, 0) }}
                         onClick={() => handleClick(label)}
-                        onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x, y })}
+                        onMouseEnter={() => setHoveredItem({ label: displayLabel(label), rawLabel: label, count, percent: pctOf(label, count), x, y })}
                         onMouseLeave={() => setHoveredItem(null)} />
                     </div>
                   );
@@ -3174,6 +3770,15 @@ export function CustomChartRenderer({ chart, sites }) {
         acc += pct;
         return { label, count, i, startPct, endPct: acc };
       });
+      // A single-slice ring (e.g. row-mode "compare one column") would otherwise always
+      // draw a full circle — its share of the total is trivially 100% when there's nothing
+      // else to share the ring with, regardless of any target set on that one category.
+      // When it has one, the ring instead shows real progress toward it (colored arc + a
+      // gray "remaining" arc below), matching every other target-aware bar in this file.
+      const singleTarget = slices.length === 1 ? targetFor(slices[0][0]) : null;
+      if (singleTarget !== null) {
+        arcs[0] = { ...arcs[0], startPct: 0, endPct: Math.min((arcs[0].count / singleTarget) * 100, 100) };
+      }
       // 0% sits at 12 o'clock (matching the old conic-gradient's default), sweeping
       // clockwise — angle math shifts by -90° so pct=0 lands at the top, not 3 o'clock.
       const angleToPoint = (pct, r) => {
@@ -3199,10 +3804,17 @@ export function CustomChartRenderer({ chart, sites }) {
                   <path key={label} d={path} fill={colorFor(label, i)}
                     className="cursor-pointer transition-opacity hover:opacity-80"
                     onClick={() => handleClick(label)}
-                    onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x: tipX, y: tipY })}
+                    onMouseEnter={() => setHoveredItem({ label: displayLabel(label), rawLabel: label, count, percent: pctOf(label, count), x: tipX, y: tipY })}
                     onMouseLeave={() => setHoveredItem(null)} />
                 );
               })}
+              {singleTarget !== null && arcs[0].endPct < 99.999 && (() => {
+                const [x1, y1] = angleToPoint(arcs[0].endPct, 48);
+                const [x2, y2] = angleToPoint(100, 48);
+                const largeArc = 100 - arcs[0].endPct > 50 ? 1 : 0;
+                const path = `M 50,50 L ${x1},${y1} A 48,48 0 ${largeArc},1 ${x2},${y2} Z`;
+                return <path d={path} className="fill-gray-100 dark:fill-gray-700 pointer-events-none" />;
+              })()}
             </svg>
             {chart.chartType === 'donut' && (() => {
                 // Deliberately arcs[0] here, NOT the true count leader (contrast the "leads
@@ -3219,7 +3831,13 @@ export function CustomChartRenderer({ chart, sites }) {
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
                       <div className="text-center">
-                        <p className="text-xl font-black">{isPercentMode ? `${((leaderCount / total) * 100).toFixed(1)}%` : total}</p>
+                        <p className="text-xl font-black">
+                          {isPercentMode
+                            ? `${((leaderCount / (singleTarget !== null ? singleTarget : total)) * 100).toFixed(1)}%`
+                            : singleTarget !== null
+                            ? <>{fmtNum(slices[0][1])}<span className="text-xs font-medium text-gray-400">/{fmtNum(singleTarget)}</span></>
+                            : fmtNum(total)}
+                        </p>
                         <p className="text-[8px] text-gray-500 truncate max-w-[70px]">{isPercentMode ? displayLabel(leaderLabel) : 'Total'}</p>
                       </div>
                     </div>
@@ -3231,7 +3849,7 @@ export function CustomChartRenderer({ chart, sites }) {
           <div className="flex-1 min-w-0">
             <div className="space-y-1.5">
               {legendItems.map(([[label, count], i]) => (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
                   {/* Value sits BELOW the label instead of pinned to the right of it — a
                       long label sharing one row with a pinned count had almost no room
                       left in a narrow card, forcing mid-word wraps ("Rema-ining"). Stacked,
@@ -3240,7 +3858,7 @@ export function CustomChartRenderer({ chart, sites }) {
                     <div className="w-2.5 h-2.5 shrink-0 rounded-full mt-1" style={{ backgroundColor: colorFor(label, i) }} />
                     <div className="min-w-0">
                       <p className="text-xs text-gray-700 dark:text-gray-300">{displayLabel(label)}</p>
-                      <p className="text-xs font-bold text-gray-900 dark:text-white">{count}</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">{displayValue(label, count)}</p>
                     </div>
                   </div>
                 </Tooltip>
@@ -3288,7 +3906,7 @@ export function CustomChartRenderer({ chart, sites }) {
                 const labelY = 100 + Math.sin(angle) * 95;
                 return (
                   <g key={label} className="cursor-pointer" onClick={() => handleClick(label)}
-                    onMouseEnter={() => setHoveredItem({ label: displayLabel(label), count, percent: pctOf(count), x: x / 2, y: y / 2 })}
+                    onMouseEnter={() => setHoveredItem({ label: displayLabel(label), rawLabel: label, count, percent: pctOf(label, count), x: x / 2, y: y / 2 })}
                     onMouseLeave={() => setHoveredItem(null)}>
                     <circle cx={x} cy={y} r="8" fill="transparent" />
                     <circle cx={x} cy={y} r="4" fill={colorFor(null, 0)} stroke="white" strokeWidth="2" />
@@ -3330,8 +3948,8 @@ export function CustomChartRenderer({ chart, sites }) {
                       onClick={() => handleClick(label)}>
                       <td className="py-1.5 px-2 text-gray-400">{(currentPage - 1) * 8 + i + 1}</td>
                       <td className="py-1.5 px-2 text-gray-700 dark:text-gray-300 font-medium">{displayLabel(label)}</td>
-                      <td className="py-1.5 px-2 text-right font-bold">{count}</td>
-                      <td className="py-1.5 px-2 text-right text-gray-500">{((count / total) * 100).toFixed(1)}%</td>
+                      <td className="py-1.5 px-2 text-right font-bold">{displayValue(label, count)}</td>
+                      <td className="py-1.5 px-2 text-right text-gray-500">{pctOf(label, count)}%</td>
                     </tr>,
                   ];
                   (subGroups || []).forEach(([subLabel, subCount]) => {
@@ -3339,7 +3957,7 @@ export function CustomChartRenderer({ chart, sites }) {
                       <tr key={`${label}__${subLabel}`} className="border-t border-gray-50 dark:border-gray-800/50 bg-gray-50/60 dark:bg-gray-800/30">
                         <td className="py-1 px-2" />
                         <td className="py-1 px-2 pl-5 text-[11px] text-gray-500 dark:text-gray-400 chart-label-wrap">{displaySecondaryLabel(subLabel)}</td>
-                        <td className="py-1 px-2 text-right text-[11px] text-gray-500">{subCount}</td>
+                        <td className="py-1 px-2 text-right text-[11px] text-gray-500">{fmtNum(subCount)}</td>
                         <td className="py-1 px-2 text-right text-[11px] text-gray-400">{((subCount / (count || 1)) * 100).toFixed(1)}%</td>
                       </tr>
                     );
@@ -3350,7 +3968,7 @@ export function CustomChartRenderer({ chart, sites }) {
                           <tr key={`${label}__${subLabel}__${subSubLabel}`} className="border-t border-gray-50 dark:border-gray-800/50 bg-gray-50/30 dark:bg-gray-800/10">
                             <td className="py-1 px-2" />
                             <td className="py-1 px-2 pl-9 text-[10px] text-gray-400 dark:text-gray-500 chart-label-wrap">{displayTertiaryLabel(subSubLabel)}</td>
-                            <td className="py-1 px-2 text-right text-[10px] text-gray-400">{subSubCount}</td>
+                            <td className="py-1 px-2 text-right text-[10px] text-gray-400">{fmtNum(subSubCount)}</td>
                             <td className="py-1 px-2 text-right text-[10px] text-gray-400">{((subSubCount / (subCount || 1)) * 100).toFixed(1)}%</td>
                           </tr>
                         );
@@ -3372,11 +3990,11 @@ export function CustomChartRenderer({ chart, sites }) {
         <div>
           <div className="grid grid-cols-2 gap-2">
             {items.map(([label, count], i) => (
-              <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+              <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
                 <div className="rounded-lg p-3 text-center cursor-pointer hover:opacity-80 transition-opacity"
                   style={{ backgroundColor: `${colorFor(label, i)}10` }}
                   onClick={() => handleClick(label)}>
-                  <p className="text-xl font-black" style={{ color: colorFor(label, i) }}>{count}</p>
+                  <p className="text-xl font-black" style={{ color: colorFor(label, i) }}>{displayValue(label, count)}</p>
                   <p className="text-[10px] text-gray-500 chart-label-wrap">{displayLabel(label)}</p>
                 </div>
               </Tooltip>
@@ -3392,7 +4010,7 @@ export function CustomChartRenderer({ chart, sites }) {
         <div>
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {items.map(([label, count], i) => (
-              <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+              <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
                 <div className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 px-2 rounded"
                   onClick={() => handleClick(label)}>
                   <div className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
@@ -3400,8 +4018,8 @@ export function CustomChartRenderer({ chart, sites }) {
                     {(currentPage - 1) * 10 + i + 1}
                   </div>
                   <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0">{count}</span>
-                  <span className="text-xs text-gray-400 shrink-0">{((count / total) * 100).toFixed(1)}%</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0">{displayValue(label, count)}</span>
+                  <span className="text-xs text-gray-400 shrink-0">{pctOf(label, count)}%</span>
                 </div>
               </Tooltip>
             ))}
@@ -3416,11 +4034,11 @@ export function CustomChartRenderer({ chart, sites }) {
         <div>
           <div className="space-y-4">
             {items.map(([label, count], i) => (
-              <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+              <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
                 <div className="cursor-pointer hover:opacity-80" onClick={() => handleClick(label)}>
                   <div className="flex items-center justify-between mb-1 gap-2">
                     <span className="text-sm text-gray-700 dark:text-gray-300 chart-label-wrap min-w-0">{displayLabel(label)}</span>
-                    <span className="text-sm font-bold shrink-0">{count} <span className="text-xs text-gray-400">({((count / total) * 100).toFixed(1)}%)</span></span>
+                    <span className="text-sm font-bold shrink-0">{displayValue(label, count)} <span className="text-xs text-gray-400">({pctOf(label, count)}%)</span></span>
                   </div>
                   <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all"
@@ -3457,7 +4075,7 @@ export function CustomChartRenderer({ chart, sites }) {
               // number stack without overlapping, since they're stacked vertically.
               const isShort = rowSpan < 2;
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={pct.toFixed(1)}
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pct.toFixed(1)}
                   style={{ gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }}>
                   <div
                     className={`h-full w-full rounded-lg flex flex-col justify-between cursor-pointer hover:opacity-80 transition-opacity ${isShort ? 'p-2' : 'p-3'}`}
@@ -3469,7 +4087,7 @@ export function CustomChartRenderer({ chart, sites }) {
                   >
                     <span className="text-xs font-medium text-gray-700 dark:text-gray-300 chart-label-wrap leading-tight">{displayLabel(label)}</span>
                     <div className="leading-tight">
-                      <span className={isShort ? 'text-sm font-bold' : 'text-xl font-black'} style={{ color: colorFor(label, i) }}>{count}</span>
+                      <span className={isShort ? 'text-sm font-bold' : 'text-xl font-black'} style={{ color: colorFor(label, i) }}>{displayValue(label, count)}</span>
                       <span className="text-[10px] text-gray-400 ml-1">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
@@ -3489,34 +4107,51 @@ export function CustomChartRenderer({ chart, sites }) {
             {items.map(([label, count], i) => {
               const subGroups = getSubGroups(label) || [];
               const subMax = subGroups[0]?.[1] || 1;
+              // Collapsed by default (see expandedComparisonRows above) — only relevant
+              // when chart.comparisonCollapsible is on; otherwise every row's breakdown
+              // always shows, exactly as before this option existed.
+              const isCollapsible = !!chart.comparisonCollapsible;
+              const isExpanded = !isCollapsible || expandedComparisonRows.has(label);
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count}>
                   <div className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg"
-                    onClick={() => handleClick(label)}>
-                    <div className="flex items-center justify-between mb-2 gap-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 chart-label-wrap min-w-0">{displayLabel(label)}</span>
-                      <span className="text-sm font-bold shrink-0">{count}</span>
+                    onClick={() => (isCollapsible ? toggleComparisonRow(label) : handleClick(label))}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {isCollapsible && (
+                        <span className="shrink-0 text-gray-400">
+                          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </span>
+                      )}
+                      <span className="w-28 sm:w-36 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
+                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                        <div className="flex-1 h-7 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden min-w-0">
+                          <div className="h-full rounded-lg flex items-center px-2.5"
+                            style={{ width: `${(count / maxFor(label)) * 100}%`, backgroundColor: colorFor(label, i) }}>
+                            <span className="text-xs font-bold text-white">{valueWithPct(label, count)}</span>
+                          </div>
+                        </div>
+                        {targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
+                      </div>
                     </div>
-                    {subGroups.length > 0 ? (
+                    {/* The fallback single-bar case (no secondary_field breakdown) is
+                        covered by the header's own bar above now — nothing else to show. */}
+                    {isExpanded && subGroups.length > 0 && (
                       <div className="space-y-1">
                         {subGroups.map(([subLabel, subCount]) => (
                           <div key={subLabel} className="flex items-center gap-2">
-                            <span className="w-24 shrink-0 text-[11px] text-gray-500 chart-label-wrap">{displaySecondaryLabel(subLabel)}</span>
+                            {/* Mirrors the header row's own left side (optional chevron space +
+                                label width) so this bar's left edge lines up with the parent
+                                category's bar above it instead of starting further left. */}
+                            {isCollapsible && <span className="shrink-0 w-[14px]" />}
+                            <span className="w-28 sm:w-36 shrink-0 text-[11px] text-gray-500 chart-label-wrap">{displaySecondaryLabel(subLabel)}</span>
                             <div className="flex-1 h-4 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
                               <div className="h-full rounded flex items-center px-2"
                                 style={{ width: `${(subCount / subMax) * 100}%`, backgroundColor: chart.secondaryCategoryColors?.[subLabel] || colorFor(label, i) }}>
-                                <span className="text-[9px] font-bold text-white">{subCount}</span>
+                                <span className="text-[9px] font-bold text-white">{fmtNum(subCount)}</span>
                               </div>
                             </div>
                           </div>
                         ))}
-                      </div>
-                    ) : (
-                      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
-                        <div className="h-full rounded flex items-center px-2"
-                          style={{ width: `${(count / max) * 100}%`, backgroundColor: colorFor(label, i) }}>
-                          <span className="text-[10px] font-bold text-white">{count}</span>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -3540,18 +4175,19 @@ export function CustomChartRenderer({ chart, sites }) {
         <div>
           <div className="flex flex-col items-center gap-2 py-4">
             {items.map(([label, count], i) => {
-              const pct = ((count / max) * 100).toFixed(1);
-              const width = Math.max(20, (count / max) * 100);
+              const pct = pctOf(label, count);
+              const width = Math.max(20, (count / maxFor(label)) * 100);
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={pct} className="w-full flex justify-center">
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pct} className="w-full flex items-center justify-center gap-2">
                   <div
                     className="h-10 rounded-lg flex items-center justify-between px-4 gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ width: `${width}%`, backgroundColor: `${colorFor(label, i)}20`, borderLeft: `4px solid ${colorFor(label, i)}` }}
                     onClick={() => handleClick(label)}
                   >
                     <span className="text-sm text-gray-700 dark:text-gray-300 chart-label-wrap min-w-0">{displayLabel(label)}</span>
-                    <span className="text-sm font-bold shrink-0" style={{ color: colorFor(label, i) }}>{count}</span>
+                    <span className="text-sm font-bold shrink-0" style={{ color: colorFor(label, i) }}>{valueWithPct(label, count)}</span>
                   </div>
+                  {targetLabel(label) && <span className="text-xs font-medium text-gray-400 shrink-0">{targetLabel(label)}</span>}
                 </Tooltip>
               );
             })}
@@ -3566,13 +4202,23 @@ export function CustomChartRenderer({ chart, sites }) {
       // and the legend needs each entry's TRUE index (not its page-local one) so its
       // swatch color stays in sync with the ring's actual wedge color across pages.
       const { items: legendItems, totalPages, currentPage } = pageOf(slices.map((s, i) => [s, i]), 6);
-      let halfAcc = 0;
-      const halfGrad = slices.map(([label, count], i) => {
-        const pct = (count / total) * 100;
-        const start = halfAcc;
-        halfAcc += pct;
-        return `${colorFor(label, i)} ${start}% ${halfAcc}%`;
-      }).join(', ');
+      // Same single-slice-would-always-be-a-full-ring issue as donut above — see its own
+      // comment. A conic-gradient can express a target-aware progress fill just as a
+      // colored-then-gray stop pair, no SVG path math needed.
+      const singleTarget = slices.length === 1 ? targetFor(slices[0][0]) : null;
+      let halfGrad;
+      if (singleTarget !== null) {
+        const progressPct = Math.min((slices[0][1] / singleTarget) * 100, 100);
+        halfGrad = `${colorFor(slices[0][0], 0)} 0% ${progressPct}%, #e5e7eb ${progressPct}% 100%`;
+      } else {
+        let halfAcc = 0;
+        halfGrad = slices.map(([label, count], i) => {
+          const pct = (count / total) * 100;
+          const start = halfAcc;
+          halfAcc += pct;
+          return `${colorFor(label, i)} ${start}% ${halfAcc}%`;
+        }).join(', ');
+      }
       // The hole used to be `absolute bottom-0` against the outer clipped box — its
       // containing block ended up being that 80px-tall clip window (the ring div itself
       // has no `relative`), not the full 160px ring, so it centered on the wrong point and
@@ -3588,7 +4234,11 @@ export function CustomChartRenderer({ chart, sites }) {
             <div className="w-40 h-40 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(${halfGrad})` }}>
               <div className="w-24 h-24 rounded-full bg-white dark:bg-gray-800 flex items-start justify-center pt-2">
                 <div className="text-center">
-                  <p className="text-xl font-black text-gray-900 dark:text-white">{total}</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white">
+                    {singleTarget !== null
+                      ? <>{fmtNum(slices[0][1])}<span className="text-xs font-medium text-gray-400">/{fmtNum(singleTarget)}</span></>
+                      : fmtNum(total)}
+                  </p>
                   <p className="text-[8px] text-gray-500">Total</p>
                 </div>
               </div>
@@ -3596,7 +4246,7 @@ export function CustomChartRenderer({ chart, sites }) {
           </div>
           <div className="flex flex-wrap justify-center gap-3 mt-4 max-w-full">
             {legendItems.map(([[label, count], i]) => (
-              <Tooltip key={label} label={displayLabel(label)} count={count} percent={((count / total) * 100).toFixed(1)}>
+              <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pctOf(label, count)}>
                 <div className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 max-w-[140px]" onClick={() => handleClick(label)}>
                   <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorFor(label, i) }} />
                   <span className="text-xs text-gray-600 dark:text-gray-400 chart-label-wrap min-w-0">{displayLabel(label)}</span>
@@ -3605,6 +4255,101 @@ export function CustomChartRenderer({ chart, sites }) {
             ))}
           </div>
           <Pager totalPages={totalPages} currentPage={currentPage} />
+        </div>
+      );
+    }
+    case 'bubble': {
+      // Packed bubbles: circles touch instead of sitting in rows, area tracks value, and
+      // (default colors) shade runs light -> dark with size, so the biggest categories
+      // read first. Packing is a spiral search from the centre — each circle (largest
+      // first) takes the first spot along the spiral that doesn't overlap one already
+      // placed — which is plenty fast for the few dozen categories this is meant for, so
+      // no layout library is needed. Everything is computed in a unit space then fitted
+      // with the SVG viewBox, so it scales with the card.
+      const bubbles = sorted.slice(0, cap(30));
+      const MIN_R = 12, MAX_R = 64, GAP = 2;
+      const hexToRgbArr = (h) => [1, 3, 5].map((s) => parseInt(h.slice(s, s + 2), 16));
+      const lerpColor = (a, b, t) => {
+        const ca = hexToRgbArr(a), cb = hexToRgbArr(b);
+        return `rgb(${ca.map((v, k) => Math.round(v + (cb[k] - v) * t)).join(',')})`;
+      };
+      const placed = [];
+      bubbles.forEach(([label, count], i) => {
+        const r = MIN_R + Math.sqrt(Math.max(count, 0) / max) * (MAX_R - MIN_R);
+        let x = 0, y = 0;
+        if (placed.length) {
+          for (let step = 0; step < 4000; step++) {
+            const angle = step * 0.35;
+            const dist = 2 + step * 0.45;
+            x = Math.cos(angle) * dist;
+            y = Math.sin(angle) * dist;
+            if (placed.every((p) => Math.hypot(p.x - x, p.y - y) >= p.r + r + GAP)) break;
+          }
+        }
+        placed.push({ label, count, i, r, x, y });
+      });
+      const minX = Math.min(...placed.map((p) => p.x - p.r)), maxX = Math.max(...placed.map((p) => p.x + p.r));
+      const minY = Math.min(...placed.map((p) => p.y - p.r)), maxY = Math.max(...placed.map((p) => p.y + p.r));
+      // Always one gradient across the whole chart (pale -> dark by value), never a
+      // different color per category. "Single color" mode keeps that gradient but built
+      // from the admin's own color (a pale tint of it up to the full color); every other
+      // mode uses the default teal -> navy.
+      const toHex = (rgbArr) => `#${rgbArr.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+      const gradEnd = chart.colorMode === 'accent' ? (chart.chartColor || '#1e4a7d') : '#1e4a7d';
+      const gradStart = chart.colorMode === 'accent'
+        ? toHex(hexToRgbArr(gradEnd).map((v) => v + (255 - v) * 0.65))
+        : '#9fd0cf';
+      const bubbleColor = (label, count) => lerpColor(gradStart, gradEnd, Math.sqrt(count / max));
+      // Hover uses the shared HoverTooltip (positioned in % of this wrapper) driven by the
+      // mouse's real position, not the circle's SVG coordinates — the SVG is letterboxed
+      // inside its box (preserveAspectRatio meet), so SVG coords wouldn't map to wrapper
+      // percentages. Every other bubble dims while one is hovered.
+      const trackHover = (e, label, count) => {
+        const rect = e.currentTarget.ownerSVGElement.parentElement.getBoundingClientRect();
+        setHoveredItem({
+          label: displayLabel(label), rawLabel: label, count, percent: null,
+          x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100,
+        });
+      };
+      return (
+        <div>
+          <div className="relative">
+          <svg viewBox={`${minX - 6} ${minY - 6} ${maxX - minX + 12} ${maxY - minY + 12}`}
+            className="w-full" style={{ height: 380 }} preserveAspectRatio="xMidYMid meet">
+            {placed.map(({ label, count, i, r, x, y }) => {
+              const fill = bubbleColor(label, count);
+              // Text colour picked off the bubble's own shade — dark text on the pale ones.
+              const rgb = fill.startsWith('rgb') ? fill.match(/\d+/g).map(Number) : hexToRgbArr(fill);
+              const textColor = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255 > 0.62 ? '#1f2937' : '#ffffff';
+              const name = displayLabel(label);
+              const maxChars = Math.max(3, Math.floor(r / 3.4));
+              const shown = name.length > maxChars ? `${name.slice(0, maxChars - 1)}…` : name;
+              const labelled = r >= 26;
+              return (
+                <g key={label} className="cursor-pointer transition-opacity duration-150"
+                  style={{ opacity: hoveredItem && hoveredItem.rawLabel !== label ? 0.4 : 1 }}
+                  onClick={() => handleClick(label)}
+                  onMouseEnter={(e) => trackHover(e, label, count)}
+                  onMouseMove={(e) => trackHover(e, label, count)}
+                  onMouseLeave={() => setHoveredItem(null)}>
+                  <circle cx={x} cy={y} r={hoveredItem?.rawLabel === label ? r + 3 : r} fill={fill} className="transition-all duration-150"
+                    stroke={selectedFilter === label || hoveredItem?.rawLabel === label ? '#0038A8' : 'none'}
+                    strokeWidth={selectedFilter === label || hoveredItem?.rawLabel === label ? 3 : 0} />
+                  {labelled && (
+                    <>
+                      <text x={x} y={y - 2} textAnchor="middle" fill={textColor} fontSize={Math.min(11, r / 3.2)} fontWeight="700">{shown}</text>
+                      <text x={x} y={y + Math.min(12, r / 3)} textAnchor="middle" fill={textColor} fillOpacity="0.85" fontSize={Math.min(10, r / 3.6)}>{displayValue(label, count)}</text>
+                    </>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+          <HoverTooltip />
+          </div>
+          {sorted.length > bubbles.length && (
+            <p className="text-[11px] text-gray-400 text-center">Showing the largest {bubbles.length} of {fmtNum(sorted.length)} — tick "Show all categories" for more.</p>
+          )}
         </div>
       );
     }
@@ -3627,13 +4372,13 @@ export function CustomChartRenderer({ chart, sites }) {
             {slices.map(([label, count], i) => {
               const pct = (count / total) * 100;
               return (
-                <Tooltip key={label} label={displayLabel(label)} count={count} percent={pct.toFixed(1)} style={{ width: `${pct}%` }}>
+                <Tooltip key={label} label={displayLabel(label)} rawLabel={label} count={count} percent={pct.toFixed(1)} style={{ width: `${pct}%` }}>
                   <div
                     className="h-full w-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ backgroundColor: colorFor(label, i) }}
                     onClick={() => handleClick(label)}
                   >
-                    {pct > 8 && <span className="text-[10px] font-bold text-white">{count}</span>}
+                    {pct > 8 && <span className="text-[10px] font-bold text-white">{displayValue(label, count)}</span>}
                   </div>
                 </Tooltip>
               );
@@ -3643,7 +4388,7 @@ export function CustomChartRenderer({ chart, sites }) {
             {legendItems.map(([[label, count], i]) => (
               <div key={label} className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 max-w-[160px]" onClick={() => handleClick(label)}>
                 <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorFor(label, i) }} />
-                <span className="text-xs text-gray-600 dark:text-gray-400 chart-label-wrap min-w-0">{displayLabel(label)} ({count})</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 chart-label-wrap min-w-0">{displayLabel(label)} ({displayValue(label, count)})</span>
               </div>
             ))}
           </div>
@@ -3661,20 +4406,27 @@ export function CustomChartRenderer({ chart, sites }) {
   return (
     <div>
       {renderChart()}
-      <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 text-[10px] text-gray-400">
-        {isDateTrend ? (
-          <>
-            <span className="shrink-0">{sorted.length.toLocaleString()} {periodWord}{sorted.length === 1 ? '' : 's'} · {total.toLocaleString()} total</span>
-            <span className="chart-label-wrap min-w-0">
-              {chart.cumulative
-                ? `Reached ${latest[1].toLocaleString()} by ${displayLabel(latest[0])}`
-                : `Latest: ${displayLabel(latest[0])} — ${latest[1].toLocaleString()}`}
-            </span>
-          </>
-        ) : (
-          <span className="shrink-0">{sorted.length.toLocaleString()} {sorted.length === 1 ? 'category' : 'categories'} · {total.toLocaleString()} total</span>
-        )}
-      </div>
+      {/* This summary line assumes the single-series `sorted`/`total`/`latest` computed
+          above (from buildChartTallyData) — chart.multiRowMode bypasses all of that inside
+          renderChart() while isDateTrend stays true (it's derived from chart type alone),
+          so `sorted` is empty and `latest` is undefined here; renderMultiRowLine already
+          shows its own legend and "N of M rows" note, so this is simply skipped instead. */}
+      {!chart.multiRowMode && (
+        <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 text-[10px] text-gray-400">
+          {isDateTrend ? (
+            <>
+              <span className="shrink-0">{sorted.length.toLocaleString()} {periodWord}{sorted.length === 1 ? '' : 's'} · {total.toLocaleString()} total</span>
+              <span className="chart-label-wrap min-w-0">
+                {chart.cumulative
+                  ? `Reached ${latest[1].toLocaleString()} by ${displayLabel(latest[0])}`
+                  : `Latest: ${displayLabel(latest[0])} — ${latest[1].toLocaleString()}`}
+              </span>
+            </>
+          ) : (
+            <span className="shrink-0">{sorted.length.toLocaleString()} {sorted.length === 1 ? 'category' : 'categories'} · {total.toLocaleString()} total</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -4286,9 +5038,22 @@ function FilterSettingsModal({ slug, tables, initialFilters, layoutId = null, on
       return next;
     });
   };
+  // range-overlap's tag is {start, end} instead of a plain column name — `part` is
+  // 'start' or 'end'. No auto-suggest for this type (see the effect below), so no
+  // autoSuggested bookkeeping needed here.
+  const setTableRangeField = (tableId, label, part, column) => {
+    setTableFields((prev) => ({
+      ...prev,
+      [tableId]: { ...(prev[tableId] || {}), [label]: { ...(prev[tableId]?.[label] || {}), [part]: column } },
+    }));
+  };
 
   const cleanFilters = filters
-    .map((f) => ({ label: f.label.trim(), type: f.type === 'range' ? 'range' : 'exact' }))
+    .map((f) => ({
+      label: f.label.trim(),
+      type: f.type === 'range' ? 'range' : f.type === 'range-overlap' ? 'range-overlap' : 'exact',
+      ...(f.type === 'range-overlap' ? { granularity: f.granularity || 'exact' } : {}),
+    }))
     .filter((f) => f.label);
 
   // Fills in a suggestion for every (table, label) cell that's still blank AND hasn't
@@ -4299,7 +5064,10 @@ function FilterSettingsModal({ slug, tables, initialFilters, layoutId = null, on
   useEffect(() => {
     const additions = {};
     const newlySuggested = {};
-    cleanFilters.forEach(({ label }) => {
+    // range-overlap needs two separately-picked columns (start/end) — too fragile to
+    // guess from name-matching alone (a "start"-ish column could match several ways),
+    // so it's excluded here; the admin always picks both by hand.
+    cleanFilters.filter(({ type }) => type !== 'range-overlap').forEach(({ label }) => {
       tables.forEach((t) => {
         const key = `${t.id}:${label}`;
         if (attemptedRef.current.has(key)) return;
@@ -4328,11 +5096,19 @@ function FilterSettingsModal({ slug, tables, initialFilters, layoutId = null, on
     setSaving(true);
     try {
       await updateProjectChartSource(slug, { general_filters: cleanFilters }, layoutId);
-      const labels = cleanFilters.map((f) => f.label);
       await Promise.all(tables.map((t) => {
         const fieldMap = tableFields[t.id] || {};
         const cleaned = {};
-        labels.forEach((label) => { if (fieldMap[label]) cleaned[label] = fieldMap[label]; });
+        cleanFilters.forEach(({ label, type }) => {
+          if (type === 'range-overlap') {
+            // "end" is genuinely optional (a table with no deactivation concept), but a
+            // range-overlap tag with no "start" at all can never match anything — same as
+            // leaving the label untagged for this table, so it's dropped rather than saved.
+            if (fieldMap[label]?.start) cleaned[label] = { start: fieldMap[label].start, end: fieldMap[label].end || '' };
+          } else if (fieldMap[label]) {
+            cleaned[label] = fieldMap[label];
+          }
+        });
         return updateProjectDataset(t.id, { general_filter_fields: cleaned });
       }));
       await onSaved();
@@ -4357,17 +5133,29 @@ function FilterSettingsModal({ slug, tables, initialFilters, layoutId = null, on
             </label>
             <div className="space-y-2">
               {filters.map((f, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input value={f.label} onChange={(e) => updateFilter(i, { label: e.target.value })}
-                    placeholder="e.g. Province" className="flex-1 px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
-                  <div className="w-48 shrink-0">
-                    <Select value={selectValue(FILTER_TYPE_OPTIONS, f.type)}
-                      onChange={(opt) => updateFilter(i, { type: opt.value })}
-                      options={FILTER_TYPE_OPTIONS} isSearchable={false} styles={selectStyles} />
+                <div key={i}>
+                  <div className="flex items-center gap-2">
+                    <input value={f.label} onChange={(e) => updateFilter(i, { label: e.target.value })}
+                      placeholder="e.g. Province" className="flex-1 px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                    <div className="w-48 shrink-0">
+                      <Select value={selectValue(FILTER_TYPE_OPTIONS, f.type)}
+                        onChange={(opt) => updateFilter(i, { type: opt.value })}
+                        options={FILTER_TYPE_OPTIONS} isSearchable={false} styles={selectStyles} />
+                    </div>
+                    <button type="button" onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-500 shrink-0">
+                      <X size={14} />
+                    </button>
                   </div>
-                  <button type="button" onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-500 shrink-0">
-                    <X size={14} />
-                  </button>
+                  {f.type === 'range-overlap' && (
+                    <div className="flex items-center gap-2 mt-1.5 pl-1">
+                      <span className="text-[11px] text-gray-400 shrink-0">Picked as</span>
+                      <div className="w-72 shrink-0">
+                        <Select value={selectValue(RANGE_OVERLAP_GRANULARITY_OPTIONS, f.granularity || 'exact')}
+                          onChange={(opt) => updateFilter(i, { granularity: opt.value })}
+                          options={RANGE_OVERLAP_GRANULARITY_OPTIONS} isSearchable={false} styles={selectStyles} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <button type="button" onClick={addFilter} className="text-xs font-medium text-[#0038A8] dark:text-blue-400 hover:underline">
@@ -4401,7 +5189,31 @@ function FilterSettingsModal({ slug, tables, initialFilters, layoutId = null, on
                     <div key={t.id} className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 truncate" title={t.name}>{t.name}</p>
                       <div className="space-y-1.5">
-                        {cleanFilters.map(({ label }) => (
+                        {cleanFilters.map(({ label, type }) => type === 'range-overlap' ? (
+                          <div key={label} className="space-y-1">
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate block" title={label}>{label}</span>
+                            <div className="flex items-center gap-2 pl-2">
+                              <span className="w-24 shrink-0 text-[10px] text-gray-400">Started (required)</span>
+                              <div className="flex-1">
+                                <Select
+                                  value={fieldOptions.find((o) => o.value === (tableFields[t.id]?.[label]?.start || '')) || null}
+                                  onChange={(opt) => setTableRangeField(t.id, label, 'start', opt ? opt.value : '')}
+                                  options={fieldOptions}
+                                  placeholder="None" isClearable styles={selectStyles} />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 pl-2">
+                              <span className="w-24 shrink-0 text-[10px] text-gray-400">Ended (optional)</span>
+                              <div className="flex-1">
+                                <Select
+                                  value={fieldOptions.find((o) => o.value === (tableFields[t.id]?.[label]?.end || '')) || null}
+                                  onChange={(opt) => setTableRangeField(t.id, label, 'end', opt ? opt.value : '')}
+                                  options={fieldOptions}
+                                  placeholder="None — never excluded" isClearable styles={selectStyles} />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
                           <div key={label} className="flex items-center gap-2">
                             <span className="w-20 shrink-0 text-[11px] text-gray-500 dark:text-gray-400 truncate" title={label}>{label}</span>
                             <div className="flex-1">
@@ -4492,6 +5304,19 @@ function FormSection({ title, subtitle, collapsible = true, defaultOpen = false,
           {children}
         </div>
       )}
+    </div>
+  );
+}
+
+// Numbered section label for the Add/Edit Chart form — turns one long run of fields into a
+// scannable sequence (type -> name/source -> fields -> layout) without restructuring the
+// conditional blocks underneath it into wrapper components.
+function StepHeading({ n, title, hint }) {
+  return (
+    <div className="flex items-center gap-2 pt-4 mt-1 border-t border-gray-100 dark:border-gray-700 first:border-t-0 first:pt-0">
+      <span className="w-5 h-5 shrink-0 rounded-full bg-[#0038A8] text-white text-[10px] font-bold flex items-center justify-center">{n}</span>
+      <h4 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h4>
+      {hint && <span className="text-[11px] text-gray-400 truncate">{hint}</span>}
     </div>
   );
 }
@@ -5278,6 +6103,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // code kept only because other, still-live code in this file references the same
   // variables; harmless since they can no longer execute.
   const isFreeWifi = false;
+  const navigate = useNavigate();
 
   const [summary, setSummary] = useState(null);
   // Every dataset a built-in chart could be pointed at; 'live' stays the default and is
@@ -5410,13 +6236,14 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     cardDesign: 'big-number', cardIcon: '', cardColor: '#0038A8', cardTarget: '', cardImage: '', cardTextAlign: 'left',
     cardGradientColor: '#000000', cardDescription: '',
     hideTitle: false,
-    dateGroupBy: 'month', cumulative: false, valueLabels: {}, secondaryValueLabels: {}, tertiaryValueLabels: {},
+    dateGroupBy: 'month', cumulative: false, valueLabels: {}, valueTargets: {}, secondaryValueLabels: {}, tertiaryValueLabels: {},
     conditions: [],
     gridSize: 'full', showOnUser: true, showAllCategories: false, disablePagination: false, dataset: '',
     extraDatasets: [], fieldMap: {}, secondaryFieldMap: {}, aggregationFieldMap: {}, tableConditions: {},
-    rowMode: false, rowColumns: [],
+    rowMode: false, rowColumns: [], multiRowMode: false,
     colorMode: 'palette', chartColor: '#0038A8', categoryColors: {}, secondaryCategoryColors: {}, categorySecondaryColors: {},
     categoryOrder: [], secondaryCategoryOrder: [], tertiaryCategoryOrder: [], donutCenterMode: 'total',
+    comparisonCollapsible: false, showRowIncrease: true, rowIncreaseColor: '', rowDecreaseColor: '', rowIncreaseInHeader: false,
   });
   // 'image-bg' card design's background photo — URL mode just writes straight into
   // newChart.cardImage like any other text field; Upload mode holds the picked File here
@@ -6011,7 +6838,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     <div className="flex-1 min-w-0 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-[#0038A8]" style={{ width: `${(count / maxCount) * 100}%` }} />
                     </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 w-16 sm:w-20 text-right shrink-0 truncate">{count} rows</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 w-16 sm:w-20 text-right shrink-0 truncate">{fmtNum(count)} rows</span>
                     {isActive ? <ChevronDown size={18} className="text-gray-400 shrink-0" /> : <ChevronRight size={18} className="text-gray-400 shrink-0" />}
                   </button>
                   {isActive && renderBreakdownRawData(group, groupField, records, rawDataFieldDefs, query)}
@@ -6106,6 +6933,27 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // computeSingletonExportRows above (always the generic, non-Free-Wi-Fi path, since extra
   // widget instances only exist for generic projects), reading from the instance's own
   // `settings`/table instead of chartSource, mirroring renderBuiltinWidgetInstance below.
+  // 'ict-plans-policies' reads two whole separate tables by NAME (see IctPlansAndPolicies
+  // .tsx) rather than one tagged dataset like every other widget instance — its export
+  // can't reuse computeWidgetInstanceExportRows' single-table/single-CSV shape (Plans and
+  // Policies have entirely different columns, and downloadCSV's headers come from just
+  // the FIRST row, so mixing both shapes into one CSV would silently drop whichever
+  // table's columns didn't match row 0). Triggers up to two separate CSV downloads
+  // instead, one per table, each headed by that table's own column LABELS (not the raw
+  // field names) — skipping either table entirely if it has no rows yet.
+  const exportIctPlansAndPoliciesCSVs = () => {
+    const findTableByName = (name) => genericTables.find(t => (t.name || '').trim().toLowerCase() === name.toLowerCase());
+    const rowsFor = (table) => (table?.rows || []).map(r => {
+      const out = {};
+      (table.fields || []).forEach(f => { out[f.label] = r.values?.[f.name] ?? ''; });
+      return out;
+    });
+    const plansRows = rowsFor(findTableByName('ICT Plans and Policies'));
+    const policiesRows = rowsFor(findTableByName('ICT Policies'));
+    if (plansRows.length) downloadCSV(plansRows, safeFilename('ICT Plans', 'csv'));
+    if (policiesRows.length) downloadCSV(policiesRows, safeFilename('ICT Policies', 'csv'));
+  };
+
   const computeWidgetInstanceExportRows = (chart) => {
     const settings = chart.settings || {};
     const datasetId = settings.summary_dataset ?? settings.map_dataset ?? settings.breakdown_dataset;
@@ -6178,6 +7026,17 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
         const records = filterRecordsByConditions(baseRecords, settings.breakdown_conditions);
         return <BreakdownAccordion records={records} source={settings} taggedFields={taggedFields} />;
       }
+      case 'ict-plans-policies':
+        // No dataset tag/settings at all — reads this project's own "ICT Plans and
+        // Policies"/"ICT Policies" Datasets by name directly (see the component itself).
+        // title="" — DraggableChart already renders this widget's own title bar (via
+        // builtinWidgetTitle), same as every other widget type here never repeating its
+        // own title internally.
+        return (
+          <div className="-m-4">
+            <IctPlansAndPolicies slug={slug} title="" />
+          </div>
+        );
       default:
         return null;
     }
@@ -6243,7 +7102,11 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       });
       const chart = builtinWidgetFromBackend(created);
       setAllCharts(prev => [...prev, chart]);
-      setEditingWidgetInstance(chart);
+      // 'ict-plans-policies' has no per-instance settings at all (it just reads this
+      // project's own "ICT Plans and Policies"/"ICT Policies" Datasets by name) — every
+      // other widget type opens straight into DataSourceModal to configure itself, but
+      // that modal has no section for this one, so there's nothing to edit here.
+      if (widgetType !== 'ict-plans-policies') setEditingWidgetInstance(chart);
     } catch {
       alert('Failed to add widget.');
     }
@@ -6286,7 +7149,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
   // active (if any) — not tied to a filter literally named "Date", since the admin can
   // name/add range filters freely now. Uses the first one with a value set.
   const activeRangeFilter = generalFilterLabels.find(
-    (f) => f.type === 'range' && (generalFilterValues[f.label]?.from || generalFilterValues[f.label]?.to)
+    (f) => isRangeFilterType(f.type, f.granularity) && (generalFilterValues[f.label]?.from || generalFilterValues[f.label]?.to)
   );
   const summaryDateFrom = activeRangeFilter ? (generalFilterValues[activeRangeFilter.label]?.from || '') : '';
   const summaryDateTo = activeRangeFilter ? (generalFilterValues[activeRangeFilter.label]?.to || '') : '';
@@ -6505,6 +7368,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     a project has none) so a text card genuinely never shows a table picker
                     at all, satisfying the backend's dataset FK without the admin ever
                     seeing that requirement. */}
+                <div className="mb-3"><StepHeading n={1} title="Choose a type" hint="Chart, single-number Card, or plain Text" /></div>
                 <div className="flex gap-2 mb-4">
                   <button type="button"
                     onClick={() => { if (isCardMode) setNewChart(c => ({ ...c, chartType: 'bar-horizontal' })); }}
@@ -6542,13 +7406,13 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     {CHART_TYPES.filter(t => t.id !== 'aggregate-cards' && (!newChart.rowMode || !t.requiresDateField)).map((type) => {
                       const fieldSelected = newChart.rowMode ? (newChart.rowColumns || []).length > 0 : !!newChart.field;
                       const count = newChart.rowMode ? (newChart.rowColumns || []).length : (fieldCardinality[newChart.field] || 0);
-                      const isDateLike = newChart.rowMode ? false : fieldIsDateLike[newChart.field];
+                      const isDateLike = newChart.rowMode ? false : (newChart.multiRowMode || fieldIsDateLike[newChart.field]);
                       const fit = getChartFit(type, count, isDateLike, fieldSelected);
                       const isDisabled = fit.status === 'disabled';
                       const isRecommended = fieldSelected && !isDisabled && recommendChartTypes(count, isDateLike).includes(type.id);
                       return (
                         <button key={type.id} disabled={isDisabled}
-                          onClick={() => setNewChart(c => ({ ...c, chartType: type.id }))}
+                          onClick={() => setNewChart(c => ({ ...c, chartType: type.id, multiRowMode: (type.id === 'line' || type.id === 'area') ? c.multiRowMode : false }))}
                           title={fit.reason || type.label}
                           className={`relative p-3 rounded-xl border-2 transition-all ${
                             newChart.chartType === type.id
@@ -6625,7 +7489,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 if (!selectedType) return null;
                 const fieldSelected = newChart.rowMode ? (newChart.rowColumns || []).length > 0 : !!newChart.field;
                 const count = newChart.rowMode ? (newChart.rowColumns || []).length : (fieldCardinality[newChart.field] || 0);
-                const fit = getChartFit(selectedType, count, newChart.rowMode ? false : fieldIsDateLike[newChart.field], fieldSelected);
+                const fit = getChartFit(selectedType, count, newChart.rowMode ? false : (newChart.multiRowMode || fieldIsDateLike[newChart.field]), fieldSelected);
                 return (
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-xs text-blue-700 dark:text-blue-300">
                     <p className="font-bold mb-1">{selectedType.label}</p>
@@ -6653,14 +7517,14 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                       <>
                         <p className="mt-1 font-semibold text-amber-600 dark:text-amber-400">
                           {newChart.showAllCategories
-                            ? `Showing all ${count} categories (default limit is top ${selectedType.maxItems})`
+                            ? `Showing all ${fmtNum(count)} categories (default limit is top ${selectedType.maxItems})`
                             : fit.reason}
                         </p>
                         <label className="flex items-center gap-2 mt-2 cursor-pointer">
                           <input type="checkbox" checked={!!newChart.showAllCategories}
                             onChange={(e) => setNewChart(c => ({ ...c, showAllCategories: e.target.checked }))}
                             className="rounded border-gray-300" />
-                          <span className="text-[11px] text-blue-700 dark:text-blue-300">Show all {count} categories (ignore the limit)</span>
+                          <span className="text-[11px] text-blue-700 dark:text-blue-300">Show all {fmtNum(count)} categories (ignore the limit)</span>
                         </label>
                         {newChart.showAllCategories && (
                           <label className="flex items-center gap-2 mt-2 cursor-pointer">
@@ -6678,9 +7542,18 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 );
               })()}
 
+              <StepHeading n={2} title="Name & data source" />
+
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Chart Title <span className="text-red-500">*</span></label>
+                <input placeholder="e.g. Sites by Contract" value={newChart.title}
+                  onChange={(e) => setNewChart(c => ({ ...c, title: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+              </div>
+
               {!isFreeWifi && !isTextNoteCard && (
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table <span className="text-red-500">*</span></label>
                   <Select value={selectValue(toOptions(genericTables.map(t => t.id), (id) => genericTables.find(t => t.id === id)?.name), newChart.dataset ? Number(newChart.dataset) : null)}
                     onChange={(opt) => setNewChart(c => ({
                       ...c, dataset: opt ? opt.value : '', field: '', secondaryField: '', tertiaryField: '',
@@ -6707,11 +7580,35 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                         // no equivalent of — fall back to a type that works with any
                         // number of categories instead of leaving an invalid one selected.
                         chartType: rowMode && (c.chartType === 'line' || c.chartType === 'area') ? 'bar-vertical' : c.chartType,
+                        // Mutually exclusive with row mode (one row's own columns vs one
+                        // line per matching row) — the toggle above hides once rowMode is
+                        // on, but clear the underlying value too rather than leaving it
+                        // stale and unseen.
+                        multiRowMode: rowMode ? false : c.multiRowMode,
                       }));
                     }}
                     className="rounded border-gray-300" />
                   <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                     Compare columns for one row <span className="text-gray-400 font-normal">(instead of grouping by a field's values across every row)</span>
+                  </span>
+                </label>
+              )}
+
+              {/* One line per row — a wide table (one row per category, one column per
+                  period, e.g. REGION rows with 2023/2024/2025/2026 columns) turned into a
+                  multi-line trend chart: every row matching Filter rows below becomes its
+                  own line, named/colored/reordered by its own `field` value exactly like
+                  "Customize labels" already does for any other chart, plotted across the
+                  same "Columns to compare" as row mode uses. Line/Area only — every other
+                  chart type has no equivalent of plotting several independent lines. */}
+              {!isFreeWifi && newChart.dataset && !isCardMode && !newChart.rowMode &&
+                (newChart.chartType === 'line' || newChart.chartType === 'area') && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!newChart.multiRowMode}
+                    onChange={(e) => setNewChart(c => ({ ...c, multiRowMode: e.target.checked }))}
+                    className="rounded border-gray-300" />
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    One line per row <span className="text-gray-400 font-normal">(compare columns across every matching row, instead of one line)</span>
                   </span>
                 </label>
               )}
@@ -6732,12 +7629,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
-              <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Chart Title</label>
-                <input placeholder="e.g. Sites by Contract" value={newChart.title}
-                  onChange={(e) => setNewChart(c => ({ ...c, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
-              </div>
+              {!isTextNoteCard && <StepHeading n={3} title="Fields" hint="What to group, break down and measure" />}
 
               {!isTextNoteCard && (newChart.rowMode ? (
                 <div>
@@ -6754,9 +7646,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   </p>
                 </div>
               ) : (
+              <>
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                  Data Field {CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary ? '(Primary)' : ''}
+                  {newChart.multiRowMode ? 'Line label field' : `Data Field ${CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary ? '(Primary)' : ''}`}
                 </label>
                 <Select
                   value={selectValue(availableFieldsFor(newChart.dataset).map(f => ({
@@ -6765,6 +7658,11 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   isDisabled={(!isFreeWifi && !newChart.dataset) || (newChart.chartType === 'aggregate-cards' && newChart.agg === 'count')}
                   onChange={(opt) => {
                     const field = opt ? opt.value : '';
+                    // Picking a field normally auto-switches to whatever chart type fits its
+                    // cardinality best — skipped in multi-row mode, where the chart type is
+                    // pinned to line/area (that auto-pick has no idea multi-row mode exists
+                    // and would happily switch away from both).
+                    if (newChart.multiRowMode) { setNewChart(c => ({ ...c, field })); return; }
                     const count = fieldCardinality[field] || 0;
                     setNewChart(c => ({ ...c, field, chartType: bestChartType(count, c.chartType, fieldIsDateLike[field]) }));
                   }}
@@ -6772,11 +7670,56 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     value: f.value, label: fieldOptionLabel(f, fieldCardinality, fieldIsDateLike),
                   }))}
                   placeholder="Select field..." isClearable styles={selectStyles} />
-                {CHART_TYPES.find(t => t.id === newChart.chartType)?.requiresDateField && (
+                {CHART_TYPES.find(t => t.id === newChart.chartType)?.requiresDateField && !newChart.multiRowMode && (
                   <p className="text-[11px] text-gray-400 mt-1">Fields marked "Date" above will work — others won't, even if their name sounds date-like.</p>
                 )}
               </div>
+              {newChart.multiRowMode && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Columns to compare</label>
+                  <Select isMulti
+                    value={(newChart.rowColumns || []).map(v => ({
+                      value: v, label: availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label || v,
+                    }))}
+                    onChange={(opts) => setNewChart(c => ({ ...c, rowColumns: (opts || []).map(o => o.value) }))}
+                    options={availableFieldsFor(newChart.dataset).map(f => ({ value: f.value, label: f.label }))}
+                    placeholder="Select columns..." styles={selectStyles} />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    The shared X-axis every line is plotted across — e.g. 2023, 2024, 2025, 2026.
+                  </p>
+                </div>
+              )}
+              </>
               ))}
+
+              {/* Secondary/Third field sit right under the main Data Field (not far below
+                  Filter rows) — a stacked/grouped/comparison chart is really defined by
+                  this pair, so it shouldn't be hunted for at the bottom of the form. Not
+                  shown in row mode, which has no "field" to cross-tab a second one against. */}
+              {!newChart.rowMode && CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Secondary Field <span className="text-gray-400">(for grouping/breakdown)</span>
+                  </label>
+                  <Select
+                    value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.secondaryField)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, secondaryField: opt ? opt.value : '' }))}
+                    options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
+                    placeholder="None" isClearable styles={selectStyles} />
+                </div>
+              )}
+              {!newChart.rowMode && CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && newChart.secondaryField && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Third Field <span className="text-gray-400">(optional — a further breakdown nested under each secondary row)</span>
+                  </label>
+                  <Select
+                    value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field && f.value !== newChart.secondaryField).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.tertiaryField)}
+                    onChange={(opt) => setNewChart(c => ({ ...c, tertiaryField: opt ? opt.value : '' }))}
+                    options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field && f.value !== newChart.secondaryField).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
+                    placeholder="None" isClearable styles={selectStyles} />
+                </div>
+              )}
 
               {/* Aggregation — optional. Off, every chart type counts rows per category
                   (the original, still-default behavior). On, each category shows a
@@ -6786,7 +7729,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   below (agg/agg_equals, count/count-where-equals included), nor in row
                   mode — there's only ever one row per category there, nothing to
                   aggregate across. */}
-              {!isCardMode && !newChart.rowMode && (
+              {!isCardMode && !newChart.rowMode && !newChart.multiRowMode && (
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer mb-1.5">
                     <input type="checkbox" checked={!!newChart.aggregationEnabled}
@@ -6817,7 +7760,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   size is what turns that into a real trend. Cumulative flips the reading
                   from "activity per period" to "running total over time" — usually the more
                   useful one for a growth/adoption story ("sites accepted over time"). */}
-              {CHART_TYPES.find(t => t.id === newChart.chartType)?.requiresDateField && (
+              {CHART_TYPES.find(t => t.id === newChart.chartType)?.requiresDateField && !newChart.multiRowMode && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Group dates by</label>
@@ -6835,6 +7778,8 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   </div>
                 </div>
               )}
+
+              <StepHeading n={4} title="Appearance & filters" />
 
               {/* Donut center — 'total' (default) shows the raw row/aggregate total, same as
                   before this option existed. 'percentage' instead shows the display-order
@@ -6854,6 +7799,69 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Comparison collapsible — only meaningful once there's a secondary_field
+                  breakdown to hide/reveal. Off (default) renders exactly as before this
+                  option existed: every category's breakdown always shown. */}
+              {newChart.chartType === 'comparison' && !!newChart.secondaryField && (
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!newChart.comparisonCollapsible}
+                      onChange={(e) => setNewChart(c => ({ ...c, comparisonCollapsible: e.target.checked }))}
+                      className="rounded border-gray-300" />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">Collapsible — start each category collapsed, expand on click to show its breakdown</span>
+                  </label>
+                </div>
+              )}
+
+              {/* The automatic per-bar "+X%" readout (each column vs the one before it) only
+                  appears for a bar-vertical chart in row mode with 2+ compared columns (see
+                  CustomChartRenderer's showIncrease) — this is just its opt-out. On
+                  (default) keeps every existing chart showing it exactly as before this
+                  checkbox existed. */}
+              {newChart.chartType === 'bar-vertical' && newChart.rowMode && (newChart.rowColumns || []).length >= 2 && (
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={newChart.showRowIncrease !== false}
+                      onChange={(e) => setNewChart(c => ({ ...c, showRowIncrease: e.target.checked }))}
+                      className="rounded border-gray-300" />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">Show each bar's "% change" vs the previous column</span>
+                  </label>
+                  {newChart.showRowIncrease !== false && (
+                    <div className="flex items-center gap-4 mt-2 ml-6">
+                      <label className="flex items-center gap-2">
+                        <input type="color" value={newChart.rowIncreaseColor || '#059669'}
+                          onChange={(e) => setNewChart(c => ({ ...c, rowIncreaseColor: e.target.value }))}
+                          className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                        <span className="text-xs text-gray-500">Increase color</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input type="color" value={newChart.rowDecreaseColor || '#dc2626'}
+                          onChange={(e) => setNewChart(c => ({ ...c, rowDecreaseColor: e.target.value }))}
+                          className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                        <span className="text-xs text-gray-500">Decrease color</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Puts the overall first-vs-last "+X% Increase from <label>" text in the
+                  chart's own title/header instead of (not in addition to — this REPLACES
+                  chart.title wherever it's normally shown) leaving it inline above the
+                  bars. See rowIncreaseHeaderText, read from the title prop rather than
+                  inside CustomChartRenderer — the per-bar badges above stay independent of
+                  this and keep showing (or not) exactly per their own checkbox. */}
+              {newChart.chartType === 'bar-vertical' && newChart.rowMode && (newChart.rowColumns || []).length >= 2 && (
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!newChart.rowIncreaseInHeader}
+                      onChange={(e) => setNewChart(c => ({ ...c, rowIncreaseInHeader: e.target.checked }))}
+                      className="rounded border-gray-300" />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">Show the % increase in the chart's title instead of "Chart Title" above</span>
+                  </label>
                 </div>
               )}
 
@@ -6965,7 +7973,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 return (
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
-                      Customize labels <span className="text-gray-400">(optional — change how a value is shown, its color, or drag <GripVertical size={11} className="inline -mt-0.5" /> to reorder)</span>
+                      Customize labels <span className="text-gray-400">(optional — change how a value is shown, its color, set an "out of" target, or drag <GripVertical size={11} className="inline -mt-0.5" /> to reorder)</span>
                     </label>
                     <div className="space-y-1.5">
                       {values.map((v, i) => (
@@ -6989,6 +7997,22 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                               onChange={(e) => setNewChart(c => ({ ...c, valueLabels: { ...c.valueLabels, [v]: e.target.value } }))}
                               placeholder={v}
                               className="flex-1 px-2.5 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                            {/* "Out of" target — shows "50/100" instead of just "50" for this
+                                category, e.g. progress toward a goal. Display-only: the real
+                                tallied count still drives bar height/percent-of-total, this
+                                just appends "/target" to the number shown — see displayValue()
+                                below in this component. */}
+                            <span className="text-gray-300 shrink-0 text-xs">/</span>
+                            <input type="number" value={newChart.valueTargets?.[v] ?? ''}
+                              onChange={(e) => setNewChart(c => ({ ...c, valueTargets: { ...c.valueTargets, [v]: e.target.value } }))}
+                              placeholder="over"
+                              title={`Show "actual/over" for "${v}" (e.g. 50/100) — leave blank to show just the count`}
+                              className="w-16 shrink-0 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                            {newChart.valueTargets?.[v] !== undefined && newChart.valueTargets?.[v] !== '' && (
+                              <button type="button" title="Remove the target"
+                                onClick={() => setNewChart(c => { const rest = { ...c.valueTargets }; delete rest[v]; return { ...c, valueTargets: rest }; })}
+                                className="text-gray-300 hover:text-red-500 shrink-0"><X size={13} /></button>
+                            )}
                             {showRowColorOverride && (
                               <button type="button" onClick={() => setExpandedCategoryColorRow(x => x === v ? null : v)}
                                 title={`Customize just "${v}"'s own bar colors`}
@@ -7031,6 +8055,41 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                               ))}
                             </div>
                           )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Row mode + bar-100-stacked with a multi-value "Is one of" filter stacks one
+                  segment per selected value (see pickRowModeRow/segmentColor in
+                  CustomChartRenderer) — there's no secondaryField to drive "Customize
+                  sub-labels" below, so give this specific combo its own small color/label
+                  editor for those segment values instead. Reuses secondaryCategoryColors/
+                  secondaryValueLabels, the exact same state the stacked-bar renderer reads. */}
+              {newChart.rowMode && newChart.chartType === 'bar-100-stacked' && (() => {
+                const multiCond = (newChart.conditions || []).find((c) => c.field && c.type === 'multi' && (c.values || []).length > 1);
+                if (!multiCond) return null;
+                const values = multiCond.values;
+                return (
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
+                      Customize stacked segment colors <span className="text-gray-400">(optional — one color per selected "{multiCond.field}" value, stacked inside each bar)</span>
+                    </label>
+                    <div className="space-y-1.5">
+                      {values.map((v, i) => (
+                        <div key={v} className="flex items-center gap-2">
+                          <input type="color" value={newChart.secondaryCategoryColors?.[v] || COLORS[i % COLORS.length]}
+                            onChange={(e) => setNewChart(c => ({ ...c, secondaryCategoryColors: { ...c.secondaryCategoryColors, [v]: e.target.value } }))}
+                            title={`Color for "${v}"`}
+                            className="w-7 h-7 shrink-0 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                          <span className="w-40 shrink-0 text-xs text-gray-500 chart-label-wrap" title={v}>{v}</span>
+                          <span className="text-gray-300 shrink-0">→</span>
+                          <input type="text" value={newChart.secondaryValueLabels?.[v] || ''}
+                            onChange={(e) => setNewChart(c => ({ ...c, secondaryValueLabels: { ...c.secondaryValueLabels, [v]: e.target.value } }))}
+                            placeholder={v}
+                            className="flex-1 px-2.5 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
                         </div>
                       ))}
                     </div>
@@ -7348,40 +8407,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 </div>
               )}
 
-              {/* Show secondary field only for charts that need it — not in row mode,
-                  which has no "field" concept to cross-tab a second one against. */}
-              {!newChart.rowMode && CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    Secondary Field <span className="text-gray-400">(for grouping/breakdown)</span>
-                  </label>
-                  <Select
-                    value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.secondaryField)}
-                    onChange={(opt) => setNewChart(c => ({ ...c, secondaryField: opt ? opt.value : '' }))}
-                    options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
-                    placeholder="None" isClearable styles={selectStyles} />
-                </div>
-              )}
-
-              {/* Third field — a further breakdown nested one level under each secondary
-                  sub-row (Province > District > Wi-Fi status, say). Only offered once a
-                  secondary field is actually picked, same as "Customize sub-labels" below —
-                  a third level nested under a second level that doesn't exist yet has
-                  nothing to nest under. Rendered today by the chart types whose sub-row
-                  layout has room for it (see getSubSubGroups); saved for every
-                  needsSecondary chart type regardless, so it's ready once more types do. */}
-              {!newChart.rowMode && CHART_TYPES.find(t => t.id === newChart.chartType)?.needsSecondary && newChart.secondaryField && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    Third Field <span className="text-gray-400">(optional — a further breakdown nested under each secondary row)</span>
-                  </label>
-                  <Select
-                    value={selectValue(toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field && f.value !== newChart.secondaryField).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label), newChart.tertiaryField)}
-                    onChange={(opt) => setNewChart(c => ({ ...c, tertiaryField: opt ? opt.value : '' }))}
-                    options={toOptions(availableFieldsFor(newChart.dataset).filter(f => f.value !== newChart.field && f.value !== newChart.secondaryField).map(f => f.value), (v) => availableFieldsFor(newChart.dataset).find(f => f.value === v)?.label)}
-                    placeholder="None" isClearable styles={selectStyles} />
-                </div>
-              )}
+              <StepHeading n={5} title="Layout & visibility" />
 
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">
@@ -7422,13 +8448,32 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 <span className="text-xs text-gray-700 dark:text-gray-300">Hide title on public page</span>
               </label>
 
-              <div className="flex gap-2">
-                <button onClick={handleAddChart} disabled={savingChart}
-                  className="flex-1 px-4 py-2.5 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] disabled:opacity-50">
-                  {savingChart ? 'Saving...' : editingChart ? 'Update Chart' : 'Create Chart'}
-                </button>
-                <button onClick={() => { setShowAddChart(false); setEditingChart(null); }} className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">Cancel</button>
-              </div>
+              {/* Sticky so Create/Cancel are always reachable — this form scrolls a long way,
+                  and the buttons used to sit at the very bottom out of sight. The negative
+                  margins cancel the scroll container's own padding so the bar spans
+                  edge-to-edge. Create stays disabled (with the reason spelled out) until the
+                  two required fields are filled, instead of failing with an alert after the
+                  click. */}
+              {(() => {
+                const missing = [
+                  !newChart.title.trim() && 'a title',
+                  !isFreeWifi && !newChart.dataset && 'a table',
+                ].filter(Boolean);
+                return (
+                  <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-10">
+                    {missing.length > 0 && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">Add {missing.join(' and ')} to continue.</p>
+                    )}
+                    <div className="flex gap-2">
+                      <button onClick={handleAddChart} disabled={savingChart || missing.length > 0}
+                        className="flex-1 px-4 py-2.5 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] disabled:opacity-50 disabled:cursor-not-allowed">
+                        {savingChart ? 'Saving...' : editingChart ? 'Update Chart' : 'Create Chart'}
+                      </button>
+                      <button onClick={() => { setShowAddChart(false); setEditingChart(null); }} className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">Cancel</button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
               </div>
 
@@ -7440,7 +8485,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 min-h-[400px] overflow-hidden">
                   <div className="p-5 pb-4">
                     <h4 className="text-base font-bold text-gray-900 dark:text-white">
-                      {newChart.title || 'Chart Title'}
+                      {rowIncreaseHeaderText(newChart, isFreeWifi ? sites : combineChartRecords(newChart, recordsByDataset, genericTables)) || newChart.title || 'Chart Title'}
                     </h4>
                   </div>
                   {/* No side/bottom padding for the 'image-bg' design, matching the actual
@@ -7549,7 +8594,9 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   onDrop={handleDrop}
                   onDragEnd={handleDragEnd}
                   isDragging={dragIndex === index}
-                  title={isCustom ? chart.title : isWidgetInstance ? builtinWidgetTitle(chart) : (isFreeWifi ? chart.label : builtInTitles[chart.id])}
+                  title={isCustom
+                    ? (rowIncreaseHeaderText(chart, isFreeWifi ? sites : combineChartRecords(chart, recordsByDataset, genericTables)) || chart.title)
+                    : isWidgetInstance ? builtinWidgetTitle(chart) : (isFreeWifi ? chart.label : builtInTitles[chart.id])}
                   subtitle={
                     isCustom ? (
                       // A Text card has no field/table binding to describe — naming it
@@ -7559,7 +8606,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                       TEXT_DESIGN_IDS.has(chart.cardDesign)
                         ? `Text · ${TEXT_DESIGNS.find(d => d.id === chart.cardDesign)?.label || 'Plain'}`
                         : `${CHART_TYPES.find(t => t.id === chart.chartType)?.label} · ${
-                            chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
+                            chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : chart.multiRowMode ? `${(chart.rowColumns || []).length} columns · one line per row` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
                           }`
                     )
                       : isWidgetInstance ? `${WIDGET_TYPE_LABELS[chart.widgetType]} · extra instance` : undefined
@@ -7567,12 +8614,20 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   isCustom={isCustom || isWidgetInstance}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total' });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);
                     setShowAddChart(true);
-                  } : isWidgetInstance ? () => setEditingWidgetInstance(chart)
+                  // 'ict-plans-policies' has no chart-config settings to open here (see
+                  // addBuiltinWidget) — its content is entirely the "ICT Plans and
+                  // Policies"/"ICT Policies" Dataset tables' own rows (see
+                  // IctPlansAndPolicies.tsx), so its pencil jumps straight to the Datasets
+                  // tab instead, pre-selecting the Plans table so there's no need to hunt
+                  // for it by name.
+                  } : isWidgetInstance ? (chart.widgetType === 'ict-plans-policies'
+                    ? () => navigate(`/kms/admin/${slug}/datasets`, { state: { focusDatasetName: 'ICT Plans and Policies' } })
+                    : () => setEditingWidgetInstance(chart))
                   // Built-ins: opens the same Data Source modal as the "Data Source" button,
                   // just scoped to this one widget's own section (see focusSection) instead
                   // of showing all three — a direct per-chart edit that still shares the
@@ -7583,7 +8638,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     isCustom
                       ? () => exportChartDataCSV(chart, isFreeWifi ? sites : combineChartRecords(chart, recordsByDataset, genericTables))
                       : isWidgetInstance
-                        ? () => downloadCSV(computeWidgetInstanceExportRows(chart), safeFilename(builtinWidgetTitle(chart), 'csv'))
+                        ? (chart.widgetType === 'ict-plans-policies' ? exportIctPlansAndPoliciesCSVs : () => downloadCSV(computeWidgetInstanceExportRows(chart), safeFilename(builtinWidgetTitle(chart), 'csv')))
                         : () => downloadCSV(computeSingletonExportRows(chart.id, chart.dataSource || 'live'), safeFilename(isFreeWifi ? chart.label : builtInTitles[chart.id], 'csv'))
                   }
                   onDelete={isCustom || isWidgetInstance ? () => handleDeleteChart(chart.id) : undefined}
@@ -7637,7 +8692,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                         {isCustom && (
                           <p className="text-[10px] text-gray-400 truncate">
                             {CHART_TYPES.find(t => t.id === chart.chartType)?.label} · {
-                              chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
+                              chart.rowMode ? `${(chart.rowColumns || []).length} columns compared` : chart.multiRowMode ? `${(chart.rowColumns || []).length} columns · one line per row` : availableFieldsFor(chart.dataset).find(f => f.value === chart.field)?.label
                             }
                           </p>
                         )}

@@ -10,7 +10,7 @@ import Awards from '../components/Awards';
 import { useTheme } from '../context/ThemeContext';
 
 import logoFreeWifi from '../assets/project-logo/Free Wifi.png';
-import logoILCDB from '../assets/project-logo/ILCDB.png';
+import logoILCDB from '../assets/project-logo/ICTAcademy.jpg';
 import logoeGov from '../assets/project-logo/eGovPH Logo.png';
 import logoPNPKI from '../assets/project-logo/PNPKI.jpg';
 import logoNBP from '../assets/project-logo/NBP.png';
@@ -30,7 +30,7 @@ const PROJECTS = [
   },
   {
     logo: logoILCDB,
-    title: 'ILCDB',
+    title: 'ICT Academy',
     description: 'ICT Livelihood & Community Development Barangay program beneficiaries and reports.',
     path: '/kms/projects/ilcdb',
     accent: 'bg-[#14478F]',

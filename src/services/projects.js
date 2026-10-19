@@ -95,6 +95,19 @@ export async function syncProjectDatasetSheet(datasetId, sheetUrl, headerRow) {
   return data;
 }
 
+/** Pulls the Business Permit transaction-count API (see kms/views.py's
+ * sync_bp_transaction_count / BpTransactionCountView) into this dataset's rows — one row
+ * per LGU per calendar month. startDate/endDate (YYYY-MM-DD) are both optional; omitted,
+ * the backend reuses the dataset's own last-synced range, then falls back to the current
+ * calendar year. Every sync REPLACES this dataset's rows, same as syncProjectDatasetSheet. */
+export async function syncProjectDatasetBpTransactionCount(datasetId, startDate, endDate) {
+  const { data } = await api.post(`kms/project-datasets/${datasetId}/sync-bp-transaction-count/`, {
+    ...(startDate ? { start_date: startDate } : {}),
+    ...(endDate ? { end_date: endDate } : {}),
+  });
+  return data;
+}
+
 export async function createProjectDatasetField(payload) {
   const { data } = await api.post('kms/project-dataset-fields/', payload);
   return data;
@@ -124,6 +137,22 @@ export async function updateProjectDatasetRow(slug, id, payload) {
 
 export async function deleteProjectDatasetRow(slug, id) {
   await api.delete(`kms/project-dataset-rows/${slug}/${id}/`);
+}
+
+// A dataset row's image-type field (e.g. "Image URL") — a separate multipart PATCH (vs.
+// createProjectDatasetRow/updateProjectDatasetRow's plain JSON) since it's an actual file
+// upload, converted/compressed server-side the same way Award/Accomplishment images and
+// the chart card/marker icon uploads are. Needs an existing row id, so for a brand-new
+// row the caller creates it (JSON) first, then calls this as a follow-up if the admin
+// picked a file instead of pasting a URL for that field.
+export async function uploadProjectDatasetRowImage(slug, rowId, fieldName, file) {
+  const fd = new FormData();
+  fd.append('image_file', file);
+  fd.append('image_field_name', fieldName);
+  const { data } = await api.patch(`kms/project-dataset-rows/${slug}/${rowId}/`, fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
 }
 
 // ── Chart layouts — named, independently-scoped "pages" within a project's Charts
@@ -247,6 +276,18 @@ export async function uploadProjectChartSourceMarkerIcon(slug, file, layoutId) {
   const { data } = await api.patch('kms/project-chart-source/', fd, {
     params: { office: officeId, ...(layoutId ? { layout: layoutId } : {}) },
     headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+// ── Business Permit transaction count (proxied elguv1backend.ibpls.com) ────────
+// See kms/views.py's BpTransactionCountView — that API's own CORS only allows
+// https://dmt-lgu.github.io, so this goes through our own backend instead of calling
+// ibpls.com directly from the browser. startDate/endDate are both optional (YYYY-MM-DD) —
+// the backend defaults to the current calendar year when either is omitted.
+export async function getBpTransactionCount(startDate, endDate) {
+  const { data } = await api.get('kms/bp-transaction-count/', {
+    params: { ...(startDate ? { start_date: startDate } : {}), ...(endDate ? { end_date: endDate } : {}) },
   });
   return data;
 }

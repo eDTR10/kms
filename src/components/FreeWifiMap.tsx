@@ -128,17 +128,40 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
   const [search, setSearch] = useState('');
   // { [fieldName]: [{value,label}, ...] } — one entry per configured filter field.
   const [selectedByField, setSelectedByField] = useState({});
+  // Which filter dropdown's menu is open. Controlled here (instead of react-select's own
+  // open/close) because on phones the menu gets closed by side effects of picking an option —
+  // the on-screen keyboard hiding, the input losing focus, the map re-fitting — none of which
+  // are the user "clicking outside". It now opens on tap and closes ONLY on a tap outside.
+  const [openField, setOpenField] = useState(null);
 
-  // Distinct values per filter field, independent of each other — no cascading, since
-  // (unlike the old fixed province→district→locality→barangay hierarchy) these are
-  // arbitrary per-project columns with no assumed relationship to one another.
+  useEffect(() => {
+    if (!openField) return;
+    const onPointerDown = (e) => {
+      if (!(e.target instanceof Element) || !e.target.closest('[data-filter-select]')) setOpenField(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [openField]);
+
+  // Distinct values per filter field, narrowed by what's picked in the OTHER filters (e.g.
+  // choosing a province only offers that province's municipalities). These are arbitrary
+  // per-project columns with no assumed hierarchy, so instead of hardcoding one, each
+  // dropdown just lists values that still exist among sites matching every other selection.
+  // A field's own selection is deliberately ignored for its own list so more can be added.
   const optionsByField = useMemo(() => {
     const map = {};
     filterFields.forEach(f => {
-      map[f.name] = [...new Set(sites.map(s => s[f.name]))].filter(Boolean).sort().map(v => ({ value: v, label: v }));
+      const matching = sites.filter(s =>
+        filterFields.every(other => {
+          if (other.name === f.name) return true;
+          const selected = selectedByField[other.name];
+          return !selected || selected.length === 0 || selected.some(opt => opt.value === s[other.name]);
+        })
+      );
+      map[f.name] = [...new Set(matching.map(s => s[f.name]))].filter(Boolean).sort().map(v => ({ value: v, label: v }));
     });
     return map;
-  }, [sites, filterFields]);
+  }, [sites, filterFields, selectedByField]);
 
   const colorFieldName = colorField?.name;
   // Distinct values of the color field on their own — colorField isn't necessarily one of
@@ -232,7 +255,7 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
       {showFilters && (
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex flex-wrap gap-3 items-center">
-            <div className="relative min-w-[200px]">
+            <div className="relative w-full sm:w-auto sm:min-w-[200px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
@@ -243,9 +266,14 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
               />
             </div>
             {filterFields.map(f => (
-              <div key={f.name} className="min-w-[160px]">
+              <div key={f.name} data-filter-select className="w-full sm:w-auto sm:min-w-[160px]">
                 <Select
                   isMulti
+                  closeMenuOnSelect={false}
+                  blurInputOnSelect={false}
+                  menuIsOpen={openField === f.name}
+                  onMenuOpen={() => setOpenField(f.name)}
+                  onMenuClose={() => { /* closed only by tapping outside — see openField */ }}
                   options={optionsByField[f.name] || []}
                   value={selectedByField[f.name] || []}
                   onChange={(val) => setFieldSelection(f.name, val)}
@@ -257,7 +285,7 @@ export default function FreeWifiMap({ sites, totalAPs, showFilters = true, heigh
             ))}
             {hasFilters && (
               <button onClick={clearFilters}
-                className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                className="w-full sm:w-auto px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
                 Clear
               </button>
             )}

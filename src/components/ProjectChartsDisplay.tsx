@@ -9,10 +9,11 @@ import {
   filterTablesByGeneralFilter, generalFilterOptionsFor, summaryAsOfLabel,
   combineChartRecords, BreakdownAccordion,
   builtinWidgetFromBackend, builtinWidgetTitle, DEFAULT_SUMMARY_STYLE,
-  customChartKind, useEqualHeightGrid,
+  customChartKind, useEqualHeightGrid, rowIncreaseHeaderText, isRangeFilterType,
 } from '../screens/Admin/FreeWifi/FreeWifiCharts';
 import FreeWifiMap from './FreeWifiMap';
 import LayoutTabs from './LayoutTabs';
+import IctPlansAndPolicies from './IctPlansAndPolicies';
 import { Skeleton } from '../screens/Admin/Skeleton';
 
 // `hideTitle` (chart.hideTitle — custom charts only) drops the header entirely, for when
@@ -209,7 +210,7 @@ export default function ProjectChartsDisplay({ slug }) {
   // The Summary Card's "as of" label reflects whichever range-type filter is currently
   // active (if any) — see the matching logic in FreeWifiCharts.tsx's admin preview.
   const activeRangeFilter = generalFilterLabels.find(
-    (f) => f.type === 'range' && (generalFilterValues[f.label]?.from || generalFilterValues[f.label]?.to)
+    (f) => isRangeFilterType(f.type, f.granularity) && (generalFilterValues[f.label]?.from || generalFilterValues[f.label]?.to)
   );
   const summaryDateFrom = activeRangeFilter ? (generalFilterValues[activeRangeFilter.label]?.from || '') : '';
   const summaryDateTo = activeRangeFilter ? (generalFilterValues[activeRangeFilter.label]?.to || '') : '';
@@ -309,7 +310,7 @@ export default function ProjectChartsDisplay({ slug }) {
       gridClass: gridSizeClass(chart.gridSize),
       kind: customChartKind(chart),
       node: (
-        <ChartCard key={chart.id} title={chart.title} hideTitle={chart.hideTitle}
+        <ChartCard key={chart.id} title={rowIncreaseHeaderText(chart, combineChartRecords(chart, recordsByDataset, filteredTables)) || chart.title} hideTitle={chart.hideTitle}
           noPadding={chart.chartType === 'aggregate-cards' && (chart.cardDesign === 'image-bg' || chart.cardDesign === 'text-image-bg')}>
           <CustomChartRenderer chart={chart} sites={combineChartRecords(chart, recordsByDataset, filteredTables)} />
         </ChartCard>
@@ -353,6 +354,15 @@ export default function ProjectChartsDisplay({ slug }) {
       if (widgetRecords.length) {
         node = <BreakdownAccordion records={widgetRecords} source={settings} taggedFields={taggedFields} />;
       }
+    } else if (widget.widgetType === 'ict-plans-policies') {
+      // No dataset tag at all — reads this project's own "ICT Plans and Policies"/"ICT
+      // Policies" Datasets by name directly, and returns null itself (no ChartCard shown)
+      // until at least one of them has real rows — see the component.
+      node = (
+        <div className="-m-4">
+          <IctPlansAndPolicies slug={slug} title="" />
+        </div>
+      );
     }
     if (!node) return;
     chartItems.push({

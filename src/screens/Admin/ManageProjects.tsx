@@ -4,7 +4,7 @@ import { Edit2, ExternalLink, Save, X } from 'lucide-react';
 
 const INITIAL_PROJECTS = [
   { id: 1, name: 'Free Wi-Fi', path: '/projects/free-wifi', embedUrl: 'https://datastudio.google.com/embed/reporting/c016a68b-488e-41c2-95f3-fd5d8fde0b00/page/p_dqiy4l4zhd', active: true },
-  { id: 2, name: 'ILCDB', path: '/projects/ilcdb', embedUrl: 'https://datastudio.google.com/embed/reporting/f8914384-b24f-4008-a338-a7f7ac14b425/page/IXtzD', active: true },
+  { id: 2, name: 'ICT Academy', path: '/projects/ilcdb', embedUrl: 'https://datastudio.google.com/embed/reporting/f8914384-b24f-4008-a338-a7f7ac14b425/page/IXtzD', active: true },
   { id: 3, name: 'eGov (NGP)', path: '/projects/egov', embedUrl: 'https://lookerstudio.google.com/embed/reporting/81b02c41-dbbc-46d4-ad8e-e349a72a2814/page/af24D', active: true },
   { id: 4, name: 'Cybersecurity / PNPKI', path: '/projects/cybersecurity', embedUrl: 'https://lookerstudio.google.com/embed/reporting/b6d40d56-33bd-4567-8d8a-20d16876deb4/page/p_gzgpvldahd', active: true },
   { id: 5, name: 'NBP / CDO GovNet', path: '/projects/govnet', embedUrl: 'https://datastudio.google.com/embed/reporting/d18767f5-b034-40b4-9215-93674ff57e47/page/fADIF', active: true },

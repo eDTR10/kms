@@ -26,7 +26,7 @@ const PROJECTS = [
       { label: 'Datasets', path: '/kms/admin/free-wifi/datasets', icon: Database },
     ],
   },
-  { id: 'ilcdb', label: 'ILCDB', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('ilcdb') },
+  { id: 'ilcdb', label: 'ICT Academy', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('ilcdb') },
   { id: 'egov', label: 'eGov (NGP)', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('egov') },
   { id: 'cybersecurity', label: 'Cybersecurity / PNPKI', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('cybersecurity') },
   { id: 'govnet', label: 'NBP / CDO GovNet', icon: Layers, color: '#0038A8', subMenus: projectSubMenus('govnet') },

@@ -11,14 +11,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Redirect to login on 401
+// 401 handling. Tokens now expire server-side (30 days), and the backend rejects an
+// expired token even on endpoints that don't need one (public pages, the login call
+// itself). So when a request that CARRIED a token comes back 401, drop the dead token and
+// retry once anonymously — public pages and login then just work. Only when that retry is
+// also 401 (a protected endpoint) is the session really over: send them to the login page
+// (unless they're already on it, which would loop). The first attempt failed at the auth
+// step, so retrying a POST/PATCH can't double-apply it.
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err?.response?.status === 401) {
-      secureStorage.removeItem("auth_token");
-      secureStorage.removeItem("auth_user_profile");
-      window.location.href = "/kms/login";
+    const original = err?.config;
+    if (err?.response?.status === 401 && original) {
+      if (original.headers?.Authorization && !original._retriedWithoutToken) {
+        secureStorage.removeItem("auth_token");
+        secureStorage.removeItem("auth_user_profile");
+        original._retriedWithoutToken = true;
+        delete original.headers.Authorization;
+        return api(original);
+      }
+      if (!window.location.pathname.endsWith("/login")) {
+        window.location.href = "/kms/login";
+      }
     }
     return Promise.reject(err);
   }

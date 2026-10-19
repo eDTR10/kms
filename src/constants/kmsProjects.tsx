@@ -7,7 +7,7 @@
 // explicit, manually-set id instead.
 export const KMS_PROJECTS = [
   { slug: 'free-wifi', label: 'Free Wi-Fi', officeId: 29 },
-  { slug: 'ilcdb', label: 'ILCDB', officeId: 25 },
+  { slug: 'ilcdb', label: 'ICT Academy', officeId: 25 },
   { slug: 'egov', label: 'eGov (NGP)', officeId: 36 },
   { slug: 'cybersecurity', label: 'Cybersecurity / PNPKI', officeId: 27 },
   { slug: 'govnet', label: 'NBP / CDO GovNet', officeId: 30 },

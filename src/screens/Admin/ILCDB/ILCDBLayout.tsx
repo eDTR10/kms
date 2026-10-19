@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { BarChart3, Database, Image } from 'lucide-react';
-import logoIlcdb from '../../../assets/project-logo/ILCDB.png';
+import logoIlcdb from '../../../assets/project-logo/ICTAcademy.jpg';
 
 const TABS = [
   { label: 'Highlights', path: '/kms/admin/ilcdb/highlights', icon: Image },
@@ -17,10 +17,10 @@ export default function ILCDBLayout() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <div className="w-12 h-12 rounded-xl bg-[#0038A8] flex items-center justify-center p-1.5">
-          <img src={logoIlcdb} alt="ILCDB" className="max-h-full max-w-full object-contain" />
+          <img src={logoIlcdb} alt="ICT Academy" className="max-h-full max-w-full object-contain" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white">ILCDB</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">ICT Academy</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">Project admin</p>
         </div>
       </div>

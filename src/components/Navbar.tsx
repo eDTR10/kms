@@ -14,7 +14,7 @@ const ABOUT_LINKS = [
 
 const PROJECT_LINKS = [
   { label: 'Free Wi-Fi', path: '/kms/projects/free-wifi' },
-  { label: 'ILCDB', path: '/kms/projects/ilcdb' },
+  { label: 'ICT Academy', path: '/kms/projects/ilcdb' },
   { label: 'eGov (NGP)', path: '/kms/projects/egov' },
   { label: 'Cybersecurity / PNPKI', path: '/kms/projects/cybersecurity' },
   { label: 'NBP / CDO GovNet', path: '/kms/projects/govnet' },

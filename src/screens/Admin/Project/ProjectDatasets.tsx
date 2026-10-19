@@ -1,14 +1,15 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Plus, Trash2, Edit2, X, Save, Table, Settings2, Upload, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight, Link2, RefreshCw, Network,
+  Search, ChevronLeft, ChevronRight, Link2, RefreshCw, Network, Download,
 } from 'lucide-react';
 import {
   getProjectOfficeId, getProjectDatasets, createProjectDataset, updateProjectDataset, deleteProjectDataset,
   createProjectDatasetField, updateProjectDatasetField, deleteProjectDatasetField,
-  createProjectDatasetRow, updateProjectDatasetRow, deleteProjectDatasetRow,
-  importProjectDatasetCsv, syncProjectDatasetSheet,
+  createProjectDatasetRow, updateProjectDatasetRow, deleteProjectDatasetRow, uploadProjectDatasetRowImage,
+  importProjectDatasetCsv, syncProjectDatasetSheet, syncProjectDatasetBpTransactionCount,
 } from '../../../services/projects';
 import DatasetRelationshipDiagram from './DatasetRelationshipDiagram';
 
@@ -21,12 +22,44 @@ const FIELD_TYPES = [
   { value: 'boolean', label: 'Yes/No' },
 ];
 
+// Must match ProjectDatasetField.name's own max_length on the backend (kms/models.py) —
+// a header slug longer than that used to be sent through untruncated, so two DIFFERENT
+// long headers (real for spreadsheet columns, e.g. two questions that only differ in
+// their last few words) could look distinct here yet get silently cut down to the exact
+// same value once the database enforced its own column width, colliding on the
+// (dataset, name) uniqueness constraint as a 500 instead of importing cleanly.
+const DATASET_FIELD_NAME_MAX_LENGTH = 100;
+
 function slugifyFieldName(label) {
-  return label
+  const slug = label
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '') || 'field';
+    .replace(/^_+|_+$/g, '');
+  return (slug || 'field').slice(0, DATASET_FIELD_NAME_MAX_LENGTH);
+}
+
+// Slugifies every header in one pass, disambiguating any that collide (including two
+// DIFFERENT headers that only collide after the length cap above) with a _2/_3/... suffix
+// — reserving room for that suffix within the max length instead of appending it and
+// re-truncating, which would just cut the suffix back off and land right back on the
+// original collision.
+function nameByHeaderFor(headers) {
+  const nameByHeader = {};
+  const usedNames = new Set();
+  headers.forEach((h) => {
+    const base = slugifyFieldName(h);
+    let name = base;
+    let suffix = 2;
+    while (usedNames.has(name)) {
+      const suffixStr = `_${suffix}`;
+      name = base.slice(0, DATASET_FIELD_NAME_MAX_LENGTH - suffixStr.length) + suffixStr;
+      suffix += 1;
+    }
+    usedNames.add(name);
+    nameByHeader[h] = name;
+  });
+  return nameByHeader;
 }
 
 function emptyValuesFor(fields) {
@@ -56,8 +89,16 @@ function parseCsvText(text, headerRow = 1) {
   for (let i = 1; i < lines.length; i++) {
     const values = parseCsvLine(lines[i]);
     const row = {};
-    headers.forEach((header, index) => { row[header] = values[index]?.trim() || ''; });
-    data.push(row);
+    let hasData = false;
+    headers.forEach((header, index) => {
+      const v = values[index]?.trim() || '';
+      row[header] = v;
+      if (v) hasData = true;
+    });
+    // A line can pass the earlier blank-LINE filter above (",,,,," isn't an empty string,
+    // so it survives .filter(line => line.trim())) yet still be blank across every actual
+    // header column — skip those rather than importing an all-blank row.
+    if (hasData) data.push(row);
   }
   return data;
 }
@@ -81,7 +122,29 @@ function parseCsvLine(line) {
   return result;
 }
 
-function FieldValueInput({ field, value, onChange }) {
+// Same "image"/"photo"/"thumbnail"/"cover" keywords IctPlansAndPolicies.tsx's own
+// fieldByLabel already looks for — a field labeled that way is understood to hold an
+// image URL, so its input gets an upload option alongside the plain URL text box (a
+// dataset field has no dedicated 'image' field_type of its own, just 'text').
+const IMAGE_FIELD_LABEL_RE = /image|photo|thumbnail|cover/i;
+
+// Native `<input type="date">` only ever accepts/displays ISO (YYYY-MM-DD) — a value
+// imported or typed in any other common format (e.g. "10/02/2025", "January 20, 2025")
+// otherwise just renders as a blank, empty-looking date field even though real data is
+// there. Display-only conversion: the stored value stays exactly as imported unless the
+// admin actually edits it through the picker, at which point onChange naturally saves it
+// as clean ISO from then on — this never silently rewrites data on its own.
+function toISODateInputValue(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (isNaN(d)) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function FieldValueInput({ field, value, onChange, pendingImage, onPickImage }) {
   if (field.field_type === 'boolean') {
     return (
       <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)}
@@ -96,8 +159,33 @@ function FieldValueInput({ field, value, onChange }) {
   }
   if (field.field_type === 'date') {
     return (
-      <input type="date" value={value ?? ''} onChange={(e) => onChange(e.target.value)}
+      <input type="date" value={toISODateInputValue(value)} onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />
+    );
+  }
+  if (field.field_type === 'text' && IMAGE_FIELD_LABEL_RE.test(field.label || '') && onPickImage) {
+    // Uploading a file doesn't touch `value` here — it's held as a pending File and only
+    // actually uploaded (replacing `value` with the resulting URL) once the row itself is
+    // saved, since a brand-new row has no id to upload against yet. See handleSaveForm.
+    const previewSrc = pendingImage ? URL.createObjectURL(pendingImage) : (value || '');
+    return (
+      <div className="space-y-1.5">
+        <input type="text" value={value ?? ''} onChange={(e) => onChange(e.target.value)}
+          placeholder="Paste an image URL, or upload a file below"
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />
+        <div className="flex items-center gap-2">
+          <label className="cursor-pointer text-xs font-medium text-[#0038A8] dark:text-blue-400 hover:underline">
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); }} />
+            {pendingImage ? 'Change uploaded file' : 'Upload a file instead'}
+          </label>
+          {pendingImage && <span className="text-xs text-gray-400 truncate max-w-[160px]" title={pendingImage.name}>{pendingImage.name}</span>}
+        </div>
+        {previewSrc && (
+          <img src={previewSrc} alt="" className="h-16 rounded border border-gray-200 dark:border-gray-700 object-cover"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        )}
+      </div>
     );
   }
   return (
@@ -107,6 +195,8 @@ function FieldValueInput({ field, value, onChange }) {
 }
 
 export default function ProjectDatasets({ slug }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [officeId, setOfficeId] = useState(null);
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,6 +228,13 @@ export default function ProjectDatasets({ slug }) {
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncAllStatus, setSyncAllStatus] = useState('');
 
+  // Business Permit transaction-count sync — eLGU only (see handleSyncBp below).
+  const today = new Date().toISOString().slice(0, 10);
+  const [showBpSync, setShowBpSync] = useState(false);
+  const [bpStartDate, setBpStartDate] = useState(`${new Date().getFullYear()}-01-01`);
+  const [bpEndDate, setBpEndDate] = useState(today);
+  const [syncingBp, setSyncingBp] = useState(false);
+
   // Table toolbar — search / sort / pagination, same shape as FreeWifiDatasets
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState(null);
@@ -150,6 +247,9 @@ export default function ProjectDatasets({ slug }) {
   const [editingRow, setEditingRow] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [saving, setSaving] = useState(false);
+  // { [fieldName]: File } — an image field's picked-but-not-yet-uploaded file (see
+  // FieldValueInput's upload option and handleSaveForm's upload-after-save step).
+  const [pendingImages, setPendingImages] = useState({});
 
   const fetchAll = () => {
     Promise.all([getProjectOfficeId(slug), getProjectDatasets(slug)])
@@ -181,6 +281,8 @@ export default function ProjectDatasets({ slug }) {
   useEffect(() => {
     setSheetUrlInput(activeDataset?.sheet_url || '');
     setSheetHeaderRow(activeDataset?.header_row || 1);
+    setBpStartDate(activeDataset?.bp_sync_start_date || `${new Date().getFullYear()}-01-01`);
+    setBpEndDate(activeDataset?.bp_sync_end_date || today);
   }, [activeDataset?.id]);
 
   const switchDataset = (id) => {
@@ -189,6 +291,20 @@ export default function ProjectDatasets({ slug }) {
     setSearchTerm('');
     setSortColumn(null);
   };
+
+  // Arriving here via a "Manage data" link elsewhere (e.g. the ICT Plans and Policies
+  // widget's pencil icon, which has no chart-config settings of its own — its content IS
+  // this table's rows) can ask to land on a specific table by name instead of whatever
+  // switchDataset/fetchAll's own "keep the previous tab, else first table" default picks.
+  // Consumed once via `replace` so navigating back here later doesn't re-trigger it.
+  useEffect(() => {
+    const focusName = location.state?.focusDatasetName;
+    if (!focusName || !datasets.length) return;
+    const match = datasets.find((d) => d.name.trim().toLowerCase() === focusName.trim().toLowerCase());
+    if (match) switchDataset(match.id);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasets, location.state]);
 
   const handleAddDataset = async () => {
     if (!newDatasetName.trim()) return;
@@ -287,12 +403,14 @@ export default function ProjectDatasets({ slug }) {
     if (parsedRows.length === 0) return alert(`No data rows found starting from line ${csvHeaderRow} — check the header row setting above.`);
 
     const headers = Object.keys(parsedRows[0]);
-    const nameByHeader = {};
-    headers.forEach((h) => { nameByHeader[h] = slugifyFieldName(h); });
+    const nameByHeader = nameByHeaderFor(headers);
 
     const csvFields = headers.map((h) => {
       const values = parsedRows.map((r) => r[h]).filter((v) => v !== '');
-      const isNumber = values.length > 0 && values.every((v) => v !== '' && !isNaN(Number(v)));
+      // Strip thousand-separator commas ("1,381,933") before testing — a bare Number(v)
+      // rejects those outright, which would tag a genuinely numeric column as text just
+      // because of how a spreadsheet export formatted it.
+      const isNumber = values.length > 0 && values.every((v) => v !== '' && !isNaN(Number(String(v).replace(/,/g, ''))));
       return { name: nameByHeader[h], label: h, field_type: isNumber ? 'number' : 'text' };
     });
 
@@ -353,6 +471,27 @@ export default function ProjectDatasets({ slug }) {
     }
   };
 
+  // Pulls the Business Permit transaction-count API into this table's rows — see
+  // sync_bp_transaction_count in kms/views.py. Only relevant for the eLGU project (that
+  // API's own data is fixed to Region 10, tied to eLGU's Business Permit reporting), so
+  // the button that calls this is gated to slug === 'elgu' below.
+  const handleSyncBp = async () => {
+    if (!activeDataset) return;
+    setSyncingBp(true);
+    try {
+      const result = await syncProjectDatasetBpTransactionCount(activeDataset.id, bpStartDate, bpEndDate);
+      fetchAll();
+      alert(
+        `Synced ${result.rows_created} row(s) and ${result.fields_created} new column(s) from the Business Permit API.` +
+        (result.monthErrors?.length ? ` Couldn't fetch: ${result.monthErrors.map((e) => e.month).join(', ')}.` : '')
+      );
+    } catch (err) {
+      alert(err?.response?.data?.error || 'Failed to sync from the Business Permit API.');
+    } finally {
+      setSyncingBp(false);
+    }
+  };
+
   // Re-syncs every table that already has a linked sheet, one at a time (not in
   // parallel — keeps the per-table progress readable and avoids hammering the Google
   // Sheets API with a burst of simultaneous requests). Each call omits sheet_url/
@@ -389,12 +528,14 @@ export default function ProjectDatasets({ slug }) {
   const openAddForm = () => {
     setEditingRow(null);
     setFormValues(emptyValuesFor(fields));
+    setPendingImages({});
     setShowForm(true);
   };
 
   const openEditForm = (row) => {
     setEditingRow(row);
     setFormValues({ ...row.values });
+    setPendingImages({});
     setShowForm(true);
   };
 
@@ -402,13 +543,19 @@ export default function ProjectDatasets({ slug }) {
     if (!activeDataset) return;
     setSaving(true);
     try {
-      if (editingRow) {
-        await updateProjectDatasetRow(slug, editingRow.id, { values: formValues });
-      } else {
-        await createProjectDatasetRow(slug, { dataset: activeDataset.id, values: formValues, order: rows.length });
+      const rowId = editingRow
+        ? (await updateProjectDatasetRow(slug, editingRow.id, { values: formValues })).id
+        : (await createProjectDatasetRow(slug, { dataset: activeDataset.id, values: formValues, order: rows.length })).id;
+      // Uploads happen AFTER the row's plain text fields are saved, one PATCH per picked
+      // file — a brand-new row has no id until the create above returns one. Sequential
+      // (not Promise.all) since each upload's own PATCH merges into `values` server-side,
+      // and concurrent PATCHes to the same row could race and drop one another's merge.
+      for (const [fieldName, file] of Object.entries(pendingImages)) {
+        await uploadProjectDatasetRowImage(slug, rowId, fieldName, file);
       }
       setShowForm(false);
       setEditingRow(null);
+      setPendingImages({});
       fetchAll();
     } catch (err) {
       alert('Failed to save row.');
@@ -429,13 +576,22 @@ export default function ProjectDatasets({ slug }) {
 
   // ── Search / sort / pagination ────────────────────────────────────────────────
 
+  // The input itself updates instantly (searchTerm); the actual row filtering waits for a
+  // brief pause in typing, so a fast typist on a large table doesn't re-filter and
+  // re-render every row on every single keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 200);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
   const filteredRows = useMemo(() => {
-    if (!searchTerm) return rows;
-    const term = searchTerm.toLowerCase();
+    if (!debouncedSearch) return rows;
+    const term = debouncedSearch.toLowerCase();
     return rows.filter((r) =>
       Object.values(r.values || {}).some((v) => v !== null && v !== undefined && String(v).toLowerCase().includes(term))
     );
-  }, [rows, searchTerm]);
+  }, [rows, debouncedSearch]);
 
   const sortedRows = useMemo(() => {
     if (!sortColumn) return filteredRows;
@@ -448,6 +604,30 @@ export default function ProjectDatasets({ slug }) {
 
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / pageSize));
   const paginatedRows = sortedRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Exports whatever the table is currently showing (search-filtered, sorted — same rows
+  // sortedRows itself drives) as a CSV, one column per field in its current column order,
+  // headed by the admin-typed LABEL rather than the raw field name. No library needed —
+  // plain text, quoting only values that actually need it per RFC 4180.
+  const handleDownloadCsv = () => {
+    if (!activeDataset) return;
+    const escape = (val) => {
+      const s = String(val ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = fields.map((f) => f.label);
+    const lines = [
+      headers.map(escape).join(','),
+      ...sortedRows.map((r) => fields.map((f) => escape(r.values?.[f.name])).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(activeDataset.name || 'table').replace(/[^a-z0-9 _-]/gi, '').trim().slice(0, 80) || 'table'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleSort = (name) => {
     if (sortColumn === name) {
@@ -532,15 +712,21 @@ export default function ProjectDatasets({ slug }) {
                 Upload CSV to <strong>{activeDataset.name}</strong>
               </p>
               <div className="flex items-center gap-2">
-                <button onClick={() => { setShowCsvImport((s) => !s); setShowFieldForm(false); setShowSheetLink(false); }}
+                <button onClick={() => { setShowCsvImport((s) => !s); setShowFieldForm(false); setShowSheetLink(false); setShowBpSync(false); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#0038A8]">
                   <FileSpreadsheet size={13} /> Import CSV
                 </button>
-                <button onClick={() => { setShowSheetLink((s) => !s); setShowCsvImport(false); setShowFieldForm(false); }}
+                <button onClick={() => { setShowSheetLink((s) => !s); setShowCsvImport(false); setShowFieldForm(false); setShowBpSync(false); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#0038A8]">
                   <Link2 size={13} /> {activeDataset.sheet_url ? 'Sheet Linked' : 'Link Sheet'}
                 </button>
-                <button onClick={() => { setShowFieldForm((s) => !s); setShowCsvImport(false); setShowSheetLink(false); }}
+                {slug === 'elgu' && (
+                  <button onClick={() => { setShowBpSync((s) => !s); setShowCsvImport(false); setShowFieldForm(false); setShowSheetLink(false); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#0038A8]">
+                    <RefreshCw size={13} /> {activeDataset.bp_synced_at ? 'BP Data Synced' : 'Sync BP Data'}
+                  </button>
+                )}
+                <button onClick={() => { setShowFieldForm((s) => !s); setShowCsvImport(false); setShowSheetLink(false); setShowBpSync(false); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-[#0038A8]">
                   <Settings2 size={13} /> Columns
                 </button>
@@ -548,6 +734,41 @@ export default function ProjectDatasets({ slug }) {
                   className="p-1.5 text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
               </div>
             </div>
+
+            {showBpSync && (
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 space-y-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Pulls the Business Permit transaction-count API (Region 10) into <strong>{activeDataset.name}</strong> —
+                  one row per LGU per calendar month, with the New/Renewal/Male/Female breakdown. Each sync{' '}
+                  <strong>replaces</strong> this table's rows with what the API currently reports for the date range
+                  below, so don't mix in manual rows via "Add Row".
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    From
+                    <input type="date" value={bpStartDate} onChange={(e) => setBpStartDate(e.target.value)}
+                      className="px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    To
+                    <input type="date" value={bpEndDate} onChange={(e) => setBpEndDate(e.target.value)}
+                      className="px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                  </label>
+                  <button onClick={handleSyncBp} disabled={syncingBp}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#0038A8] text-white rounded-lg text-xs font-bold disabled:opacity-50 whitespace-nowrap">
+                    <RefreshCw size={13} className={syncingBp ? 'animate-spin' : ''} /> {syncingBp ? 'Syncing...' : 'Sync Now'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  A wide date range fetches one month at a time from the upstream API and can take a while.
+                </p>
+                {activeDataset.bp_synced_at && (
+                  <p className="text-[11px] text-gray-400">
+                    Last synced {new Date(activeDataset.bp_synced_at).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
 
             {showSheetLink && (
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 space-y-3">
@@ -721,6 +942,11 @@ export default function ProjectDatasets({ slug }) {
                   className="flex items-center gap-2 px-4 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-medium hover:bg-[#001a52] disabled:opacity-50">
                   <Plus size={16} /> Add Row
                 </button>
+                <button onClick={handleDownloadCsv} disabled={fields.length === 0 || sortedRows.length === 0}
+                  title="Download this table as CSV"
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:border-[#0038A8] hover:text-[#0038A8] disabled:opacity-50">
+                  <Download size={16} /> Download
+                </button>
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input type="text" placeholder="Search..." value={searchTerm}
@@ -832,7 +1058,9 @@ export default function ProjectDatasets({ slug }) {
                 <div key={f.id}>
                   <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">{f.label}</label>
                   <FieldValueInput field={f} value={formValues[f.name]}
-                    onChange={(v) => setFormValues((prev) => ({ ...prev, [f.name]: v }))} />
+                    onChange={(v) => setFormValues((prev) => ({ ...prev, [f.name]: v }))}
+                    pendingImage={pendingImages[f.name]}
+                    onPickImage={(file) => setPendingImages((prev) => ({ ...prev, [f.name]: file }))} />
                 </div>
               ))}
             </div>
