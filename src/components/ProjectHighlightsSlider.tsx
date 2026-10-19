@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
-import { getProjectHighlights, getProjectSliderDesign } from '../services/projects';
+import { getProjectHighlights, getProjectSliderDesign, getProjectDatasets } from '../services/projects';
 import { designFromBackend, highlightFromBackend } from '../screens/Admin/FreeWifi/FreeWifiHighlights';
 import { SliderPreview } from '../screens/Admin/Project/ProjectHighlights';
 import { Skeleton } from '../screens/Admin/Skeleton';
@@ -18,12 +18,18 @@ export default function ProjectHighlightsSlider({ slug }) {
   const [loading, setLoading] = useState(true);
   const [highlights, setHighlights] = useState([]);
   const [design, setDesign] = useState(DEFAULT_DESIGN);
+  const [tables, setTables] = useState([]);
 
   useEffect(() => {
     setLoading(true);
     Promise.all([getProjectHighlights(slug), getProjectSliderDesign(slug)])
       .then(([h, d]) => {
-        setHighlights(h.map(highlightFromBackend));
+        const mapped = h.map(highlightFromBackend);
+        setHighlights(mapped);
+        // Datasets are fetched only when some highlight opted into a dataset-driven title.
+        if (mapped.some((x) => x.active && x.titleBinding?.enabled)) {
+          getProjectDatasets(slug).then(setTables).catch(() => {});
+        }
         setDesign(designFromBackend(d));
       })
       .catch(() => {})
@@ -42,7 +48,7 @@ export default function ProjectHighlightsSlider({ slug }) {
 
   return (
     <div className="mb-8">
-      <SliderPreview highlights={highlights} design={design} />
+      <SliderPreview highlights={highlights} design={design} tables={tables} />
     </div>
   );
 }

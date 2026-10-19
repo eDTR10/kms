@@ -283,13 +283,13 @@ const TEXT_DESIGN_IDS = new Set(TEXT_DESIGNS.map((d) => d.id));
 // convert between the two shapes so every plain <select> below can become a <Select>
 // (see selectStyles, imported from FreeWifiMap.tsx) without restructuring how its value
 // is held in state.
-const toOptions = (values, labelFor = (v) => v) => values.map((v) => ({ value: v, label: labelFor(v) }));
+export const toOptions = (values, labelFor = (v) => v) => values.map((v) => ({ value: v, label: labelFor(v) }));
 const selectValue = (options, current) => options.find((o) => o.value === current) || null;
 
 // Distinct, non-blank values of `field` across `records` — populates the "equals" dropdown
 // for the count_equals aggregation (Summary Card tiles / Value Card), so an admin picks an
 // actual value from the data instead of free-typing something that has to match it exactly.
-const distinctFieldValues = (records, field) =>
+export const distinctFieldValues = (records, field) =>
   [...new Set((records || []).map((r) => r[field]))]
     .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
     .map(String)
@@ -2123,6 +2123,36 @@ function computeAggregateValue(records, field, agg) {
   return records.reduce((s, r) => s + (toNum(r[field]) || 0), 0); // sum (default)
 }
 
+// Same number a Value Card shows, as display text — used by project highlights whose
+// title is bound to a dataset (title_binding: {enabled, dataset, field, agg, equals,
+// percentageLabel, conditions}). `table` is one entry of getProjectDatasets().
+export function computeBindingDisplay(table, binding) {
+  if (!table || !binding) return null;
+  const records = (table.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) }));
+  const sites = filterRecordsByConditions(records, binding.conditions);
+  const agg = binding.agg || 'sum';
+  const matchCount = () => sites.filter((r) => matchesEqualsValue(r[binding.field], binding.equals)).length;
+  const value = agg === 'count_equals'
+    ? matchCount()
+    : agg === 'percentage'
+    ? (sites.length ? (matchCount() / sites.length) * 100 : 0)
+    : computeAggregateValue(sites, binding.field, agg);
+  return agg === 'percentage'
+    ? `${value.toFixed(1)}%${binding.percentageLabel ? ' ' + binding.percentageLabel : ''}`
+    : agg === 'average'
+    ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+    : value.toLocaleString();
+}
+
+// Title text for a highlight: `{value}` in the typed title is replaced by the computed
+// number; with no placeholder the number is put in front. Falls back to the typed title
+// (placeholder stripped) while the dataset is loading or missing.
+export function resolveHighlightTitle(title, binding, tables) {
+  if (!binding?.enabled || !binding.dataset) return title;
+  const display = computeBindingDisplay((tables || []).find((t) => t.id === Number(binding.dataset)), binding);
+  if (display == null) return title.replace('{value}', '').trim();
+  return title.includes('{value}') ? title.replace('{value}', display) : `${display} ${title}`.trim();
+}
 
 // KPI tile for chart_type='aggregate-cards' — one big number (e.g. "Total Budget:
 // ₱2.4M"), the chart's own Title (rendered by the enclosing ChartCard/DraggableChart)
@@ -4857,7 +4887,7 @@ function ExtraTableList({ primaryId, extraIds, genericTables, onAdd, onRemove, r
 // other caller omits it) enables a per-condition "map per table" section identical in
 // spirit to ExtraTablesEditor's, for when a condition's column is named differently on
 // one of the chart's extra tables.
-function ConditionsEditor({ conditions, onChange, fieldOptions, valuesFor, extraTables }) {
+export function ConditionsEditor({ conditions, onChange, fieldOptions, valuesFor, extraTables }) {
   const add = () => onChange([...(conditions || []), { field: '', type: 'equals', value: '' }]);
   const update = (i, patch) => onChange((conditions || []).map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
   const remove = (i) => onChange((conditions || []).filter((_, idx) => idx !== i));

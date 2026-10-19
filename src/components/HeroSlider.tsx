@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight, Award as AwardIcon, Image as ImageIcon, Star } from 'lucide-react';
 import { getSliderItems } from '../services/slider';
+import api from '../services/api';
+import { resolveHighlightTitle } from '../screens/Admin/FreeWifi/FreeWifiCharts';
+import { resolveLinkedAccomplishments } from '../lib/linkedAccomplishments';
 import './HeroSlider.css';
 import mindanaoSvgUrl from './../assets/maps/ph.svg';
 
@@ -914,6 +917,27 @@ function AccomplishmentSlide({ accomplishment }: { accomplishment: any }) {
    Hero Slider
    ═══════════════════════════════════════════════ */
 
+async function resolveDatasetItems(items) {
+  const bound = (i) => i.content_type === 'project_highlight' ? i.content_detail?.title_binding?.enabled : false;
+  const hl = items.filter(bound);
+  const accs = items.filter((i) => i.content_type === 'accomplishment' && i.content_detail?.linked_highlight);
+  if (!hl.length && !accs.length) return items;
+  const offices = [...new Set(hl.map((i) => i.content_detail.office))];
+  const byOffice = {};
+  await Promise.all(offices.map((o) =>
+    api.get('kms/project-datasets/', { params: { office: o } })
+      .then(({ data }) => { byOffice[o] = data.results ?? data; }).catch(() => { byOffice[o] = []; })));
+  const accResolved = await resolveLinkedAccomplishments(accs.map((i) => ({ ...i.content_detail, _id: i.id })));
+  return items.map((i) => {
+    if (bound(i) && i.content_detail.title) {
+      const d = i.content_detail;
+      return { ...i, content_detail: { ...d, title: resolveHighlightTitle(d.title, d.title_binding, byOffice[d.office]) } };
+    }
+    const r = accResolved.find((a) => a._id === i.id);
+    return r ? { ...i, content_detail: { ...i.content_detail, metric: r.metric } } : i;
+  });
+}
+
 export default function HeroSlider() {
   const [sliderItems, setSliderItems] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
@@ -922,7 +946,11 @@ export default function HeroSlider() {
   useEffect(() => {
     getSliderItems().then((items) => {
       // Filter only active items, already sorted by order from backend
-      setSliderItems(items.filter((item) => item.is_active));
+      const active = items.filter((item) => item.is_active);
+      setSliderItems(active);
+      // Dataset-driven numbers (project highlight titles / linked accomplishment metrics)
+      // are computed after the slides are already showing.
+      resolveDatasetItems(active).then(setSliderItems).catch(() => {});
     }).catch(() => {});
   }, []);
 
@@ -932,7 +960,7 @@ export default function HeroSlider() {
     ...sliderItems.map((item) => {
       if (item.content_type === 'award') {
         return { type: 'award', award: item.content_detail };
-      } else if (item.content_type === 'highlight') {
+      } else if (item.content_type === 'highlight' || item.content_type === 'project_highlight') {
         return { type: 'highlight', highlight: item.content_detail };
       } else if (item.content_type === 'accomplishment') {
         return { type: 'accomplishment', accomplishment: item.content_detail };

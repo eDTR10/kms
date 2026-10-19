@@ -12,6 +12,9 @@ import {
 } from '../../services/accomplishments';
 import { getKmsSettings, updateKmsSettings } from '../../services/settings';
 import { ACCOMPLISHMENT_STYLES } from '../../lib/gridStyles';
+import api from '../../services/api';
+import { KMS_PROJECTS } from '../../constants/kmsProjects';
+import { resolveLinkedAccomplishments } from '../../lib/linkedAccomplishments';
 
 const STYLE_ICONS = {
   'collage-1': LayoutGrid, 'collage-2': LayoutGrid, 'collage-3': LayoutGrid,
@@ -153,6 +156,7 @@ const EMPTY_FORM = {
   image: '',
   image_file: null,
   breakdown: [],
+  project_highlight: null,
 };
 
 export default function ManageAccomplishments() {
@@ -168,6 +172,9 @@ export default function ManageAccomplishments() {
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
   const [importing, setImporting] = useState(false);
+  // Highlights from every project, loaded the first time the form opens, so a new
+  // accomplishment can start from one (title/description/image carried over).
+  const [projectHighlights, setProjectHighlights] = useState(null);
   const [importResult, setImportResult] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [savingStyle, setSavingStyle] = useState(false);
@@ -192,8 +199,30 @@ export default function ManageAccomplishments() {
   };
 
   const fetchItems = async () => {
-    try { setItems(await getAccomplishments()); } catch (err) { console.error(err); }
+    try {
+      const data = await getAccomplishments();
+      setItems(data);
+      setItems(await resolveLinkedAccomplishments(data).catch(() => data));
+    } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  };
+
+  useEffect(() => {
+    if (!showForm || projectHighlights) return;
+    api.get('kms/project-highlights/').then(({ data }) => setProjectHighlights(data.results ?? data)).catch(() => setProjectHighlights([]));
+  }, [showForm, projectHighlights]);
+
+  const useProjectHighlight = (id) => {
+    const h = (projectHighlights || []).find((x) => String(x.id) === String(id));
+    if (!h) return;
+    setForm((f) => ({
+      ...f,
+      title: (h.title || '').replace('{value}', '').trim(),
+      description: h.description || '',
+      image: h.image || '', image_file: null,
+      project_highlight: h.id,
+    }));
+    setPreview(h.image || ''); setImageMode('url');
   };
 
   const resetForm = () => {
@@ -205,6 +234,7 @@ export default function ManageAccomplishments() {
       year: item.year, metric: item.metric, metric_label: item.metric_label,
       title: item.title, description: item.description || '', image: item.image || '',
       image_file: null, breakdown: item.breakdown || [],
+      project_highlight: item.linked_highlight ? item.project_highlight : null,
     });
     setEditingId(item.id); setShowForm(true); setPreview(item.image || '');
   };
@@ -238,6 +268,7 @@ export default function ManageAccomplishments() {
       if (form.image_file) fd.append('image_file', form.image_file);
       else if (form.image) fd.append('image', form.image);
       fd.append('breakdown', JSON.stringify(form.breakdown));
+      fd.append('project_highlight', form.project_highlight || '');
       if (editingId) await updateAccomplishment(editingId, fd);
       else await createAccomplishment(fd);
       resetForm(); fetchItems();
@@ -450,6 +481,26 @@ export default function ManageAccomplishments() {
       {showForm && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 mb-6">
           <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-4">{editingId ? 'Edit' : 'New'} Accomplishment</h3>
+          {(
+            <select value="" onChange={(e) => { useProjectHighlight(e.target.value); e.target.value = ''; }}
+              className="w-full mb-3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+              <option value="">{projectHighlights ? 'Link to a project highlight (optional)...' : 'Loading project highlights...'}</option>
+              {KMS_PROJECTS.map((p) => {
+                const list = (projectHighlights || []).filter((h) => h.office === p.officeId);
+                return list.length ? (
+                  <optgroup key={p.slug} label={p.label}>
+                    {list.map((h) => <option key={h.id} value={h.id}>{(h.title || '').replace('{value}', '').trim() || `Highlight #${h.id}`}</option>)}
+                  </optgroup>
+                ) : null;
+              })}
+            </select>
+          )}
+          {form.project_highlight && (
+            <div className="flex items-center justify-between gap-3 mb-3 px-3 py-2 text-xs rounded-lg bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800">
+              <span>Linked to a project highlight — title, description and image follow it automatically. If its title uses a dataset number, that number becomes the metric.</span>
+              <button type="button" onClick={() => setForm((f) => ({ ...f, project_highlight: null }))} className="shrink-0 font-semibold underline">Unlink</button>
+            </div>
+          )}
           <div className="grid sm:grid-cols-2 gap-3">
             <input placeholder="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0038A8]" />

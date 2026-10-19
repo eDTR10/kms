@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ListChecks, X } from 'lucide-react';
 import { getAccomplishments } from '../services/accomplishments';
 import { getKmsSettings } from '../services/settings';
+import { resolveLinkedAccomplishments } from '../lib/linkedAccomplishments';
 
 // ═══════════════════════════════════════════════════════════════════
 // Collage Pattern Variants
@@ -406,7 +407,13 @@ export default function Accomplishments() {
   const [activePattern, setActivePattern] = useState('classic');
 
   useEffect(() => {
-    getAccomplishments().then((data) => setItems(data.filter((item) => item.active !== false)));
+    getAccomplishments().then(async (data) => {
+      const visible = data.filter((item) => item.active !== false);
+      setItems(visible);
+      // Dataset-driven metrics arrive a moment later, after the tiles are already showing.
+      const resolved = await resolveLinkedAccomplishments(visible).catch(() => visible);
+      setItems(resolved);
+    });
     getKmsSettings().then((s) => {
       const styleId = s.accomplishments_style || 'collage-1';
       setActivePattern(STYLE_TO_PATTERN[styleId] || 'classic');

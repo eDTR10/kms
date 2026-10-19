@@ -1,11 +1,14 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
+import Select from 'react-select';
+import { selectStyles } from '../../../components/FreeWifiMap';
 import { Save, Image, Eye, EyeOff, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, Palette } from 'lucide-react';
 import {
   getProjectOfficeId, getProjectHighlights, createProjectHighlight, updateProjectHighlight, deleteProjectHighlight,
-  reorderProjectHighlights, getProjectSliderDesign, updateProjectSliderDesign,
+  reorderProjectHighlights, getProjectSliderDesign, getProjectDatasets, updateProjectSliderDesign,
 } from '../../../services/projects';
 import { designFromBackend, designToBackend, highlightFromBackend } from '../FreeWifi/FreeWifiHighlights';
+import { resolveHighlightTitle, computeBindingDisplay, ConditionsEditor, toOptions, distinctFieldValues } from '../FreeWifi/FreeWifiCharts';
 
 // Same layout templates as Free Wi-Fi's Highlights slider — kept in sync manually
 // since DesignTab below needs its own project-scoped save handler.
@@ -128,7 +131,7 @@ const TEMPLATES = [
 ];
 
 const EMPTY_HIGHLIGHT = {
-  title: '', description: '', image: '', active: true, showTitle: true, showDescription: true,
+  title: '', description: '', image: '', active: true, showTitle: true, showDescription: true, titleBinding: {},
 };
 
 const DEFAULT_DESIGN = {
@@ -144,7 +147,7 @@ const HEIGHT_OPTIONS = [
   { value: 'custom', label: 'Custom (px)' },
 ];
 
-export function SliderPreview({ highlights, design }) {
+export function SliderPreview({ highlights, design, tables = [] }) {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -178,7 +181,7 @@ export function SliderPreview({ highlights, design }) {
   const template = design.template || 'classic-center';
 
   const renderTemplateContent = () => {
-    const title = highlight.showTitle !== false && highlight.title;
+    const title = highlight.showTitle !== false && resolveHighlightTitle(highlight.title, highlight.titleBinding, tables);
     const desc = highlight.showDescription !== false && highlight.description;
 
     switch (template) {
@@ -186,7 +189,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex items-center px-12">
             <div className="max-w-lg text-left">
-              {title && <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-base" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -195,7 +198,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex items-center justify-end px-12">
             <div className="max-w-lg text-right">
-              {title && <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-base" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -204,7 +207,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex flex-col justify-end">
             <div className="bg-black/50 backdrop-blur-sm px-8 py-6">
-              {title && <h2 className="text-2xl sm:text-3xl font-black mb-2 text-center" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-2xl sm:text-3xl font-black mb-2 text-center" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-sm text-center max-w-2xl mx-auto" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -213,7 +216,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex flex-col justify-start">
             <div className="bg-black/50 backdrop-blur-sm px-8 py-6">
-              {title && <h2 className="text-2xl sm:text-3xl font-black mb-2 text-center" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-2xl sm:text-3xl font-black mb-2 text-center" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-sm text-center max-w-2xl mx-auto" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -224,7 +227,7 @@ export function SliderPreview({ highlights, design }) {
             <div className="w-1/2" />
             <div className="w-1/2 flex items-center px-10 bg-black/30 backdrop-blur-sm">
               <div className="text-left">
-                {title && <h2 className="text-2xl sm:text-3xl font-black mb-3" style={{ color: design.textColor }}>{highlight.title}</h2>}
+                {title && <h2 className="text-2xl sm:text-3xl font-black mb-3" style={{ color: design.textColor }}>{title}</h2>}
                 {desc && <p className="text-sm" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
               </div>
             </div>
@@ -234,7 +237,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex items-end justify-center px-8 pb-8">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl px-8 py-6 max-w-xl border border-white/20">
-              {title && <h2 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-sm" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -243,7 +246,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex items-center justify-center px-8">
             <div className="text-center max-w-md">
-              {title && <h2 className="text-3xl sm:text-4xl font-black" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-3xl sm:text-4xl font-black" style={{ color: design.textColor }}>{title}</h2>}
             </div>
           </div>
         );
@@ -260,7 +263,7 @@ export function SliderPreview({ highlights, design }) {
                   <span className="h-px w-8 bg-[#FCD116]" />
                 </div>
               )}
-              {title && <h2 className="text-4xl sm:text-5xl font-black mb-3 tracking-tight" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-4xl sm:text-5xl font-black mb-3 tracking-tight" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-base" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -269,7 +272,7 @@ export function SliderPreview({ highlights, design }) {
         return (
           <div className="relative z-10 h-full flex items-center justify-center px-8">
             <div className="text-center max-w-2xl">
-              {title && <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: design.textColor }}>{highlight.title}</h2>}
+              {title && <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ color: design.textColor }}>{title}</h2>}
               {desc && <p className="text-base" style={{ color: `${design.textColor}cc` }}>{highlight.description}</p>}
             </div>
           </div>
@@ -497,12 +500,87 @@ function DesignTab({ slug, highlights, onSaved }) {
   );
 }
 
+const BINDING_AGG_OPTIONS = [
+  { value: 'sum', label: 'Sum values' },
+  { value: 'average', label: 'Average values' },
+  { value: 'count', label: 'Count all rows' },
+  { value: 'distinct', label: 'Count unique values' },
+  { value: 'count_equals', label: 'Count rows where equals...' },
+  { value: 'percentage', label: 'Percentage of rows (%)' },
+];
+
+// Opt-in: compute the title from a dataset exactly like a Value Card (same aggregations
+// and Filter rows). Off by default, in which case the typed title is used as-is.
+function TitleBindingEditor({ binding, tables, onChange }) {
+  const set = (patch) => onChange({ ...binding, ...patch });
+  const table = tables.find((t) => t.id === Number(binding.dataset));
+  const fields = table?.fields || [];
+  const records = (table?.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) }));
+  const fieldOptions = fields.map((f) => ({ value: f.name, label: f.label }));
+  const pick = (options, v) => options.find((o) => o.value === v) || null;
+  const needsField = binding.agg !== 'count';
+  const needsEquals = binding.agg === 'count_equals' || binding.agg === 'percentage';
+  const preview = binding.enabled && table ? computeBindingDisplay(table, binding) : null;
+  const input = 'w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800';
+  return (
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={!!binding.enabled}
+          onChange={(e) => set({ enabled: e.target.checked, agg: binding.agg || 'sum', conditions: binding.conditions || [] })}
+          className="rounded border-gray-300" />
+        <span className="text-sm text-gray-700 dark:text-gray-300">Take the title's number from a dataset</span>
+      </label>
+      {binding.enabled && (
+        <div className="space-y-2">
+          <p className="text-[11px] text-gray-400">
+            Type <b>{'{value}'}</b> in the title where the number goes (e.g. "{'{value}'} schools connected"). Without it, the number is put in front of the title.
+          </p>
+          <Select value={pick(tables.map((t) => ({ value: t.id, label: t.name })), binding.dataset)}
+            onChange={(o) => set({ dataset: o ? o.value : '', field: '', equals: '', conditions: [] })}
+            options={tables.map((t) => ({ value: t.id, label: t.name }))} placeholder="Select dataset..." styles={selectStyles} />
+          {table && (
+            <>
+              <Select value={pick(BINDING_AGG_OPTIONS, binding.agg || 'sum')}
+                onChange={(o) => set({ agg: o.value })}
+                options={BINDING_AGG_OPTIONS} isSearchable={false} styles={selectStyles} />
+              {needsField && (
+                <Select value={pick(fieldOptions, binding.field)}
+                  onChange={(o) => set({ field: o ? o.value : '', equals: '' })}
+                  options={fieldOptions} placeholder="Select field..." styles={selectStyles} />
+              )}
+              {needsEquals && binding.field && (
+                <Select value={pick(toOptions(distinctFieldValues(records, binding.field)), binding.equals)}
+                  onChange={(o) => set({ equals: o ? o.value : '' })}
+                  options={toOptions(distinctFieldValues(records, binding.field))} placeholder="Value..." isClearable styles={selectStyles} />
+              )}
+              {binding.agg === 'percentage' && (
+                <input className={input} placeholder="Word shown after the %, e.g. Live" value={binding.percentageLabel || ''}
+                  onChange={(e) => set({ percentageLabel: e.target.value })} />
+              )}
+              <div>
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Filter rows (optional)</p>
+                <ConditionsEditor conditions={binding.conditions} onChange={(next) => set({ conditions: next })}
+                  fieldOptions={toOptions(fields.map((f) => f.name), (v) => fields.find((f) => f.name === v)?.label)}
+                  valuesFor={(field) => toOptions(distinctFieldValues(records, field))} extraTables={[]} />
+              </div>
+              {preview != null && <p className="text-xs text-gray-500">Current value: <b>{preview}</b></p>}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectHighlights({ slug }) {
   const [officeId, setOfficeId] = useState(null);
   const [highlights, setHighlights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [design, setDesign] = useState(DEFAULT_DESIGN);
+  // Datasets are only needed for highlights with a dataset-bound title; a failed load
+  // just leaves those titles on their typed text.
+  const [tables, setTables] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -518,6 +596,7 @@ export default function ProjectHighlights({ slug }) {
 
   useEffect(() => {
     setLoadError(null);
+    getProjectDatasets(slug).then(setTables).catch(() => {});
     Promise.all([getProjectOfficeId(slug), getProjectHighlights(slug), getProjectSliderDesign(slug)])
       .then(([id, h, d]) => {
         setOfficeId(id);
@@ -543,6 +622,7 @@ export default function ProjectHighlights({ slug }) {
     fd.append('active', form.active !== false);
     fd.append('show_title', form.showTitle !== false);
     fd.append('show_description', form.showDescription !== false);
+    fd.append('title_binding', JSON.stringify(form.titleBinding?.enabled ? form.titleBinding : {}));
     if (imageFile) {
       fd.append('image_file', imageFile);
     } else if (form.image && !form.image.startsWith('blob:')) {
@@ -581,6 +661,7 @@ export default function ProjectHighlights({ slug }) {
     setForm({
       title: highlight.title, description: highlight.description || '', image: highlight.image || '',
       active: highlight.active, showTitle: highlight.showTitle, showDescription: highlight.showDescription,
+      titleBinding: highlight.titleBinding || {},
     });
     setImageFile(null);
     setImageMode('url');
@@ -647,7 +728,7 @@ export default function ProjectHighlights({ slug }) {
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Slider Preview</h2>
-        <SliderPreview highlights={highlights} design={design} />
+        <SliderPreview highlights={highlights} design={design} tables={tables} />
       </div>
 
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
@@ -727,6 +808,9 @@ export default function ProjectHighlights({ slug }) {
                   </label>
                 </div>
 
+                <TitleBindingEditor binding={form.titleBinding || {}} tables={tables}
+                  onChange={(b) => setForm((f) => ({ ...f, titleBinding: b }))} />
+
                 <div className="flex gap-2">
                   <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-medium disabled:opacity-50">
                     <Save size={14} className="inline mr-1" /> {saving ? 'Saving...' : editingId ? 'Update' : 'Save'}
@@ -758,7 +842,7 @@ export default function ProjectHighlights({ slug }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{highlight.title}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{resolveHighlightTitle(highlight.title, highlight.titleBinding, tables)}</p>
                     {highlight.description && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{highlight.description}</p>}
                   </div>
                   <div className="flex items-center gap-1">
@@ -802,7 +886,7 @@ export default function ProjectHighlights({ slug }) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{highlight.title}</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{resolveHighlightTitle(highlight.title, highlight.titleBinding, tables)}</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => toggleActive(highlight.id)}

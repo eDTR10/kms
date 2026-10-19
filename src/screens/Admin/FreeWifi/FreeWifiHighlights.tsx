@@ -56,6 +56,7 @@ export function highlightFromBackend(h) {
     active: h.active,
     showTitle: h.show_title,
     showDescription: h.show_description,
+    titleBinding: h.title_binding || {},
     order: h.order,
   };
 }

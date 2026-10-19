@@ -6,17 +6,25 @@ import { getSliderItems, createSliderItem, deleteSliderItem, reorderSliderItems,
 import { getAccomplishments } from '../../services/accomplishments';
 import { getAwards } from '../../services/awards';
 import { getHighlights } from '../../services/highlights';
+import api from '../../services/api';
+import { KMS_PROJECTS } from '../../constants/kmsProjects';
+
+const TAB_TO_TYPE = { awards: 'award', highlights: 'highlight', accomplishments: 'accomplishment', projectHighlights: 'project_highlight' };
+const TAB_LABELS = { awards: 'Awards', highlights: 'Highlights', accomplishments: 'Accomplishments', projectHighlights: 'Project Highlights' };
+const projectLabel = (office) => KMS_PROJECTS.find((p) => p.officeId === office)?.label || `Project ${office}`;
 
 const CONTENT_TYPE_ICONS = {
   accomplishment: Star,
   award: Award,
   highlight: ImageIcon,
+  project_highlight: ImageIcon,
 };
 
 const CONTENT_TYPE_COLORS = {
   accomplishment: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   award: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   highlight: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  project_highlight: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
 
 export default function ManageSlider() {
@@ -26,7 +34,7 @@ export default function ManageSlider() {
   const [dragIndex, setDragIndex] = useState(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [addTab, setAddTab] = useState('awards');
-  const [availableItems, setAvailableItems] = useState({ accomplishments: [], awards: [], highlights: [] });
+  const [availableItems, setAvailableItems] = useState({ accomplishments: [], awards: [], highlights: [], projectHighlights: [] });
   const [loadingItems, setLoadingItems] = useState(false);
 
   useEffect(() => {
@@ -46,12 +54,14 @@ export default function ManageSlider() {
   const fetchAvailableItems = async () => {
     setLoadingItems(true);
     try {
-      const [accomplishments, awards, highlights] = await Promise.all([
+      const [accomplishments, awards, highlights, projectHighlights] = await Promise.all([
         getAccomplishments(),
         getAwards(),
         getHighlights(),
+        // No ?office filter = highlights from every project.
+        api.get('kms/project-highlights/').then(({ data }) => data.results ?? data).catch(() => []),
       ]);
-      setAvailableItems({ accomplishments, awards, highlights });
+      setAvailableItems({ accomplishments, awards, highlights, projectHighlights });
     } catch (err) {
       console.error(err);
     } finally {
@@ -133,7 +143,8 @@ export default function ManageSlider() {
   };
 
   const getAvailableForType = (type) => {
-    const items = availableItems[type === 'accomplishment' ? 'accomplishments' : type === 'award' ? 'awards' : 'highlights'] || [];
+    const key = Object.keys(TAB_TO_TYPE).find((k) => TAB_TO_TYPE[k] === type);
+    const items = availableItems[key] || [];
     return items.filter((item) => !isItemInSlider(type, item.id));
   };
 
@@ -181,7 +192,7 @@ export default function ManageSlider() {
 
               {/* Tabs */}
               <div className="flex border-b border-gray-200 dark:border-gray-700">
-                {['awards', 'highlights', 'accomplishments'].map((tab) => (
+                {['awards', 'highlights', 'projectHighlights', 'accomplishments'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setAddTab(tab)}
@@ -191,7 +202,7 @@ export default function ManageSlider() {
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                     }`}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {TAB_LABELS[tab]}
                   </button>
                 ))}
               </div>
@@ -200,11 +211,11 @@ export default function ManageSlider() {
               <div className="overflow-y-auto max-h-[60vh] p-4">
                 {loadingItems ? (
                   <p className="text-center text-gray-400 py-8">Loading...</p>
-                ) : getAvailableForType(addTab === 'accomplishments' ? 'accomplishment' : addTab === 'awards' ? 'award' : 'highlight').length === 0 ? (
+                ) : getAvailableForType(TAB_TO_TYPE[addTab]).length === 0 ? (
                   <p className="text-center text-gray-400 py-8">All items of this type are already in the slider.</p>
                 ) : (
                   <div className="space-y-3">
-                    {getAvailableForType(addTab === 'accomplishments' ? 'accomplishment' : addTab === 'awards' ? 'award' : 'highlight').map((item) => (
+                    {getAvailableForType(TAB_TO_TYPE[addTab]).map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -221,12 +232,12 @@ export default function ManageSlider() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{item.title}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {addTab === 'awards' ? item.issuer : addTab === 'accomplishments' ? `${item.metric} ${item.metric_label}` : item.description}
+                            {addTab === 'awards' ? item.issuer : addTab === 'accomplishments' ? `${item.metric} ${item.metric_label}` : addTab === 'projectHighlights' ? `${projectLabel(item.office)}${item.description ? ' · ' + item.description : ''}` : item.description}
                           </p>
                         </div>
                         <button
                           onClick={() => handleAddItem(
-                            addTab === 'accomplishments' ? 'accomplishment' : addTab === 'awards' ? 'award' : 'highlight',
+                            TAB_TO_TYPE[addTab],
                             item.id
                           )}
                           disabled={saving}

@@ -15,7 +15,7 @@ export default function ILCDB() {
           <p className="text-sm text-[#CE1126] font-semibold uppercase tracking-wider">Projects</p>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white mt-1">ICT Academy</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            ICT Livelihood and Community Development Barangay – beneficiaries and report dashboard.
+            beneficiaries and report dashboard.
           </p>
         </div>
       </div>
