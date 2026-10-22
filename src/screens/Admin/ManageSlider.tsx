@@ -7,6 +7,7 @@ import { getAccomplishments } from '../../services/accomplishments';
 import { getAwards } from '../../services/awards';
 import { getHighlights } from '../../services/highlights';
 import api from '../../services/api';
+import { resolveLinkedAccomplishments, stripAccomplishments } from '../../lib/linkedAccomplishments';
 import { KMS_PROJECTS } from '../../constants/kmsProjects';
 
 const TAB_TO_TYPE = { awards: 'award', highlights: 'highlight', accomplishments: 'accomplishment', projectHighlights: 'project_highlight' };
@@ -61,7 +62,9 @@ export default function ManageSlider() {
         // No ?office filter = highlights from every project.
         api.get('kms/project-highlights/').then(({ data }) => data.results ?? data).catch(() => []),
       ]);
-      setAvailableItems({ accomplishments, awards, highlights, projectHighlights });
+      // Linked accomplishments show their live metric here too, not the raw {value}.
+      const resolved = await resolveLinkedAccomplishments(accomplishments).catch(() => stripAccomplishments(accomplishments));
+      setAvailableItems({ accomplishments: resolved, awards, highlights, projectHighlights });
     } catch (err) {
       console.error(err);
     } finally {
@@ -145,7 +148,8 @@ export default function ManageSlider() {
   const getAvailableForType = (type) => {
     const key = Object.keys(TAB_TO_TYPE).find((k) => TAB_TO_TYPE[k] === type);
     const items = availableItems[key] || [];
-    return items.filter((item) => !isItemInSlider(type, item.id));
+    // Everything is listed; ones already in the slider are marked instead of hidden.
+    return items;
   };
 
   return (
@@ -212,7 +216,7 @@ export default function ManageSlider() {
                 {loadingItems ? (
                   <p className="text-center text-gray-400 py-8">Loading...</p>
                 ) : getAvailableForType(TAB_TO_TYPE[addTab]).length === 0 ? (
-                  <p className="text-center text-gray-400 py-8">All items of this type are already in the slider.</p>
+                  <p className="text-center text-gray-400 py-8">Nothing to add here yet.</p>
                 ) : (
                   <div className="space-y-3">
                     {getAvailableForType(TAB_TO_TYPE[addTab]).map((item) => (
@@ -240,10 +244,10 @@ export default function ManageSlider() {
                             TAB_TO_TYPE[addTab],
                             item.id
                           )}
-                          disabled={saving}
-                          className="px-3 py-1.5 bg-[#0038A8] text-white text-xs font-medium rounded-lg hover:bg-[#001a52] transition-colors disabled:opacity-50"
+                          disabled={saving || isItemInSlider(TAB_TO_TYPE[addTab], item.id)}
+                          className="px-3 py-1.5 bg-[#0038A8] text-white text-xs font-medium rounded-lg hover:bg-[#001a52] transition-colors disabled:opacity-50 disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-600"
                         >
-                          Add
+                          {isItemInSlider(TAB_TO_TYPE[addTab], item.id) ? 'In slider' : 'Add'}
                         </button>
                       </div>
                     ))}

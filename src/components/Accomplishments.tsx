@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ListChecks, X } from 'lucide-react';
 import { getAccomplishments } from '../services/accomplishments';
 import { getKmsSettings } from '../services/settings';
-import { resolveLinkedAccomplishments } from '../lib/linkedAccomplishments';
+import { Skeleton } from '../screens/Admin/Skeleton';
+import { resolveLinkedAccomplishments, stripAccomplishments } from '../lib/linkedAccomplishments';
 
 // ═══════════════════════════════════════════════════════════════════
 // Collage Pattern Variants
@@ -234,9 +235,9 @@ function AccomplishmentCard({ item, size, onClick }) {
         <p className={`font-black text-[#FCD116] drop-shadow-sm leading-none ${big ? 'text-4xl' : small ? 'text-xl' : 'text-2xl'}`}>
           {item.metric}
         </p>
-        {!small && (
-          <p className="text-xs font-medium text-white/70 uppercase tracking-wide mt-1 mb-2">
-            {item.metricLabel}
+        {(item.metric_label || item.metricLabel) && (
+          <p className={`font-medium text-white/70 uppercase tracking-wide truncate ${small ? 'text-[9px] mt-0.5' : 'text-xs mt-1 mb-2'}`}>
+            {item.metric_label || item.metricLabel}
           </p>
         )}
         <h3 className={`font-bold leading-tight text-white ${big ? 'text-lg mb-2' : small ? 'text-xs mt-1' : 'text-sm mb-1'}`}
@@ -291,7 +292,7 @@ function AccomplishmentLightboxContent({ item }) {
             {item.metric}
           </p>
           <p className="text-xs font-medium text-accent-foreground/60 uppercase tracking-wide mb-4">
-            {item.metricLabel}
+            {item.metric_label || item.metricLabel}
           </p>
           <h3 className="text-2xl sm:text-4xl font-black text-accent-foreground leading-tight drop-shadow-lg mb-3">
             {item.title}
@@ -403,17 +404,16 @@ function AccomplishmentLightbox({ items, index, onClose, onNext, onPrev }) {
 
 export default function Accomplishments() {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [activePattern, setActivePattern] = useState('classic');
 
   useEffect(() => {
     getAccomplishments().then(async (data) => {
       const visible = data.filter((item) => item.active !== false);
-      setItems(visible);
-      // Dataset-driven metrics arrive a moment later, after the tiles are already showing.
-      const resolved = await resolveLinkedAccomplishments(visible).catch(() => visible);
-      setItems(resolved);
-    });
+      // Wait for dataset-driven metrics so tiles never flash the raw {value} text.
+      setItems(await resolveLinkedAccomplishments(visible).catch(() => stripAccomplishments(visible)));
+    }).catch(() => {}).finally(() => setLoading(false));
     getKmsSettings().then((s) => {
       const styleId = s.accomplishments_style || 'collage-1';
       setActivePattern(STYLE_TO_PATTERN[styleId] || 'classic');
@@ -432,7 +432,7 @@ export default function Accomplishments() {
   const currentPattern = COLLAGE_PATTERNS[activePattern] || COLLAGE_PATTERNS.classic;
   const overflowPattern = OVERFLOW_PATTERNS[Math.floor(Math.random() * OVERFLOW_PATTERNS.length)];
 
-  if (items.length === 0) return null;
+  if (!loading && items.length === 0) return null;
 
   return (
     <section id="accomplishments" className="bg-white dark:bg-background py-20">
@@ -450,7 +450,16 @@ export default function Accomplishments() {
           <div className="mt-4 h-1.5 w-16 bg-[#FCD116] dark:bg-primary rounded-full mx-auto dark:shadow-[0_0_10px_rgba(44,90,255,0.5)]" />
         </div>
 
-        {/* Collage grid */}
+        {loading ? (
+          // Same collage shape as the real grid, so the page doesn't jump when tiles arrive.
+          <div className="grid grid-cols-2 lg:grid-cols-5 auto-rows-[170px] lg:auto-rows-[120px] grid-flow-row-dense gap-4" aria-busy="true" aria-label="Loading accomplishments">
+            {currentPattern.map(({ base, lg }, i) => (
+              <div key={i} className={`${base} ${lg}`}>
+                <Skeleton className="h-full w-full rounded-2xl" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <motion.div
           variants={container}
           initial="hidden"
@@ -476,6 +485,7 @@ export default function Accomplishments() {
             );
           })}
         </motion.div>
+        )}
       </div>
 
       <AnimatePresence>

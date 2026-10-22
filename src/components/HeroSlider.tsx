@@ -6,7 +6,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, Award as AwardIcon, Image as Ima
 import { getSliderItems } from '../services/slider';
 import api from '../services/api';
 import { resolveHighlightTitle } from '../screens/Admin/FreeWifi/FreeWifiCharts';
-import { resolveLinkedAccomplishments } from '../lib/linkedAccomplishments';
+import { resolveLinkedAccomplishments, fetchOfficeDatasets, stripPlaceholder } from '../lib/linkedAccomplishments';
 import './HeroSlider.css';
 import mindanaoSvgUrl from './../assets/maps/ph.svg';
 
@@ -838,6 +838,9 @@ function HighlightSlide({ highlight }: { highlight: any }) {
         <h2 className="text-2xl sm:text-4xl font-black leading-tight tracking-tight
                        max-w-2xl drop-shadow-lg text-white">{highlight.title}</h2>
       )}
+      {highlight.description && (
+        <p className="mt-3 text-base sm:text-lg text-white/80 max-w-xl drop-shadow">{highlight.description}</p>
+      )}
     </motion.div>
   );
 }
@@ -920,21 +923,19 @@ function AccomplishmentSlide({ accomplishment }: { accomplishment: any }) {
 async function resolveDatasetItems(items) {
   const bound = (i) => i.content_type === 'project_highlight' ? i.content_detail?.title_binding?.enabled : false;
   const hl = items.filter(bound);
-  const accs = items.filter((i) => i.content_type === 'accomplishment' && i.content_detail?.linked_highlight);
+  const accs = items.filter((i) => i.content_type === 'accomplishment' && (i.content_detail?.linked_highlight || i.content_detail?.breakdown_binding?.enabled));
   if (!hl.length && !accs.length) return items;
   const offices = [...new Set(hl.map((i) => i.content_detail.office))];
   const byOffice = {};
-  await Promise.all(offices.map((o) =>
-    api.get('kms/project-datasets/', { params: { office: o } })
-      .then(({ data }) => { byOffice[o] = data.results ?? data; }).catch(() => { byOffice[o] = []; })));
+  await Promise.all(offices.map((o) => fetchOfficeDatasets(o).then((t) => { byOffice[o] = t; })));
   const accResolved = await resolveLinkedAccomplishments(accs.map((i) => ({ ...i.content_detail, _id: i.id })));
   return items.map((i) => {
-    if (bound(i) && i.content_detail.title) {
+    if (bound(i) && i.content_detail.show_title !== false) {
       const d = i.content_detail;
       return { ...i, content_detail: { ...d, title: resolveHighlightTitle(d.title, d.title_binding, byOffice[d.office]) } };
     }
     const r = accResolved.find((a) => a._id === i.id);
-    return r ? { ...i, content_detail: { ...i.content_detail, metric: r.metric } } : i;
+    return r ? { ...i, content_detail: { ...i.content_detail, metric: r.metric, breakdown: r.breakdown } } : i;
   });
 }
 
@@ -947,10 +948,11 @@ export default function HeroSlider() {
     getSliderItems().then((items) => {
       // Filter only active items, already sorted by order from backend
       const active = items.filter((item) => item.is_active);
-      setSliderItems(active);
-      // Dataset-driven numbers (project highlight titles / linked accomplishment metrics)
-      // are computed after the slides are already showing.
-      resolveDatasetItems(active).then(setSliderItems).catch(() => {});
+      // Slides are shown only once dataset-driven numbers (project highlight titles / linked
+      // accomplishment metrics) are computed, so the raw {value} text is never visible.
+      resolveDatasetItems(active).then(setSliderItems).catch(() => setSliderItems(active.map((i) => (
+        i.content_detail ? { ...i, content_detail: { ...i.content_detail, title: stripPlaceholder(i.content_detail.title), metric: stripPlaceholder(i.content_detail.metric) } } : i
+      ))));
     }).catch(() => {});
   }, []);
 

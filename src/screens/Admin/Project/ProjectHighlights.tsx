@@ -1,8 +1,9 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import Select from 'react-select';
+import { FormSection, Field, INPUT } from '../../../components/FormParts';
 import { selectStyles } from '../../../components/FreeWifiMap';
-import { Save, Image, Eye, EyeOff, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, Palette } from 'lucide-react';
+import { X, Save, Image, Eye, EyeOff, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, Palette } from 'lucide-react';
 import {
   getProjectOfficeId, getProjectHighlights, createProjectHighlight, updateProjectHighlight, deleteProjectHighlight,
   reorderProjectHighlights, getProjectSliderDesign, getProjectDatasets, updateProjectSliderDesign,
@@ -580,7 +581,7 @@ export default function ProjectHighlights({ slug }) {
   const [design, setDesign] = useState(DEFAULT_DESIGN);
   // Datasets are only needed for highlights with a dataset-bound title; a failed load
   // just leaves those titles on their typed text.
-  const [tables, setTables] = useState([]);
+  const [tables, setTables] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -596,7 +597,7 @@ export default function ProjectHighlights({ slug }) {
 
   useEffect(() => {
     setLoadError(null);
-    getProjectDatasets(slug).then(setTables).catch(() => {});
+    getProjectDatasets(slug).then(setTables).catch(() => setTables([]));
     Promise.all([getProjectOfficeId(slug), getProjectHighlights(slug), getProjectSliderDesign(slug)])
       .then(([id, h, d]) => {
         setOfficeId(id);
@@ -632,7 +633,7 @@ export default function ProjectHighlights({ slug }) {
   };
 
   const handleSave = async () => {
-    if (!form.title.trim()) return alert('Title is required');
+    if (!form.title.trim() && !form.titleBinding?.enabled) return alert('Title is required (or take its number from a dataset)');
     if (!officeId) return alert('No office is set up for this project yet — see the error banner above.');
     setSaving(true);
     try {
@@ -759,65 +760,82 @@ export default function ProjectHighlights({ slug }) {
           </div>
 
           {showForm && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5">
-              <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-4">{editingId ? 'Edit Highlight' : 'New Highlight'}</h3>
-              <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Title</label>
-                  <input placeholder="Highlight title" value={form.title}
-                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+                  <h3 className="font-bold text-gray-900 dark:text-white">{editingId ? 'Edit' : 'New'} Highlight</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">A slide in this project's highlights slider.</p>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Description</label>
-                  <textarea placeholder="Highlight description" value={form.description}
-                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    rows={3} className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Image</label>
-                  <div className="flex gap-2 mb-2">
-                    <button onClick={() => setImageMode('url')}
-                      className={`px-3 py-1.5 text-xs rounded-lg ${imageMode === 'url' ? 'bg-[#0038A8] text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>URL</button>
-                    <button onClick={() => setImageMode('upload')}
-                      className={`px-3 py-1.5 text-xs rounded-lg ${imageMode === 'upload' ? 'bg-[#0038A8] text-white' : 'bg-gray-100 dark:bg-gray-700'}`}>Upload</button>
+                <button onClick={() => { setShowForm(false); setEditingId(null); setImageFile(null); }}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Close"><X size={18} /></button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <FormSection step="1" title="Details">
+                  <div className="grid gap-4">
+                    <Field label="Title" hint="Type {value} where a dataset number should go (see step 3).">
+                      <input placeholder="e.g. Free Wi-Fi for All" value={form.title}
+                        onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={INPUT} />
+                    </Field>
+                    <Field label="Description">
+                      <textarea placeholder="A short sentence shown under the title" value={form.description} rows={3}
+                        onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className={INPUT} />
+                    </Field>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.showTitle !== false}
+                          onChange={(e) => setForm((f) => ({ ...f, showTitle: e.target.checked }))} className="rounded border-gray-300" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Show title</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.showDescription !== false}
+                          onChange={(e) => setForm((f) => ({ ...f, showDescription: e.target.checked }))} className="rounded border-gray-300" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Show description</span>
+                      </label>
+                    </div>
                   </div>
-                  {imageMode === 'url' ? (
-                    <input type="url" placeholder="https://example.com/image.jpg" value={form.image}
-                      onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
-                  ) : (
-                    <input type="file" accept="image/*" onChange={handleFileChange}
-                      className="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#0038A8] file:text-white" />
-                  )}
-                  {form.image && <img src={form.image} alt="Preview" className="mt-2 h-20 rounded-lg object-cover" />}
-                </div>
+                </FormSection>
 
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.showTitle !== false}
-                      onChange={(e) => setForm((f) => ({ ...f, showTitle: e.target.checked }))}
-                      className="rounded border-gray-300" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Show title</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.showDescription !== false}
-                      onChange={(e) => setForm((f) => ({ ...f, showDescription: e.target.checked }))}
-                      className="rounded border-gray-300" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Show description</span>
-                  </label>
-                </div>
+                <FormSection step="2" title="Image">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="w-full sm:w-44 h-28 shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                      {form.image ? <img src={form.image} alt="Preview" className="w-full h-full object-cover" /> : <Image size={26} className="text-gray-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 mb-2">
+                        {[['url', 'URL'], ['upload', 'Upload']].map(([mode, label]) => (
+                          <button key={mode} type="button" onClick={() => setImageMode(mode)}
+                            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${imageMode === mode ? 'bg-white dark:bg-gray-800 text-[#0038A8] shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {imageMode === 'url' ? (
+                        <input type="url" placeholder="https://…" value={form.image}
+                          onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} className={INPUT} />
+                      ) : (
+                        <input type="file" accept="image/*" onChange={handleFileChange}
+                          className="w-full text-sm file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[#0038A8] file:text-white" />
+                      )}
+                      <p className="text-xs text-gray-400 mt-1.5">Auto-converted to WebP.</p>
+                    </div>
+                  </div>
+                </FormSection>
 
-                <TitleBindingEditor binding={form.titleBinding || {}} tables={tables}
-                  onChange={(b) => setForm((f) => ({ ...f, titleBinding: b }))} />
+                <FormSection step="3" title="Dataset number" hint="Optional — compute the title from a dataset.">
+                  <TitleBindingEditor binding={form.titleBinding || {}} tables={tables || []}
+                    onChange={(b) => setForm((f) => ({ ...f, titleBinding: b, // turning it on with an empty title makes the title the dataset value
+                      title: b.enabled && !f.titleBinding?.enabled && !f.title.trim() ? '{value}' : f.title }))} />
+                </FormSection>
+              </div>
 
-                <div className="flex gap-2">
-                  <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                    <Save size={14} className="inline mr-1" /> {saving ? 'Saving...' : editingId ? 'Update' : 'Save'}
-                  </button>
-                  <button onClick={() => { setShowForm(false); setEditingId(null); setImageFile(null); }}
-                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">Cancel</button>
-                </div>
+              <div className="flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 dark:bg-gray-900/40 rounded-b-2xl border-t border-gray-100 dark:border-gray-700">
+                <button onClick={() => { setShowForm(false); setEditingId(null); setImageFile(null); }}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
+                <button onClick={handleSave} disabled={saving}
+                  className="flex items-center gap-1.5 px-5 py-2 bg-[#0038A8] text-white rounded-lg text-sm font-medium disabled:opacity-50 hover:bg-[#002f8f]">
+                  <Save size={14} /> {saving ? 'Saving…' : editingId ? 'Update' : 'Save'}
+                </button>
               </div>
             </div>
           )}

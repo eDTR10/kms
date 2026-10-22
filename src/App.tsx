@@ -34,6 +34,7 @@ import ManageSlider from './screens/Admin/ManageSlider';
 import ManageAccomplishments from './screens/Admin/ManageAccomplishments';
 import ManageAwards from './screens/Admin/ManageAwards';
 import ManageHighlights from './screens/Admin/ManageHighlights';
+import ManageSyncAll from './screens/Admin/ManageSyncAll';
 import FreeWifiLayout from './screens/Admin/FreeWifi/FreeWifiLayout';
 import FreeWifiHighlights from './screens/Admin/FreeWifi/FreeWifiHighlights';
 import FreeWifiCharts from './screens/Admin/FreeWifi/FreeWifiCharts';
@@ -270,6 +271,14 @@ function App() {
           element={
             <ProtectedRoute adminOnly>
               <AdminLayout><ManageAwards /></AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kms/admin/sync"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminLayout><ManageSyncAll /></AdminLayout>
             </ProtectedRoute>
           }
         />

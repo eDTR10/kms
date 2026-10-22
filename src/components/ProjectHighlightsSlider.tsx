@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
-import { getProjectHighlights, getProjectSliderDesign, getProjectDatasets } from '../services/projects';
+import { getProjectHighlights, getProjectSliderDesign, getProjectOfficeId } from '../services/projects';
+import { fetchOfficeDatasets, stripPlaceholder } from '../lib/linkedAccomplishments';
 import { designFromBackend, highlightFromBackend } from '../screens/Admin/FreeWifi/FreeWifiHighlights';
 import { SliderPreview } from '../screens/Admin/Project/ProjectHighlights';
 import { Skeleton } from '../screens/Admin/Skeleton';
@@ -23,13 +24,15 @@ export default function ProjectHighlightsSlider({ slug }) {
   useEffect(() => {
     setLoading(true);
     Promise.all([getProjectHighlights(slug), getProjectSliderDesign(slug)])
-      .then(([h, d]) => {
+      .then(async ([h, d]) => {
         const mapped = h.map(highlightFromBackend);
-        setHighlights(mapped);
-        // Datasets are fetched only when some highlight opted into a dataset-driven title.
+        // Datasets are fetched only when some highlight opted into a dataset-driven title,
+        // and the slider waits for them (skeleton shows) so {value} is never visible.
         if (mapped.some((x) => x.active && x.titleBinding?.enabled)) {
-          getProjectDatasets(slug).then(setTables).catch(() => {});
+          try { setTables(await fetchOfficeDatasets(await getProjectOfficeId(slug))); }
+          catch { mapped.forEach((x) => { x.title = stripPlaceholder(x.title); }); }
         }
+        setHighlights(mapped);
         setDesign(designFromBackend(d));
       })
       .catch(() => {})

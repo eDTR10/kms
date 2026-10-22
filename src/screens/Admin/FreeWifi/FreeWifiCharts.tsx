@@ -2144,11 +2144,36 @@ export function computeBindingDisplay(table, binding) {
     : value.toLocaleString();
 }
 
+// Accomplishment breakdown from a dataset: one row per distinct `group_field` value (e.g.
+// Province) with that group's count/sum/average/unique (same vocabulary as a Value Card),
+// biggest first. Returns [{label, value}] like a hand-typed breakdown.
+export function computeBreakdownRows(table, binding) {
+  if (!table || !binding?.group_field) return null;
+  const records = (table.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) }));
+  const sites = filterRecordsByConditions(records, binding.conditions);
+  const groups = new Map();
+  sites.forEach((r) => {
+    const k = String(r[binding.group_field] ?? '').trim() || 'N/A';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  });
+  const agg = binding.agg || 'count';
+  return [...groups.entries()]
+    .map(([label, rows]) => ({ label, num: computeAggregateValue(rows, binding.field, agg) }))
+    .sort((a, b) => b.num - a.num)
+    .map(({ label, num }) => ({
+      label,
+      value: agg === 'average' ? num.toLocaleString(undefined, { maximumFractionDigits: 1 }) : num.toLocaleString(),
+    }));
+}
+
 // Title text for a highlight: `{value}` in the typed title is replaced by the computed
 // number; with no placeholder the number is put in front. Falls back to the typed title
 // (placeholder stripped) while the dataset is loading or missing.
 export function resolveHighlightTitle(title, binding, tables) {
   if (!binding?.enabled || !binding.dataset) return title;
+  // Datasets still being fetched: a pulsing placeholder bar in the text colour.
+  if (tables == null) return <span className="inline-block h-[0.9em] w-28 max-w-full align-middle rounded bg-current opacity-20 animate-pulse" aria-label="Loading" />;
   const display = computeBindingDisplay((tables || []).find((t) => t.id === Number(binding.dataset)), binding);
   if (display == null) return title.replace('{value}', '').trim();
   return title.includes('{value}') ? title.replace('{value}', display) : `${display} ${title}`.trim();

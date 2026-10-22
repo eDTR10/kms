@@ -5,6 +5,10 @@ export default function Maps() {
     { name: 'Iligan City', embed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125835.5!2d124.1!3d8.2333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32ffd8f5d69f1e95%3A0x36c1e22e7d94c70e!2sIligan%20City%2C%20Lanao%20del%20Norte!5e0!3m2!1sen!2sph!4v1' },
   ];
 
+  // Province coverage — Google's keyless "place" embed outlines each province's boundary.
+  const provinceEmbed = (place) => `https://www.google.com/maps?q=${encodeURIComponent(`${place}, Philippines`)}&z=9&output=embed`;
+  const PROVINCES = ['Misamis Oriental', 'Misamis Occidental', 'Lanao del Norte', 'Bukidnon'].map((name) => ({ name, embed: provinceEmbed(name) }));
+
   return (
     <div className="dark:bg-gray-950 transition-colors duration-300">
       {/* Header */}
@@ -32,6 +36,28 @@ export default function Maps() {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />
+        </div>
+      </section>
+
+      {/* Province coverage */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Provinces</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {PROVINCES.map((area) => (
+            <div key={area.name}>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">{area.name}</h3>
+              <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm" style={{ height: '300px' }}>
+                <iframe
+                  title={area.name}
+                  src={area.embed}
+                  className="w-full h-full border-0"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

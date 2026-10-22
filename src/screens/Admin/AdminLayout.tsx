@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronRight, ChevronDown, Wifi, Trophy, Star, Sparkles, Presentation, Image, BarChart3, Database, Layers, MapPinned, Home } from 'lucide-react';
+import { LogOut, ChevronRight, ChevronDown, Wifi, Trophy, Star, Sparkles, Presentation, Image, BarChart3, Database, Layers, MapPinned, Home, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // Same 3-tab shape as Free Wi-Fi (Highlights / Charts / Datasets), each
@@ -50,6 +50,7 @@ const OTHER_LINKS = [
   { label: 'Accomplishments', path: '/kms/admin/accomplishments', icon: Trophy },
   { label: 'Awards', path: '/kms/admin/awards', icon: Star },
   { label: 'Highlights', path: '/kms/admin/highlights', icon: Sparkles },
+  { label: 'Sync Data', path: '/kms/admin/sync', icon: RefreshCw },
 ];
 
 export default function AdminLayout({ children }) {
