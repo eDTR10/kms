@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Coins, Landmark, RefreshCw, Wallet } from 'lucide-react';
+import { CalendarDays, Coins, Landmark, RefreshCw, Search, Wallet, X } from 'lucide-react';
 import axios from '../plugin/axios';
 import AnimatedNumber from '../components/kpi/AnimatedNumber';
 
@@ -36,6 +36,11 @@ interface BudgetData {
   by_class: ClassRow[];
   by_pap: PapRow[];
   monthly: MonthRow[];
+  options: { class_types: Option[]; fund_sources: Option[]; paps: Option[] };
+}
+interface Option {
+  code: string;
+  name: string;
 }
 
 const peso = (n: number) =>
@@ -114,6 +119,11 @@ function ProgressBar({ pct }: { pct: number }) {
 export default function AFD() {
   const thisYear = new Date().getFullYear();
   const [year, setYear] = useState(thisYear);
+  const [classType, setClassType] = useState('');
+  const [fundSource, setFundSource] = useState('');
+  const [papCode, setPapCode] = useState('');
+  const [throughMonth, setThroughMonth] = useState(0);
+  const [search, setSearch] = useState('');
   const [data, setData] = useState<BudgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -124,17 +134,43 @@ export default function AFD() {
     setLoading(true);
     setError('');
     axios
-      .get<BudgetData>('kms/budget-utilization/', { params: { year } })
+      .get<BudgetData>('kms/budget-utilization/', {
+        params: {
+          year,
+          class_type: classType || undefined,
+          fund_source: fundSource || undefined,
+          pap_code: papCode || undefined,
+          through_month: throughMonth || undefined,
+        },
+      })
       .then((res) => !cancelled && setData(res.data))
       .catch(() => !cancelled && setError('Could not load budget data from eFAS.'))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [year, reloadKey]);
+  }, [year, classType, fundSource, papCode, throughMonth, reloadKey]);
+
+  const filteredPaps = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!data) return [];
+    if (!q) return data.by_pap;
+    return data.by_pap.filter((p) => p.pap.toLowerCase().includes(q) || p.pap_code.toLowerCase().includes(q));
+  }, [data, search]);
+
+  const filtersActive = !!(classType || fundSource || papCode || throughMonth || search);
+  const clearFilters = () => {
+    setClassType('');
+    setFundSource('');
+    setPapCode('');
+    setThroughMonth(0);
+    setSearch('');
+  };
+  const selectCls =
+    'rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0038A8]/40';
 
   const maxMonth = useMemo(() => Math.max(1, ...(data?.monthly.map((m) => m.obligation) ?? [1])), [data]);
-  const years = [thisYear, thisYear - 1, thisYear - 2];
+  const years = [thisYear, thisYear - 1, thisYear - 2, thisYear - 3];
   const hasData = !!data && (data.total_allotment > 0 || data.total_obligation > 0);
 
   return (
@@ -147,30 +183,91 @@ export default function AFD() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-2">
-            {years.map((y) => (
-              <button
-                key={y}
-                onClick={() => setYear(y)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  year === y
-                    ? 'bg-[#0038A8] text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                FY {y}
-              </button>
-            ))}
+      <div className="h-1 overflow-hidden" aria-hidden="true">
+        {loading && <div className="h-full w-1/3 bg-[#FCD116] animate-[afd-slide_1.1s_ease-in-out_infinite]" />}
+      </div>
+      <style>{`@keyframes afd-slide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}`}</style>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8" aria-busy={loading}>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              {years.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => setYear(y)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    year === y
+                      ? 'bg-[#0038A8] text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  FY {y}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              disabled={loading}
+              className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-[#0038A8] dark:hover:text-blue-400 disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {loading ? 'Loading…' : 'Refresh'}
+            </button>
           </div>
-          <button
-            onClick={() => setReloadKey((k) => k + 1)}
-            className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-[#0038A8] dark:hover:text-blue-400"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[220px] max-w-md">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search program / PAP name or code…"
+                className={`${selectCls} w-full pl-9`}
+              />
+            </div>
+            <select value={papCode} onChange={(e) => setPapCode(e.target.value)} className={`${selectCls} max-w-[260px]`} aria-label="Program / PAP">
+              <option value="">All programs (PAP)</option>
+              {data?.options.paps.map((p) => (
+                <option key={p.code} value={p.code}>{p.name}</option>
+              ))}
+            </select>
+            <select value={classType} onChange={(e) => setClassType(e.target.value)} className={selectCls} aria-label="Expense class">
+              <option value="">All expense classes</option>
+              {data?.options.class_types.map((c) => (
+                <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+              ))}
+            </select>
+            <select value={fundSource} onChange={(e) => setFundSource(e.target.value)} className={selectCls} aria-label="Fund source">
+              <option value="">All fund sources</option>
+              {data?.options.fund_sources.map((f) => (
+                <option key={f.code} value={f.code}>{f.code} — {f.name}</option>
+              ))}
+            </select>
+            <select value={throughMonth} onChange={(e) => setThroughMonth(Number(e.target.value))} className={selectCls} aria-label="As of month">
+              <option value={0}>Whole year</option>
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>Through {m}</option>
+              ))}
+            </select>
+            {filtersActive && (
+              <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-600 px-2 py-1.5">
+                <X size={14} /> Clear
+              </button>
+            )}
+          </div>
         </div>
+
+        {loading && !data && (
+          <div className="space-y-5 animate-pulse" role="status" aria-label="Loading budget data">
+            <div className="h-24 rounded-sm bg-gray-200 dark:bg-gray-800" />
+            <div className="grid lg:grid-cols-[1fr_2fr] gap-5">
+              <div className="h-64 rounded-3xl bg-gray-200 dark:bg-gray-800" />
+              <div className="h-64 rounded-3xl bg-gray-200 dark:bg-gray-800" />
+            </div>
+            <div className="h-32 rounded-3xl bg-gray-200 dark:bg-gray-800" />
+          </div>
+        )}
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 px-4 py-3 text-sm">
@@ -185,7 +282,7 @@ export default function AFD() {
         )}
 
         {data && hasData && (
-          <>
+          <div className={`space-y-8 transition-opacity ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
             {/* Infographic */}
             <div className="rounded-sm overflow-hidden shadow-md" style={{ background: '#e8eefc' }}>
               <div className="flex flex-wrap items-end justify-between gap-2 px-5 sm:px-8 py-4" style={{ background: '#2b2d5e' }}>
@@ -275,7 +372,7 @@ export default function AFD() {
             {/* By PAP */}
             {data.by_pap.length > 0 && (
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 px-5 pt-5 pb-3">BUR by Program / Activity / Project</h3>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 px-5 pt-5 pb-3">BUR by Program / Activity / Project <span className="text-sm font-normal text-gray-400">({filteredPaps.length})</span></h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -288,7 +385,7 @@ export default function AFD() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.by_pap.map((p) => (
+                      {filteredPaps.map((p) => (
                         <tr key={p.pap_code} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
                           <td className="px-5 py-3 text-gray-800 dark:text-gray-100">
                             {p.pap}
@@ -307,6 +404,9 @@ export default function AFD() {
                       ))}
                     </tbody>
                   </table>
+                  {filteredPaps.length === 0 && (
+                    <p className="text-center text-sm text-gray-400 py-8">No programs match “{search}”.</p>
+                  )}
                 </div>
               </div>
             )}
@@ -314,7 +414,7 @@ export default function AFD() {
             <p className="text-xs text-gray-400 dark:text-gray-500">
               Source: eFAS Registry of Allotment, Obligation and Disbursement (RAOD). BUR = total obligation ÷ total allotment.
             </p>
-          </>
+          </div>
         )}
       </section>
     </div>
