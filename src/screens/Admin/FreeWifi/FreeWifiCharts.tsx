@@ -14,6 +14,7 @@ import {
 } from '../../../services/freewifiData';
 import { getKmsSettings, updateKmsSettings } from '../../../services/settings';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import FreeWifiMap, { selectStyles, MAP_TILE_STYLES } from '../../../components/FreeWifiMap';
 import {
   getProjectOfficeId, getProjectDatasets, updateProjectDataset,
@@ -748,6 +749,9 @@ const DATA_SOURCE_OPTIONS = DATA_SOURCES.map(s => ({ value: s.id, label: s.label
 const TILE_AGG_OPTIONS = [
   { value: 'distinct', label: 'Count unique values' },
   { value: 'count_equals', label: 'Count rows where equals...' },
+  // Same numerator as count_equals, shown as that count's share of every row this tile's own
+  // Filter rows leave (e.g. "23.8%"), same as the Value Card's 'percentage'.
+  { value: 'percentage', label: 'Percentage of rows (%)' },
   { value: 'sum', label: 'Sum values' },
   { value: 'count', label: 'Count all rows' },
   // "Row mode" for one tile — instead of aggregating across every matching row, reads
@@ -1435,6 +1439,21 @@ export function computeSummaryTiles(records, source, taggedFields, combineCtx) {
         } else if (cfg.agg === 'count_equals') {
           const target = String(cfg.equals ?? '').trim().toLowerCase();
           value = rows.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
+        } else if (cfg.agg === 'percentage') {
+          const target = String(cfg.equals ?? '').trim().toLowerCase();
+          const matched = rows.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === target).length;
+          // "Over": when set, the share is out of the rows whose same column equals that value
+          // (e.g. Live over Live + Planned); blank = out of every row the tile's filters leave.
+          const hasOver = cfg.over !== undefined && cfg.over !== null && cfg.over !== '';
+          const overTarget = String(cfg.over ?? '').trim().toLowerCase();
+          // A typed number that isn't one of the column's own values is a fixed total
+          // (e.g. 31 over 62); otherwise "Over" is a column value and its rows are counted.
+          const overRows = hasOver ? rows.filter(r => String(r[cfg.field] ?? '').trim().toLowerCase() === overTarget) : [];
+          const overNumber = Number(String(cfg.over ?? '').replace(/,/g, ''));
+          const denominator = !hasOver
+            ? rows.length
+            : (overRows.length === 0 && Number.isFinite(overNumber) ? overNumber : overRows.length);
+          value = denominator ? (matched / denominator) * 100 : 0;
         } else if (cfg.agg === 'row_value') {
           // Not an aggregate at all — this tile's own `conditions` pick ONE row (the
           // first match), and its raw value for `field` is shown as-is.
@@ -1442,7 +1461,11 @@ export function computeSummaryTiles(records, source, taggedFields, combineCtx) {
         } else {
           value = rows.reduce((s, r) => s + (toNum(r[cfg.field]) || 0), 0);
         }
-        return { label: cfg.label || fieldDef?.label || cfg.field || 'Count', value, highlight: Boolean(cfg.highlight) };
+        return {
+          label: cfg.label || fieldDef?.label || cfg.field || 'Count', value, highlight: Boolean(cfg.highlight),
+          // Text to show: percentages read "23.8%", everything else is the plain number.
+          display: cfg.agg === 'percentage' ? `${value.toFixed(1)}%` : undefined,
+        };
       })
     : [{ label: 'Total Records', value: records.length }];
   // Tile 0 is always the lead (big number). The highlighted/accent tile is whichever tile
@@ -1461,21 +1484,22 @@ export function computeSummaryTiles(records, source, taggedFields, combineCtx) {
 // Card widget and its style-editor preview, so they're always visually identical. "Row"
 // is a single flex row that never wraps regardless of how many tiles are configured
 // (a fixed grid-cols count would wrap extra tiles onto their own row).
+const tileText = (t) => t.display ?? t.value.toLocaleString();
 export function renderSummaryCardBody({ lead, rest, accentTile }, style) {
   const accentTextColor = contrastTextColor(style.accentColor);
   if (style.orientation === 'stacked') {
     return (
       <div className="space-y-3">
-        <div><p className="text-sm text-white/70 mb-1">{lead.label}</p><p className="text-4xl font-black">{lead.value.toLocaleString()}</p></div>
+        <div><p className="text-sm text-white/70 mb-1">{lead.label}</p><p className="text-4xl font-black">{tileText(lead)}</p></div>
         {rest.map(t => (
           <div key={t.label} className="bg-white/10 rounded-xl p-4 flex items-center justify-between">
-            <span className="text-sm text-white/70">{t.label}</span><span className="text-2xl font-black">{t.value.toLocaleString()}</span>
+            <span className="text-sm text-white/70">{t.label}</span><span className="text-2xl font-black">{tileText(t)}</span>
           </div>
         ))}
         {accentTile && (
           <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: style.accentColor }}>
             <span className="text-sm" style={{ color: accentTextColor }}>{accentTile.label}</span>
-            <span className="text-2xl font-black" style={{ color: accentTextColor }}>{accentTile.value.toLocaleString()}</span>
+            <span className="text-2xl font-black" style={{ color: accentTextColor }}>{tileText(accentTile)}</span>
           </div>
         )}
       </div>
@@ -1483,16 +1507,16 @@ export function renderSummaryCardBody({ lead, rest, accentTile }, style) {
   }
   return (
     <div className="flex flex-wrap gap-4 md:gap-6">
-      <div className="flex-1 min-w-[120px]"><p className="text-sm text-white/70 mb-1 truncate">{lead.label}</p><p className="text-4xl font-black">{lead.value.toLocaleString()}</p></div>
+      <div className="flex-1 min-w-[120px]"><p className="text-sm text-white/70 mb-1 truncate">{lead.label}</p><p className="text-4xl font-black">{tileText(lead)}</p></div>
       {rest.map(t => (
         <div key={t.label} className="flex-1 min-w-[120px] bg-white/10 rounded-xl p-4">
-          <p className="text-sm text-white/70 mb-1 truncate">{t.label}</p><p className="text-3xl font-black">{t.value.toLocaleString()}</p>
+          <p className="text-sm text-white/70 mb-1 truncate">{t.label}</p><p className="text-3xl font-black">{tileText(t)}</p>
         </div>
       ))}
       {accentTile && (
         <div className="flex-1 min-w-[120px] rounded-xl p-4" style={{ backgroundColor: style.accentColor }}>
           <p className="text-sm mb-1 truncate" style={{ color: accentTextColor }}>{accentTile.label}</p>
-          <p className="text-3xl font-black" style={{ color: accentTextColor }}>{accentTile.value.toLocaleString()}</p>
+          <p className="text-3xl font-black" style={{ color: accentTextColor }}>{tileText(accentTile)}</p>
         </div>
       )}
     </div>
@@ -1695,6 +1719,8 @@ export function chartConfigFromBackend(c) {
     // Any chart_type — hides the public page's title/subtitle header above this chart.
     // The admin's own preview always shows it regardless (see the model field's docstring).
     hideTitle: !!c.hide_title,
+    // Optional small-print note under the chart (blank = none).
+    footnote: c.footnote || '',
     // Only meaningful for chart_type in ('line', 'area') — see DATE_GROUP_BY_OPTIONS and
     // CustomChartRenderer's dateBucketKey usage.
     dateGroupBy: c.date_group_by || 'month',
@@ -1794,6 +1820,7 @@ export function chartConfigToBackend(chart) {
     card_gradient_color: isCard ? (chart.cardGradientColor || '#000000') : '',
     card_description: isCard ? (chart.cardDescription || '') : '',
     hide_title: !!chart.hideTitle,
+    footnote: chart.footnote || '',
     date_group_by: isDateTrend ? (chart.dateGroupBy || 'month') : '',
     cumulative: isDateTrend ? !!chart.cumulative : false,
     value_labels: Object.fromEntries(Object.entries(chart.valueLabels || {}).filter(([, v]) => v && v.trim())),
@@ -4487,7 +4514,7 @@ export function CustomChartRenderer({ chart, sites }) {
 }
 
 // Wrapper for draggable chart
-function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, children, title, subtitle, onEdit, onEditStyle, onExportData, onDelete, onToggleVisibility, showOnUser, isCustom, dataSource, onDataSourceChange, noPadding }) {
+function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, children, title, subtitle, onEdit, onEditStyle, onExportData, onDelete, onToggleVisibility, showOnUser, isCustom, dataSource, onDataSourceChange, noPadding, footnote }) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [imgWidth, setImgWidth] = useState('');
   const [imgHeight, setImgHeight] = useState('');
@@ -4634,6 +4661,9 @@ function DraggableChart({ id, index, onDragStart, onDragOver, onDrop, onDragEnd,
         <div ref={contentRef} className={`flex-1 ${noPadding ? '' : 'p-4'}`}>
           {children}
         </div>
+        {footnote && String(footnote).trim() && (
+          <p className="px-4 pb-3 pt-1 text-[10px] italic leading-snug text-gray-500 dark:text-gray-400 whitespace-pre-line break-words">{footnote}</p>
+        )}
       </div>
     </div>
   );
@@ -5468,7 +5498,11 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
   const [summaryDatasetId, setSummaryDatasetId] = useState(initial?.summary_dataset || '');
   const [summaryTitle, setSummaryTitle] = useState(initial?.summary_title || '');
   const [summaryHideTitle, setSummaryHideTitle] = useState(!!initial?.summary_hide_title);
-  // Each tile: { field, agg: 'sum'|'distinct'|'count_equals'|'count', equals?, label, highlight? }.
+  // Optional small-print note shown under the widget (blank = none).
+  const [summaryFootnote, setSummaryFootnote] = useState(initial?.summary_footnote || '');
+  const [mapFootnote, setMapFootnote] = useState(initial?.map_footnote || '');
+  const [breakdownFootnote, setBreakdownFootnote] = useState(initial?.breakdown_footnote || '');
+  // Each tile: { field, agg: 'sum'|'distinct'|'count_equals'|'percentage'|'count', equals?, label, highlight? }.
   // Position controls layout (tile 0 = big lead number); `highlight` marks the one tile
   // rendered as the colored accent box (falls back to the last tile if none is marked, so
   // older saves — plain field-name strings or objects without `highlight` — keep working).
@@ -5564,6 +5598,50 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
 
   const summaryTable = tables.find(t => t.id === Number(summaryDatasetId));
   const summaryTableFields = summaryTable?.fields || [];
+  // Summary tiles can read the table's own columns plus every column of a table it links to
+  // ("<their column> (via <linking column>)"), same as the chart builder. Records are merged
+  // exactly like the public widget's (mergeReferencedFields), so the value counts, the
+  // pickers and the live preview all see the linked columns.
+  const summaryRecords = useMemo(() => {
+    if (!summaryTable) return [];
+    const base = (summaryTable.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) }));
+    return mergeReferencedFields(base, summaryTable.fields, tables);
+  }, [summaryTable, tables]);
+  const summaryFieldOptions = useMemo(() => {
+    if (!summaryTable) return [];
+    const all = [
+      ...(summaryTable.fields || []).map((f) => ({ value: f.name, label: f.label })),
+      ...referencedFieldOptionsFor(summaryTable, tables),
+    ];
+    return all.map((o) => {
+      const distinct = distinctFieldValues(summaryRecords, o.value).length;
+      const hasBlank = distinct > 0 && summaryRecords.some((r) => String(r[o.value] ?? '').trim() === '');
+      const n = hasBlank ? distinct + 1 : distinct;
+      return { ...o, label: `${o.label} (${n.toLocaleString()} value${n === 1 ? '' : 's'})` };
+    });
+  }, [summaryTable, summaryRecords, tables]);
+  const summaryValuesFor = (field) => toOptions(distinctFieldValues(summaryRecords, field));
+  // Live value for one tile in the editor, computed exactly like the public widget does
+  // (computeSummaryTiles on a one-tile source). null = tile not filled in enough to compute.
+  const tilePreview = (t) => {
+    if (!summaryTable) return null;
+    if (t.agg !== 'count' && !t.field) return null;
+    if ((t.agg === 'count_equals' || t.agg === 'percentage') && (t.equals === undefined || t.equals === '')) return null;
+    try {
+      const toRecords = (tb) => mergeReferencedFields((tb?.rows || []).map((r) => ({ id: r.id, ...(r.values || {}) })), tb?.fields, tables);
+      const recordsByDataset = {};
+      [Number(summaryDatasetId), ...summaryExtraDatasets].forEach((id) => {
+        recordsByDataset[id] = id === Number(summaryDatasetId) ? summaryRecords : toRecords(tables.find((x) => x.id === id));
+      });
+      const { lead } = computeSummaryTiles(
+        recordsByDataset[Number(summaryDatasetId)] || [],
+        { summary_fields: [t], summary_dataset: Number(summaryDatasetId), summary_extra: { datasets: summaryExtraDatasets, table_conditions: summaryTableConditions } },
+        summaryTableFields,
+        { recordsByDataset, genericTables: tables },
+      );
+      return tileText(lead);
+    } catch { return null; }
+  };
   const mapTable = tables.find(t => t.id === Number(mapDatasetId));
   const mapTableFields = mapTable?.fields || [];
   const breakdownTable = tables.find(t => t.id === Number(breakdownDatasetId));
@@ -5602,6 +5680,9 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
         summary_dataset: summaryDatasetId ? Number(summaryDatasetId) : null,
         summary_title: summaryTitle,
         summary_hide_title: summaryHideTitle,
+        summary_footnote: summaryFootnote,
+        map_footnote: mapFootnote,
+        breakdown_footnote: breakdownFootnote,
         summary_fields: summaryFields.filter(t => t.agg === 'count' || t.field)
           .map(t => ({ ...t, conditions: (t.conditions || []).filter(c => c.field) })),
         summary_extra: { datasets: summaryExtraDatasets, table_conditions: summaryTableConditions },
@@ -5634,7 +5715,7 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="compact-radius bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">
             {focusSection === 'summary' ? 'Summary Card Settings'
@@ -5666,6 +5747,12 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
               <span className="text-xs text-gray-700 dark:text-gray-300">Hide title on public page</span>
             </label>
             <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Note / disclaimer <span className="text-gray-400">(optional — small text under the widget)</span></label>
+              <textarea value={summaryFootnote} onChange={(e) => setSummaryFootnote(e.target.value)} rows={2}
+                placeholder="e.g. Data as of the latest report submitted by the provinces."
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+            </div>
+            <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
               <Select value={selectValue(toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name), summaryDatasetId ? Number(summaryDatasetId) : null)}
                 onChange={(opt) => { setSummaryDatasetId(opt ? opt.value : ''); setSummaryFields([]); }}
@@ -5694,10 +5781,10 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                           <GripVertical size={14} className="text-gray-400" />
                         </span>
                         <div className="flex-1 min-w-[110px]">
-                          <Select value={selectValue(toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label), t.field)}
+                          <Select value={selectValue(summaryFieldOptions, t.field)}
                             onChange={(opt) => updateSummaryTile(i, { field: opt ? opt.value : '' })}
                             isDisabled={t.agg === 'count'}
-                            options={toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label)}
+                            options={summaryFieldOptions}
                             placeholder="Select column..." isClearable styles={selectStyles} />
                         </div>
                         <div className="w-52">
@@ -5705,16 +5792,22 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                             onChange={(opt) => updateSummaryTile(i, { agg: opt.value })}
                             options={TILE_AGG_OPTIONS} isSearchable={false} styles={selectStyles} />
                         </div>
-                        {t.agg === 'count_equals' && (
+                        {(t.agg === 'count_equals' || t.agg === 'percentage') && (
                           <div className="w-32">
-                            <Select value={selectValue(toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), t.field)), t.equals || '')}
+                            <Select value={selectValue(summaryValuesFor(t.field), t.equals || '')}
                               onChange={(opt) => updateSummaryTile(i, { equals: opt ? opt.value : '' })}
-                              options={toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), t.field))}
+                              options={summaryValuesFor(t.field)}
                               placeholder="Value..." isClearable styles={selectStyles} />
                           </div>
                         )}
-                        <input value={t.label || ''} onChange={(e) => updateSummaryTile(i, { label: e.target.value })}
-                          placeholder="Tile label" className="w-28 px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                        {(() => {
+                          const v = tilePreview(t);
+                          return (
+                            <span title="Value this tile shows right now" className="shrink-0 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-[#0038A8] dark:text-blue-300 text-xs font-bold tabular-nums min-w-[3.5rem] text-center">
+                              {v ?? '—'}
+                            </span>
+                          );
+                        })()}
                         {i > 0 && (
                           <button type="button" onClick={() => setHighlightTile(i)} title="Make this the highlighted tile"
                             className={`shrink-0 ${t.highlight ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'}`}>
@@ -5725,6 +5818,21 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                           <X size={14} />
                         </button>
                       </div>
+                      {t.agg === 'percentage' && (
+                        <div className="mt-2">
+                          <label className="text-[10px] text-gray-400 mb-1 block">Over (optional) — pick a value (out of rows where the column equals it) or type a number to use as the total</label>
+                          <CreatableSelect value={t.over ? { value: t.over, label: String(t.over) } : null}
+                            onChange={(opt) => updateSummaryTile(i, { over: opt ? opt.value : '' })}
+                            options={summaryValuesFor(t.field)}
+                            formatCreateLabel={(v) => `Use "${v}"`}
+                            placeholder="All rows (default) — or type a value / number" isClearable styles={selectStyles} />
+                        </div>
+                      )}
+                      <div className="mt-2">
+                        <label className="text-[10px] text-gray-400 mb-1 block">Tile label</label>
+                        <input value={t.label || ''} onChange={(e) => updateSummaryTile(i, { label: e.target.value })}
+                          placeholder="Label shown on the tile" className="w-full px-2 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800" />
+                      </div>
                       <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                         <p className="text-[10px] text-gray-400 mb-1">
                           {t.agg === 'row_value'
@@ -5732,8 +5840,8 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                             : 'Filter rows for this tile (optional — independent of every other tile\'s own filter)'}
                         </p>
                         <ConditionsEditor conditions={t.conditions} onChange={(next) => updateSummaryTile(i, { conditions: next })}
-                          fieldOptions={toOptions(summaryTableFields.map(f => f.name), (n) => summaryTableFields.find(f => f.name === n)?.label)}
-                          valuesFor={(field) => toOptions(distinctFieldValues((summaryTable?.rows || []).map(r => r.values || {}), field))} />
+                          fieldOptions={summaryFieldOptions}
+                          valuesFor={summaryValuesFor} />
                       </div>
                       {/* Per-tile field mapping onto the widget's extra tables below —
                           only shown once at least one is added, since a tile with no extra
@@ -5795,6 +5903,11 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                 className="rounded border-gray-300" />
               <span className="text-xs text-gray-700 dark:text-gray-300">Hide title on public page</span>
             </label>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Note / disclaimer <span className="text-gray-400">(optional — small text under the widget)</span></label>
+              <textarea value={mapFootnote} onChange={(e) => setMapFootnote(e.target.value)} rows={2}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+            </div>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
               <Select value={selectValue(toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name), mapDatasetId ? Number(mapDatasetId) : null)}
@@ -6059,6 +6172,11 @@ function DataSourceModal({ slug, tables, initial, builtInTitles, focusSection = 
                 className="rounded border-gray-300" />
               <span className="text-xs text-gray-700 dark:text-gray-300">Hide title on public page</span>
             </label>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Note / disclaimer <span className="text-gray-400">(optional — small text under the widget)</span></label>
+              <textarea value={breakdownFootnote} onChange={(e) => setBreakdownFootnote(e.target.value)} rows={2}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+            </div>
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Table</label>
               <Select value={selectValue(toOptions(tables.map(t => t.id), (id) => tables.find(t => t.id === id)?.name), breakdownDatasetId ? Number(breakdownDatasetId) : null)}
@@ -7175,7 +7293,10 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     const hideTitle = editingWidgetInstance.widgetType === 'summary' ? payload.summary_hide_title
       : editingWidgetInstance.widgetType === 'map' ? payload.map_hide_title
       : payload.breakdown_hide_title;
-    const updated = await updateProjectBuiltinWidget(editingWidgetInstance.dbId, { settings: payload, hide_title: !!hideTitle });
+    const footnote = editingWidgetInstance.widgetType === 'summary' ? payload.summary_footnote
+      : editingWidgetInstance.widgetType === 'map' ? payload.map_footnote
+      : payload.breakdown_footnote;
+    const updated = await updateProjectBuiltinWidget(editingWidgetInstance.dbId, { settings: { ...payload, footnote: footnote || '' }, hide_title: !!hideTitle });
     const chart = builtinWidgetFromBackend(updated);
     setAllCharts(prev => prev.map(c => c.id === chart.id ? chart : c));
     setEditingWidgetInstance(null);
@@ -8503,6 +8624,14 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 <span className="text-xs text-gray-700 dark:text-gray-300">Hide title on public page</span>
               </label>
 
+              {/* Optional small-print note/disclaimer shown under the chart on the public page. */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Note / disclaimer <span className="text-gray-400">(optional — small text under the chart)</span></label>
+                <textarea value={newChart.footnote || ''} onChange={(e) => setNewChart(c => ({ ...c, footnote: e.target.value }))} rows={2}
+                  placeholder="e.g. Figures are based on reports submitted as of the cut-off date."
+                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
+              </div>
+
               {/* Sticky so Create/Cancel are always reachable — this form scrolls a long way,
                   and the buttons used to sit at the very bottom out of sight. The negative
                   margins cancel the scroll container's own padding so the bar spans
@@ -8667,9 +8796,12 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                       : isWidgetInstance ? `${WIDGET_TYPE_LABELS[chart.widgetType]} · extra instance` : undefined
                   }
                   isCustom={isCustom || isWidgetInstance}
+                  footnote={isCustom ? chart.footnote
+                    : isWidgetInstance ? chart.settings?.footnote
+                    : (chartSource?.[`${chart.id === 'province-breakdown' ? 'breakdown' : chart.id}_footnote`])}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, footnote: chart.footnote || '', dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);

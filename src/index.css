@@ -290,3 +290,9 @@
     --viz-seq-450: #3987e5;
   }
 }
+/* Data Source modal: tighter corners on its inputs, selects and chips (the modal card itself keeps its own radius). */
+.compact-radius .rounded-lg,
+.compact-radius .rounded-md,
+.compact-radius [class*="-control"] {
+  border-radius: 6px;
+}
