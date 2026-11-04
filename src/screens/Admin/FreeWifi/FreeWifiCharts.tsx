@@ -1792,6 +1792,9 @@ export function chartConfigFromBackend(c) {
     rowIncreaseColor: c.row_increase_color || '',
     rowDecreaseColor: c.row_decrease_color || '',
     rowIncreaseInHeader: !!c.row_increase_in_header,
+    footerExcluded: c.footer_excluded || [],
+    hideFooter: !!c.hide_footer,
+    footerValueColumn: c.footer_value_column || '',
   };
 }
 
@@ -1858,6 +1861,9 @@ export function chartConfigToBackend(chart) {
     row_increase_color: chart.chartType === 'bar-vertical' ? (chart.rowIncreaseColor || '') : '',
     row_decrease_color: chart.chartType === 'bar-vertical' ? (chart.rowDecreaseColor || '') : '',
     row_increase_in_header: chart.chartType === 'bar-vertical' ? !!chart.rowIncreaseInHeader : false,
+    footer_excluded: chart.rowMode ? (chart.footerExcluded || []) : [],
+    hide_footer: !!chart.hideFooter,
+    footer_value_column: chart.rowMode ? (chart.footerValueColumn || '') : '',
   };
 }
 
@@ -2917,6 +2923,11 @@ export function CustomChartRenderer({ chart, sites }) {
     );
   }
   let sorted = tallySorted;
+  const footerRows = isRowMode ? sorted.filter(([k]) => !(chart.footerExcluded || []).includes(k)) : sorted;
+  const footerTotal = isRowMode ? footerRows.reduce((sum, [, n]) => sum + n, 0) : total;
+  // Row mode: the admin can pin the footer to ONE compared column's own value (e.g. the
+  // Sub-Total) instead of the computed sum.
+  const footerPick = isRowMode && chart.footerValueColumn ? sorted.find(([k]) => k === chart.footerValueColumn) : null;
   const max = Math.max(...sorted.map(([, count]) => count), 1);
 
   // Every chart type below caps how many categories it draws for readability.
@@ -4349,7 +4360,9 @@ export function CustomChartRenderer({ chart, sites }) {
       // no layout library is needed. Everything is computed in a unit space then fitted
       // with the SVG viewBox, so it scales with the card.
       const bubbles = sorted.slice(0, cap(30));
-      const MIN_R = 12, MAX_R = 64, GAP = 2;
+      // MIN_R sits just above the `labelled` threshold below (r >= 26) so even the smallest
+      // bubble still shows its name and value, instead of being a blank circle next to big ones.
+      const MIN_R = 28, MAX_R = 64, GAP = 2;
       const hexToRgbArr = (h) => [1, 3, 5].map((s) => parseInt(h.slice(s, s + 2), 16));
       const lerpColor = (a, b, t) => {
         const ca = hexToRgbArr(a), cb = hexToRgbArr(b);
@@ -4493,7 +4506,9 @@ export function CustomChartRenderer({ chart, sites }) {
           renderChart() while isDateTrend stays true (it's derived from chart type alone),
           so `sorted` is empty and `latest` is undefined here; renderMultiRowLine already
           shows its own legend and "N of M rows" note, so this is simply skipped instead. */}
-      {!chart.multiRowMode && (
+      {/* Row mode: columns the admin unticked in "Customize labels" (footerExcluded) are left
+          out of this count/total — e.g. a Sub-Total column that already sums the others. */}
+      {!chart.multiRowMode && !chart.hideFooter && (!isRowMode || footerPick || footerRows.length > 0) && (
         <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 text-[10px] text-gray-400">
           {isDateTrend ? (
             <>
@@ -4505,7 +4520,9 @@ export function CustomChartRenderer({ chart, sites }) {
               </span>
             </>
           ) : (
-            <span className="shrink-0">{sorted.length.toLocaleString()} {sorted.length === 1 ? 'category' : 'categories'} · {total.toLocaleString()} total</span>
+            footerPick
+              ? <span className="shrink-0">{displayLabel(footerPick[0])} · {footerPick[1].toLocaleString()}</span>
+              : <span className="shrink-0">{footerRows.length.toLocaleString()} {footerRows.length === 1 ? 'category' : 'categories'} · {footerTotal.toLocaleString()} total</span>
           )}
         </div>
       )}
@@ -6416,7 +6433,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     rowMode: false, rowColumns: [], multiRowMode: false,
     colorMode: 'palette', chartColor: '#0038A8', categoryColors: {}, secondaryCategoryColors: {}, categorySecondaryColors: {},
     categoryOrder: [], secondaryCategoryOrder: [], tertiaryCategoryOrder: [], donutCenterMode: 'total',
-    comparisonCollapsible: false, showRowIncrease: true, rowIncreaseColor: '', rowDecreaseColor: '', rowIncreaseInHeader: false,
+    comparisonCollapsible: false, showRowIncrease: true, rowIncreaseColor: '', rowDecreaseColor: '', rowIncreaseInHeader: false, footerExcluded: [], hideFooter: false, footerValueColumn: '',
   });
   // 'image-bg' card design's background photo — URL mode just writes straight into
   // newChart.cardImage like any other text field; Upload mode holds the picked File here
@@ -8178,6 +8195,17 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                                 tallied count still drives bar height/percent-of-total, this
                                 just appends "/target" to the number shown — see displayValue()
                                 below in this component. */}
+                            {newChart.rowMode && (
+                              <label className="flex items-center gap-1 shrink-0 text-[10px] text-gray-400 cursor-pointer"
+                                title={`Count "${v}" in the chart footer's total — untick for a Sub-Total/Total column`}>
+                                <input type="checkbox" checked={!(newChart.footerExcluded || []).includes(v)}
+                                  onChange={(e) => setNewChart(c => {
+                                    const rest = (c.footerExcluded || []).filter((x) => x !== v);
+                                    return { ...c, footerExcluded: e.target.checked ? rest : [...rest, v] };
+                                  })} />
+                                Count in total
+                              </label>
+                            )}
                             <span className="text-gray-300 shrink-0 text-xs">/</span>
                             <input type="number" value={newChart.valueTargets?.[v] ?? ''}
                               onChange={(e) => setNewChart(c => ({ ...c, valueTargets: { ...c.valueTargets, [v]: e.target.value } }))}
@@ -8632,6 +8660,28 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                   className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800" />
               </div>
 
+              {/* The "N categories · X total" line under the chart. Unticking hides it entirely;
+                  for row-mode charts, "Count in total" in Customize labels picks which columns feed it. */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={!newChart.hideFooter}
+                  onChange={(e) => setNewChart(c => ({ ...c, hideFooter: !e.target.checked }))}
+                  className="rounded border-gray-300" />
+                <span className="text-xs text-gray-700 dark:text-gray-300">Show overall total line under the chart</span>
+              </label>
+              {newChart.rowMode && !newChart.hideFooter && (
+                <div className="flex items-center gap-2 pl-6">
+                  <span className="text-xs text-gray-500 shrink-0">Number shown</span>
+                  <select value={newChart.footerValueColumn || ''}
+                    onChange={(e) => setNewChart(c => ({ ...c, footerValueColumn: e.target.value }))}
+                    className="flex-1 px-2.5 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-800">
+                    <option value="">Auto — sum of the "Count in total" columns</option>
+                    {(newChart.rowColumns || []).map((col) => (
+                      <option key={col} value={col}>{newChart.valueLabels?.[col] || col} (that column's own value)</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Sticky so Create/Cancel are always reachable — this form scrolls a long way,
                   and the buttons used to sit at the very bottom out of sight. The negative
                   margins cancel the scroll container's own padding so the bar spans
@@ -8801,7 +8851,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     : (chartSource?.[`${chart.id === 'province-breakdown' ? 'breakdown' : chart.id}_footnote`])}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, footnote: chart.footnote || '', dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader, footerExcluded: chart.footerExcluded || [], hideFooter: !!chart.hideFooter, footerValueColumn: chart.footerValueColumn || '' });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);
