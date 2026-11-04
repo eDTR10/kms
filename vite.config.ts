@@ -55,7 +55,7 @@ export default defineConfig({
   plugins: [react(), cspPlugin()],
   server: {
     host: '0.0.0.0', // IP address, 0.0.0.0 makes it accessible on your local network
-    port: 6980, // specify the port you want here
+    port: 6969, // specify the port you want here
   },
   resolve: {
     alias: {

@@ -1721,6 +1721,8 @@ export function chartConfigFromBackend(c) {
     hideTitle: !!c.hide_title,
     // Optional small-print note under the chart (blank = none).
     footnote: c.footnote || '',
+    // bar-horizontal + per-category "over" targets: draw value | remainder as two segments.
+    targetRemainder: c.target_remainder !== false,
     // Only meaningful for chart_type in ('line', 'area') — see DATE_GROUP_BY_OPTIONS and
     // CustomChartRenderer's dateBucketKey usage.
     dateGroupBy: c.date_group_by || 'month',
@@ -1821,6 +1823,7 @@ export function chartConfigToBackend(chart) {
     card_description: isCard ? (chart.cardDescription || '') : '',
     hide_title: !!chart.hideTitle,
     footnote: chart.footnote || '',
+    target_remainder: (chart.chartType === 'bar-horizontal' || chart.chartType === 'bar-100-stacked') && !!chart.targetRemainder,
     date_group_by: isDateTrend ? (chart.dateGroupBy || 'month') : '',
     cumulative: isDateTrend ? !!chart.cumulative : false,
     value_labels: Object.fromEntries(Object.entries(chart.valueLabels || {}).filter(([, v]) => v && v.trim())),
@@ -3261,13 +3264,30 @@ export function CustomChartRenderer({ chart, sites }) {
                       onClick={() => handleClick(label)}>
                       <span className="w-40 shrink-0 text-sm text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
                       <div className="flex-1 flex items-center gap-2 min-w-0">
+                        {chart.targetRemainder && targetFor(label) !== null ? (
+                          // Value + what's left to the target as two segments of one bar
+                          // (22 | 3 instead of 22 "/25"), so no "/target" suffix is shown.
+                          <div className="flex-1 flex h-8 rounded-lg overflow-hidden min-w-0 bg-gray-100 dark:bg-gray-700">
+                            <div className="h-full flex items-center justify-center px-1 text-xs font-bold text-white"
+                              style={{ width: `${Math.min(100, (count / targetFor(label)) * 100)}%`, backgroundColor: colorFor(label, i) }}>
+                              {count > 0 && fmtNum(count)}
+                            </div>
+                            {targetFor(label) - count > 0 && (
+                              <div className="h-full flex items-center justify-center px-1 text-xs font-bold text-white"
+                                style={{ width: `${((targetFor(label) - count) / targetFor(label)) * 100}%`, backgroundColor: '#B0B0B0' }}>
+                                {fmtNum(targetFor(label) - count)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
                         <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden min-w-0">
                           <div className="h-full rounded-lg flex items-center px-3"
                             style={{ width: `${(count / maxFor(label)) * 100}%`, backgroundColor: colorFor(label, i) }}>
                             <span className="text-xs font-bold text-white">{valueWithPct(label, count)}</span>
                           </div>
                         </div>
-                        {targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
+                        )}
+                        {!chart.targetRemainder && targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
                       </div>
                     </div>
                   </Tooltip>
@@ -3454,13 +3474,29 @@ export function CustomChartRenderer({ chart, sites }) {
                       onClick={() => handleClick(label)}>
                       <span className="w-28 shrink-0 text-xs text-gray-700 dark:text-gray-300 chart-label-wrap">{displayLabel(label)}</span>
                       <div className="flex-1 flex items-center gap-2 min-w-0">
+                        {chart.targetRemainder && targetFor(label) !== null ? (
+                          // Value | what's left to the target (22 | 3) instead of "22" + "/25".
+                          <div className="flex-1 flex h-6 rounded overflow-hidden min-w-0 bg-gray-100 dark:bg-gray-700">
+                            <div className="h-full flex items-center justify-center px-1 text-xs font-bold text-white"
+                              style={{ width: `${Math.min(100, (count / targetFor(label)) * 100)}%`, backgroundColor: colorFor(label, i) }}>
+                              {count > 0 && fmtNum(count)}
+                            </div>
+                            {targetFor(label) - count > 0 && (
+                              <div className="h-full flex items-center justify-center px-1 text-xs font-bold text-white"
+                                style={{ width: `${((targetFor(label) - count) / targetFor(label)) * 100}%`, backgroundColor: '#B0B0B0' }}>
+                                {fmtNum(targetFor(label) - count)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
                         <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden min-w-0">
                           <div className="h-full flex items-center px-2"
                             style={{ width: `${(count / maxFor(label)) * 100}%`, backgroundColor: colorFor(label, i) }}>
                             <span className="text-xs font-bold text-white">{fmtNum(count)}</span>
                           </div>
                         </div>
-                        {targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
+                        )}
+                        {!chart.targetRemainder && targetLabel(label) && <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{targetLabel(label)}</span>}
                       </div>
                     </div>
                   </Tooltip>
@@ -6409,7 +6445,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
     cardDesign: 'big-number', cardIcon: '', cardColor: '#0038A8', cardTarget: '', cardImage: '', cardTextAlign: 'left',
     cardGradientColor: '#000000', cardDescription: '',
     hideTitle: false,
-    dateGroupBy: 'month', cumulative: false, valueLabels: {}, valueTargets: {}, secondaryValueLabels: {}, tertiaryValueLabels: {},
+    dateGroupBy: 'month', cumulative: false, valueLabels: {}, valueTargets: {}, targetRemainder: true, secondaryValueLabels: {}, tertiaryValueLabels: {},
     conditions: [],
     gridSize: 'full', showOnUser: true, showAllCategories: false, disablePagination: false, dataset: '',
     extraDatasets: [], fieldMap: {}, secondaryFieldMap: {}, aggregationFieldMap: {}, tableConditions: {},
@@ -6647,7 +6683,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
       }
       setShowAddChart(false);
       setEditingChart(null);
-      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', tertiaryField: '', chartType: 'bar-horizontal', agg: 'sum', equals: '', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '' });
+      setNewChart({ title: '', field: isFreeWifi ? 'province' : '', secondaryField: '', tertiaryField: '', chartType: 'bar-horizontal', agg: 'sum', equals: '', gridSize: 'full', showOnUser: true, showAllCategories: false, dataset: '', targetRemainder: true });
       setCardImageMode('url');
       setPendingCardImageFile(null);
     } catch (err) {
@@ -8624,6 +8660,17 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                 <span className="text-xs text-gray-700 dark:text-gray-300">Hide title on public page</span>
               </label>
 
+              {(newChart.chartType === 'bar-horizontal' || newChart.chartType === 'bar-100-stacked') && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!newChart.targetRemainder}
+                    onChange={(e) => setNewChart(c => ({ ...c, targetRemainder: e.target.checked }))}
+                    className="rounded border-gray-300" />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">
+                    Show what's left to the "over" target as a second segment <span className="text-gray-400">(e.g. 22 of 25 shows 22 | 3, no "/25")</span>
+                  </span>
+                </label>
+              )}
+
               {/* Optional small-print note/disclaimer shown under the chart on the public page. */}
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Note / disclaimer <span className="text-gray-400">(optional — small text under the chart)</span></label>
@@ -8801,7 +8848,7 @@ export default function FreeWifiCharts({ slug = 'free-wifi' }) {
                     : (chartSource?.[`${chart.id === 'province-breakdown' ? 'breakdown' : chart.id}_footnote`])}
                   showOnUser={chart.showOnUser}
                   onEdit={isCustom ? () => {
-                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, footnote: chart.footnote || '', dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader });
+                    setNewChart({ title: chart.title, field: chart.field, secondaryField: chart.secondaryField || '', tertiaryField: chart.tertiaryField || '', chartType: chart.chartType, agg: chart.agg || 'sum', equals: chart.equals || '', aggregationEnabled: !!chart.aggregationEnabled, aggregationField: chart.aggregationField || '', aggregationType: chart.aggregationType || 'sum', cardDesign: chart.cardDesign || 'big-number', cardIcon: chart.cardIcon || '', cardColor: chart.cardColor || '#0038A8', cardTarget: chart.cardTarget || '', cardImage: chart.cardImage || '', cardTextAlign: chart.cardTextAlign || 'left', cardGradientColor: chart.cardGradientColor || '#000000', cardDescription: chart.cardDescription || '', hideTitle: !!chart.hideTitle, footnote: chart.footnote || '', targetRemainder: !!chart.targetRemainder, dateGroupBy: chart.dateGroupBy || 'month', cumulative: !!chart.cumulative, valueLabels: chart.valueLabels || {}, valueTargets: chart.valueTargets || {}, secondaryValueLabels: chart.secondaryValueLabels || {}, tertiaryValueLabels: chart.tertiaryValueLabels || {}, conditions: chart.conditions || [], gridSize: chart.gridSize, showOnUser: chart.showOnUser, showAllCategories: chart.showAllCategories || false, disablePagination: !!chart.disablePagination, dataset: chart.dataset ? String(chart.dataset) : '', extraDatasets: chart.extraDatasets || [], fieldMap: chart.fieldMap || {}, secondaryFieldMap: chart.secondaryFieldMap || {}, aggregationFieldMap: chart.aggregationFieldMap || {}, tableConditions: chart.tableConditions || {}, rowMode: !!chart.rowMode, rowColumns: chart.rowColumns || [], multiRowMode: !!chart.multiRowMode, colorMode: chart.colorMode || 'palette', chartColor: chart.chartColor || '#0038A8', categoryColors: chart.categoryColors || {}, secondaryCategoryColors: chart.secondaryCategoryColors || {}, categorySecondaryColors: chart.categorySecondaryColors || {}, categoryOrder: chart.categoryOrder || [], secondaryCategoryOrder: chart.secondaryCategoryOrder || [], tertiaryCategoryOrder: chart.tertiaryCategoryOrder || [], donutCenterMode: chart.donutCenterMode || 'total', comparisonCollapsible: !!chart.comparisonCollapsible, showRowIncrease: chart.showRowIncrease !== false, rowIncreaseColor: chart.rowIncreaseColor || '', rowDecreaseColor: chart.rowDecreaseColor || '', rowIncreaseInHeader: !!chart.rowIncreaseInHeader });
                     setEditingChart(chart);
                     setCardImageMode('url');
                     setPendingCardImageFile(null);
