@@ -31,7 +31,7 @@ import { Skeleton } from '../screens/Admin/Skeleton';
 // visible card inside it stayed at its own shorter content height, so same-row cards with
 // a longer wrapped title (2 lines vs 1) visibly mismatched even though their grid cells
 // lined up.
-function ChartCard({ title, hideTitle, noPadding, children }) {
+function ChartCard({ title, hideTitle, noPadding, footnote, children }) {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {!hideTitle && (
@@ -43,6 +43,9 @@ function ChartCard({ title, hideTitle, noPadding, children }) {
         </div>
       )}
       <div className={`flex-1 ${noPadding ? '' : 'p-4'}`}>{children}</div>
+      {footnote && String(footnote).trim() && (
+        <p className="px-4 pb-3 pt-1 text-[10px] italic leading-snug text-gray-500 dark:text-gray-400 whitespace-pre-line break-words">{footnote}</p>
+      )}
     </div>
   );
 }
@@ -256,7 +259,7 @@ export default function ProjectChartsDisplay({ slug }) {
       gridClass: 'col-span-12',
       kind: 'widget:summary',
       node: (
-        <ChartCard key="summary" title={source.summary_title || 'Summary'} hideTitle={source.summary_hide_title}>
+        <ChartCard key="summary" title={source.summary_title || 'Summary'} hideTitle={source.summary_hide_title} footnote={source.summary_footnote}>
           <div className="rounded-2xl p-8 text-white -m-4"
             style={{ background: `linear-gradient(135deg, ${source.color_from || '#0038A8'}, ${source.color_to || '#0055f1'})` }}>
             <div className="flex items-center gap-2 mb-6">
@@ -284,7 +287,7 @@ export default function ProjectChartsDisplay({ slug }) {
       gridClass: 'col-span-12',
       kind: 'widget:map',
       node: (
-        <ChartCard key="map" title={source.map_title || 'Map'} hideTitle={source.map_hide_title}>
+        <ChartCard key="map" title={source.map_title || 'Map'} hideTitle={source.map_hide_title} footnote={source.map_footnote}>
           <div className="-m-4">
             <FreeWifiMap sites={mapped} totalAPs={mapped.length} height="500px" tooltipFields={tooltipFieldDefs} filterFields={filterFieldDefs} colorField={colorFieldDef} markerIcon={source.marker_icon} markerIconName={source.marker_icon_name} markerIconColor={source.marker_icon_color} statsIconName={source.stats_icon_name} statsIconColor={source.stats_icon_color} tileStyle={source.map_tile_style} />
           </div>
@@ -298,7 +301,7 @@ export default function ProjectChartsDisplay({ slug }) {
       gridClass: 'col-span-12',
       kind: 'widget:breakdown',
       node: (
-        <ChartCard key="province-breakdown" title={source.breakdown_title || 'Breakdown'} hideTitle={source.breakdown_hide_title}>
+        <ChartCard key="province-breakdown" title={source.breakdown_title || 'Breakdown'} hideTitle={source.breakdown_hide_title} footnote={source.breakdown_footnote}>
           <BreakdownAccordion records={filteredBreakdownRecords} source={source} taggedFields={breakdownTaggedFields} />
         </ChartCard>
       ),
@@ -310,7 +313,7 @@ export default function ProjectChartsDisplay({ slug }) {
       gridClass: gridSizeClass(chart.gridSize),
       kind: customChartKind(chart),
       node: (
-        <ChartCard key={chart.id} title={rowIncreaseHeaderText(chart, combineChartRecords(chart, recordsByDataset, filteredTables)) || chart.title} hideTitle={chart.hideTitle}
+        <ChartCard key={chart.id} title={rowIncreaseHeaderText(chart, combineChartRecords(chart, recordsByDataset, filteredTables)) || chart.title} hideTitle={chart.hideTitle} footnote={chart.footnote}
           noPadding={chart.chartType === 'aggregate-cards' && (chart.cardDesign === 'image-bg' || chart.cardDesign === 'text-image-bg')}>
           <CustomChartRenderer chart={chart} sites={combineChartRecords(chart, recordsByDataset, filteredTables)} />
         </ChartCard>
@@ -370,7 +373,8 @@ export default function ProjectChartsDisplay({ slug }) {
       gridClass: gridSizeClass(widget.gridSize),
       kind: `widget:${widget.widgetType}`,
       node: (
-        <ChartCard key={widget.id} title={builtinWidgetTitle(widget)} hideTitle={widget.hideTitle}>
+        <ChartCard key={widget.id} title={builtinWidgetTitle(widget)} hideTitle={widget.hideTitle}
+          footnote={widget.settings?.footnote}>
           {node}
         </ChartCard>
       ),
